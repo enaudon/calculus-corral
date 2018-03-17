@@ -1,0 +1,12 @@
+#
+# .gitignore
+#
+
+# Editor files
+*~
+[._]*.sw[a-p]
+[._]*.s[a-v][a-z]
+
+# Build artifacts
+_build/*
+.merlin
