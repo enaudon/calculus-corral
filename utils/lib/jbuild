@@ -1,0 +1,6 @@
+(jbuild_version 1)
+
+(library
+  ((name utils)
+   (wrapped false)
+   (flags (-w +A-4 -warn-error +A-4))))
