@@ -11,8 +11,19 @@ and t = {
   loc : Loc.t ;
 }
 
+(* Internal utilities *)
+
 let error : Loc.t -> string -> 'a = fun loc msg ->
   failwith @@ Printf.sprintf "%s %s" (Loc.to_string loc) msg
+
+let var : Loc.t -> Id.t -> t = fun loc id ->
+  { desc = Variable id; loc }
+
+let abs : Loc.t -> Id.t -> Type.t -> t -> t = fun loc arg tp body ->
+  { desc = Abstraction (arg, tp, body); loc }
+
+let app : Loc.t -> t -> t -> t = fun loc fn arg ->
+  { desc = Application (fn, arg); loc }
 
 (* Typing *)
 
@@ -21,10 +32,9 @@ let to_type =
     | Variable id ->
       begin try Id.Map.find id env with
         | Id.Unbound id ->
-          failwith @@
+          error tm.loc @@
             Printf.sprintf
-              "%s: Undefined identifier '%s'\n%!"
-              (Loc.to_string tm.loc)
+              "Term.to_type: undefined identifier '%s'"
               (Id.to_string id)
       end
     | Abstraction (arg, arg_tp, body) ->
@@ -48,6 +58,71 @@ let to_type =
               (Type.to_string act_arg_tp)
   in
   to_type Id.Map.empty
+
+(* Transformations *)
+
+(** [free_vars tm] computes the free variables in [tm]. *)
+let free_vars : t -> Id.Set.t =
+  let rec free_vars fvars tm = match tm.desc with
+    | Variable id ->
+      Id.Set.add id fvars
+    | Abstraction (arg, _, body) ->
+      Id.Set.del arg @@ free_vars fvars body
+    | Application (fn, arg) ->
+      free_vars (free_vars fvars fn) arg
+  in
+  free_vars Id.Set.empty
+
+(**
+  [subst ~fvars tm id tm'] replaces occurences of [id] in [tm] with
+  [tm'].  The optional argument, [fvars], is a set of identifiers that
+  may occur free in [tm'].
+
+  [subst] avoids name capture by renaming binders in [tm] to follow the
+  Barendregt convention--i.e. the names of bound variable are chosen
+  distinct from those of free variables.  The set [fvars] is used for
+  this purpose: while traversing [tm], [subst] renames any identifiers
+  which are members of [fvars], and therefore may occur free in [tm']
+ *)
+let subst : ?fvars : Id.Set.t -> t -> Id.t -> t -> t =
+  fun ?fvars tm id tm' ->
+  let rec subst fvars sub tm =
+    let loc = tm.loc in
+    match tm.desc with
+      | Variable id ->
+        Id.Map.find_default tm id sub
+      | Abstraction (arg, tp, body) ->
+        if Id.Set.mem arg fvars then
+          let arg' = Id.fresh () in
+          let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
+          abs loc arg' tp @@
+            subst (Id.Set.add arg' fvars) sub' body
+        else
+         abs loc arg tp @@
+            subst (Id.Set.add arg fvars) (Id.Map.del arg sub) body
+      | Application (fn, arg) ->
+        app loc (subst fvars sub fn) (subst fvars sub arg)
+  in
+  let fvars = match fvars with
+    | None -> free_vars tm'
+    | Some fvs -> fvs
+  in
+  subst fvars (Id.Map.singleton id tm') tm
+
+let rec beta_reduce tm = match tm.desc with
+  | Variable id ->
+    error tm.loc @@
+      Printf.sprintf
+        "Term.beta_reduce: undefined identifier '%s'"
+        (Id.to_string id)
+  | Abstraction _ ->
+    tm
+  | Application (fn, act_arg) ->
+    match (beta_reduce fn).desc with
+      | Abstraction (fml_arg, _, body) ->
+        beta_reduce @@ subst body fml_arg (beta_reduce act_arg)
+      | _ ->
+        error tm.loc "Term.beta_reduce: cannot apply non-function"
 
 (* Utilities *)
 
@@ -76,18 +151,16 @@ let rec to_string tm =
 
 (* Constructors *)
 
-let var ?(loc = Loc.dummy) id =
-  { desc = Variable (Id.of_string id); loc }
+let var ?(loc = Loc.dummy) id = var loc (Id.of_string id)
 
 let abs ?(loc = Loc.dummy) arg tp body =
-  { desc = Abstraction (Id.of_string arg, tp, body); loc }
+  abs loc (Id.of_string arg) tp body
 
 let abs' ?(loc = Loc.dummy) args body =
   let abs' body (arg, tp) = abs ~loc arg tp body in
   List.fold_left abs' body (List.rev args)
 
-let app ?(loc = Loc.dummy) fn arg =
-  { desc = Application (fn, arg); loc }
+let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 
 let app' ?(loc = Loc.dummy) fn args =
   List.fold_left (fun fn args -> app ~loc fn args) fn args

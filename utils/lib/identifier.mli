@@ -8,7 +8,30 @@ type t
 (** [Unbound id] indicates that no binding exists for the [id]. *)
 exception Unbound of t
 
-(** {1 Maps} *)
+(** {1 Containers} *)
+
+(** Sets of identifiers. *)
+module Set : sig
+
+  (** The type of set elements, i.e. identifiers. *)
+  type elt = t
+
+  (** The type of sets of identifiers. *)
+  type t
+
+  (** [empty] is the empty set. *)
+  val empty : t
+
+  (** [add id set] extends [set] with [id]. *)
+  val add : elt -> t -> t
+
+  (** [del id set] removes the element [id] from [set]. *)
+  val del : elt -> t -> t
+
+  (** [mem id set] determines whether [id] is a member of [set]. *)
+  val mem : elt -> t -> bool
+
+end
 
 (** Maps from identifiers. *)
 module Map : sig
@@ -22,14 +45,29 @@ module Map : sig
   (** [empty] is the empty map. *)
   val empty : 'a t
 
-  (** [add id x map] extends [env] with a binding from [id] to [x]. *)
+  (**
+    [singleton id x] constructs a [map] with one binding from [id] to
+    [x].
+   *)
+  val singleton : key -> 'a -> 'a t
+
+  (** [add id x map] extends [map] with a binding from [id] to [x]. *)
   val add : key -> 'a -> 'a t -> 'a t
 
+  (** [del id map] removes the mapping from [id] from [map]. *)
+  val del : key -> 'a t -> 'a t
+
   (**
-    [find id map] computes the value to which [id] is bound in [env].
-    If no such value exists, then [find] raises [Unbound id].
+    [find id map] computes the value to which [id] is bound in [map].
+    If no such binding exists, [find] raises [Unbound id].
    *)
   val find : key -> 'a t -> 'a
+
+  (**
+    [find_default x id map] computes the value to which [id] is bound in
+    [map].  If no such binding exists, [find] evaluates to [x].
+   *)
+  val find_default : 'a -> key -> 'a t -> 'a
 
 end
 

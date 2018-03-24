@@ -30,6 +30,11 @@ val app' : ?loc : Location.t -> t -> t list -> t
 (** [to_type tm] comptutes the type of [tm]. *)
 val to_type : t -> Type.t
 
+(** {1 Transformations} *)
+
+(** [beta_reduce tm] beta-reduces [tm].*)
+val beta_reduce : t -> t
+
 (** {1 Utilities} *)
 
 (** [to_string tm] computes a string representation of [tm]. *)

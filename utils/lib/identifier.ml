@@ -2,17 +2,32 @@ type t = string
 
 exception Unbound of t
 
+module OrdId = struct
+  type nonrec t = t
+  let compare = Pervasives.compare
+end
+
+module Set = struct
+
+  include Set.Make (OrdId)
+
+  let del = remove
+
+end
+
 module Map = struct
 
-  include Map.Make (struct
-    type nonrec t = t
-    let compare = Pervasives.compare
-  end)
+  include Map.Make (OrdId)
+
+  let del = remove
+
+  let find_default x id map =
+    try find id map with
+      | Not_found -> x
 
   let find id map =
     try find id map with
-      | Not_found ->
-        raise @@ Unbound id
+      | Not_found -> raise @@ Unbound id
 
 end
 
