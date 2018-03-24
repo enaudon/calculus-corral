@@ -25,10 +25,10 @@ val get_func : t -> t * t
 (** {1 Utilities} *)
 
 (**
-  [equals tp1 tp2] evaluates to [true] if [tp1] and [tp2] are equal, or
-  [false] otherwise.
+  [alpha_equivalent tp1 tp2] evaluates to [true] if [tp1] and [tp2] are
+  equal up renaming of bound variables, or [false] otherwise.
  *)
-val equals : t -> t -> bool
+val alpha_equivalent : t -> t -> bool
 
 (** [to_string tp] computes a string representation of [tp]. *)
 val to_string : t -> string

@@ -4,11 +4,11 @@ type t =
 
 (* Utilities *) 
 
-let rec equals tp1 tp2 = match tp1, tp2 with
+let rec alpha_equivalent tp1 tp2 = match tp1, tp2 with
   | Base id1, Base id2 ->
     id1 = id2
   | Function (arg1, res1), Function (arg2, res2) ->
-    equals arg1 arg2 && equals res1 res2
+    alpha_equivalent arg1 arg2 && alpha_equivalent res1 res2
   | _ ->
     false
 

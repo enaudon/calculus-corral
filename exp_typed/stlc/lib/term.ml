@@ -48,7 +48,7 @@ let to_type =
               "Term.to_type: cannot apply non-function"
       in
       let act_arg_tp = to_type env arg in
-      if Type.equals act_arg_tp fml_arg_tp then
+      if Type.alpha_equivalent act_arg_tp fml_arg_tp then
         res_tp
       else
       error arg.loc @@
@@ -109,22 +109,47 @@ let subst : ?fvars : Id.Set.t -> t -> Id.t -> t -> t =
   in
   subst fvars (Id.Map.singleton id tm') tm
 
-let rec beta_reduce tm = match tm.desc with
-  | Variable id ->
-    error tm.loc @@
-      Printf.sprintf
-        "Term.beta_reduce: undefined identifier '%s'"
-        (Id.to_string id)
-  | Abstraction _ ->
-    tm
-  | Application (fn, act_arg) ->
-    match (beta_reduce fn).desc with
-      | Abstraction (fml_arg, _, body) ->
-        beta_reduce @@ subst body fml_arg (beta_reduce act_arg)
-      | _ ->
-        error tm.loc "Term.beta_reduce: cannot apply non-function"
+let rec beta_reduce tm =
+  let loc = tm.loc in
+  match tm.desc with
+    | Variable _ ->
+      tm
+    | Abstraction (arg, tp, body) ->
+      abs loc arg tp @@ beta_reduce body
+    | Application (fn, act_arg) ->
+      let act_arg' = beta_reduce act_arg in
+      let fn' = beta_reduce fn in
+      match fn'.desc with
+        | Abstraction (fml_arg, _, body) ->
+          beta_reduce @@ subst body fml_arg act_arg'
+        | _ ->
+          app loc fn' act_arg'
 
 (* Utilities *)
+
+let alpha_equivalent =
+  let rec alpha_equiv env tm1 tm2 = match tm1.desc, tm2.desc with
+      | Variable id1, Variable id2 ->
+        let id1' = try Id.Map.find id1 env with
+          | Id.Unbound id ->
+            error tm1.loc @@
+              Printf.sprintf
+                "Term.to_type: undefined identifier '%s'"
+                (Id.to_string id)
+        in
+        id1' = id2
+      | Abstraction (arg1, tp1, body1),
+          Abstraction (arg2, tp2, body2) ->
+        if Type.alpha_equivalent tp1 tp2 then
+          alpha_equiv (Id.Map.add arg1 arg2 env) body1 body2
+        else
+          false
+      | Application (fn1, arg1), Application (fn2, arg2) ->
+        alpha_equiv env fn1 fn2 && alpha_equiv env arg1 arg2
+      | _ ->
+        false
+  in
+  alpha_equiv (Id.Map.empty)
 
 let rec to_string tm =
   let to_paren_string tm = Printf.sprintf "(%s)" (to_string tm) in
