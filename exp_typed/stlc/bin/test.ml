@@ -23,7 +23,7 @@ let assert_equal tm exp_tp exp_tm =
   assert_equal_tp tm exp_tp;
   let act_tm =
     try
-      Term.beta_reduce tm
+      Term.beta_reduce ~deep:() tm
     with Failure msg ->
       assert_failure @@
         Printf.sprintf "Failure beta-reducing '%s'\n%s"

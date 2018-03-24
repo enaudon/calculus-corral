@@ -82,10 +82,10 @@ let free_vars : t -> Id.Set.t =
   Barendregt convention--i.e. the names of bound variable are chosen
   distinct from those of free variables.  The set [fvars] is used for
   this purpose: while traversing [tm], [subst] renames any identifiers
-  which are members of [fvars], and therefore may occur free in [tm']
+  which are members of [fvars], and therefore may occur free in [tm'].
  *)
 let subst : ?fvars : Id.Set.t -> t -> Id.t -> t -> t =
-  fun ?fvars tm id tm' ->
+    fun ?fvars tm id tm' ->
   let rec subst fvars sub tm =
     let loc = tm.loc in
     match tm.desc with
@@ -109,21 +109,49 @@ let subst : ?fvars : Id.Set.t -> t -> Id.t -> t -> t =
   in
   subst fvars (Id.Map.singleton id tm') tm
 
-let rec beta_reduce tm =
-  let loc = tm.loc in
-  match tm.desc with
-    | Variable _ ->
-      tm
-    | Abstraction (arg, tp, body) ->
-      abs loc arg tp @@ beta_reduce body
-    | Application (fn, act_arg) ->
-      let act_arg' = beta_reduce act_arg in
-      let fn' = beta_reduce fn in
-      match fn'.desc with
-        | Abstraction (fml_arg, _, body) ->
-          beta_reduce @@ subst body fml_arg act_arg'
-        | _ ->
-          app loc fn' act_arg'
+(**
+  [beta_reduce tm] beta-reduces [tm].
+
+  In order to make calls to [subst] more efficient, [beta_reduce] tracks
+  bound variables as it traverses [tm].  These bound variables may occur
+  free in sub-expressions of [tm], such as the argument in function
+  applications.  Therefore, they become the free variables passed to
+  [subst].  Doing this, means [subst] can skip the call to [free_vars],
+  saving an extra traversal over the [tm'] argument to [subst].
+
+  This technique is due to Jones, et al.:
+    Peyton Jones, Simon; Marlow, Simon. Secrets of the Glasgow Haskell
+    Compiler inliner.  Journal of Functional Programming, 2002.
+ *)
+let beta_reduce ?deep =
+  let deep = if deep = None then false else true in
+  let rec beta_reduce bvars tm =
+    let loc = tm.loc in
+    match tm.desc with
+      | Variable id ->
+        if Id.Set.mem id bvars then
+          tm
+        else
+          error tm.loc @@
+            Printf.sprintf
+              "Term.beta_reduce: undefined identifier '%s'"
+              (Id.to_string id)
+      | Abstraction (arg, tp, body) ->
+        if deep then
+          abs loc arg tp @@ beta_reduce (Id.Set.add arg bvars) body
+        else
+          tm
+      | Application (fn, act_arg) ->
+        let fn' = beta_reduce bvars fn in
+        let act_arg' = beta_reduce bvars act_arg in
+        match fn'.desc with
+          | Abstraction (fml_arg, _, body) ->
+            let body' = subst ~fvars:bvars body fml_arg act_arg' in
+            beta_reduce bvars body'
+          | _ ->
+            app loc fn' act_arg'
+  in
+  beta_reduce Id.Set.empty
 
 (* Utilities *)
 

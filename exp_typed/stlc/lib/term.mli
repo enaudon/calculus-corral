@@ -32,8 +32,12 @@ val to_type : t -> Type.t
 
 (** {1 Transformations} *)
 
-(** [beta_reduce tm] beta-reduces [tm].*)
-val beta_reduce : t -> t
+(**
+  [beta_reduce tm] evaluates any applications in [tm]. If the [deep]
+  argument is passed, then [beta_reduce] will evaluate the body of
+  abstractions.
+ *)
+val beta_reduce : ?deep : unit -> t -> t
 
 (** {1 Utilities} *)
 
