@@ -116,6 +116,17 @@ let mul =
     ["m", nat_tp; "n", nat_tp; "s", Type.func b b]
     (Term.app (Term.var "m") (Term.app (Term.var "n") (Term.var "s")))
 
+let if_zero =
+  Term.abs'
+    ["m", nat_tp; "n", nat_tp; "l", nat_tp; "s", Type.func b b; "z", b]
+    (Term.app'
+      (Term.var "m")
+      [
+        (Term.abs "x" b
+          (Term.app' (Term.var "l") [Term.var "s"; Term.var "z"])) ;
+        (Term.app' (Term.var "n") [Term.var "s"; Term.var "z"])
+      ])
+
 (* Church booleans *)
 
 let bool_tp = Type.func' [nat_tp; nat_tp] nat_tp
@@ -189,28 +200,6 @@ let to_type_tests = "Term.to_type tests", [
 
   ] ) ;
 
-  ( "Church Booleans", [
-
-    ("false", fun _ -> assert_equal fls bool_tp fls) ;
-
-    ("true", fun _ -> assert_equal tru bool_tp tru) ;
-
-    (
-      "if", fun _ ->
-        let exp_tp = Type.func' [bool_tp; nat_tp; nat_tp] nat_tp in
-        assert_equal if_ exp_tp if_
-    ) ;
-
-    (
-      "bool_to_nat", fun _ ->
-        assert_equal
-          bool_to_nat
-          (Type.func bool_tp nat_tp)
-          (Term.abs "b" bool_tp @@ Term.app' (Term.var "b") [one; zero])
-    ) ;
-
-  ] ) ;
-
   ( "Church Naturals", [
 
     ("zero", fun _ -> assert_equal zero nat_tp zero) ;
@@ -237,6 +226,36 @@ let to_type_tests = "Term.to_type tests", [
     (
       "mul", fun _ ->
         assert_equal mul (Type.func' [nat_tp; nat_tp] nat_tp) mul
+    ) ;
+
+    (
+      "if_zero", fun _ ->
+        assert_equal
+          if_zero
+          (Type.func' [nat_tp; nat_tp; nat_tp] nat_tp)
+          if_zero
+    ) ;
+
+  ] ) ;
+
+  ( "Church Booleans", [
+
+    ("false", fun _ -> assert_equal fls bool_tp fls) ;
+
+    ("true", fun _ -> assert_equal tru bool_tp tru) ;
+
+    (
+      "if", fun _ ->
+        let exp_tp = Type.func' [bool_tp; nat_tp; nat_tp] nat_tp in
+        assert_equal if_ exp_tp if_
+    ) ;
+
+    (
+      "bool_to_nat", fun _ ->
+        assert_equal
+          bool_to_nat
+          (Type.func bool_tp nat_tp)
+          (Term.abs "b" bool_tp @@ Term.app' (Term.var "b") [one; zero])
     ) ;
 
   ] ) ;
@@ -275,6 +294,35 @@ let beta_reduce_tests = "Term.beta_reduce", [
       "2 * 2 * 2", fun _ ->
         let tm = Term.app' mul [two; Term.app' mul [two; two]] in
         assert_equal tm nat_tp eight
+    ) ;
+
+    (
+      "if_zero 0 1 2", fun _ ->
+        assert_equal (Term.app' if_zero [zero; one; two]) nat_tp one
+    ) ;
+
+    (
+      "if_zero 1 1 2", fun _ ->
+        assert_equal (Term.app' if_zero [one; one; two]) nat_tp two
+    ) ;
+
+    (
+      "if_zero 2 1 2", fun _ ->
+        assert_equal (Term.app' if_zero [two; one; two]) nat_tp two
+    ) ;
+
+    (
+      "if_zero (4 * 4 + 1) (8 * 2) (1 + 2 + 1)", fun _ ->
+        let tm =
+          Term.app'
+            if_zero
+            [
+              Term.app' add [Term.app' mul [four; four]; one] ;
+              Term.app' mul [eight; two] ;
+              Term.app' add [one; Term.app' add [two; one]] ;
+            ]
+        in
+        assert_equal tm nat_tp four
     ) ;
 
     (
