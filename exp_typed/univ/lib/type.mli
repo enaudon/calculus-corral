@@ -1,0 +1,58 @@
+(** {1 Types} *)
+
+(** The type of types. *)
+type t
+
+(** {1 Exceptions} *)
+
+(** {1 Constructors and Destructors} *)
+
+(** [base name] constructs a base type identified by [name]. *)
+val base : string -> t
+
+(** [var id] constructs a type variable identified by [id]. *)
+val var : string -> t
+
+(** [func arg res] constructs a function from [arg] to [res]. *)
+val func : t -> t -> t
+
+(** [func' args res] constructs a function from [args] to [res]. *)
+val func' : t list -> t -> t
+
+(**
+  [forall id tp] constructs a universally quantified type.
+ *)
+val forall : string -> t -> t
+
+(**
+  [get_func tp] computes the argument and result type of [tp], if [tp]
+  is a function.  Otherwise, [get_func] raises [Invalid_argument].
+ *)
+val get_func : t -> t * t
+
+(**
+  [get_forall tp] computes the variable identifier and body of [tp], if
+  [tp] is a universally quantified type.  Otherwise, [get_forall] raises
+  [Invalid_argument].
+ *)
+val get_forall : t -> Identifier.t * t
+
+(** {1 Utilities} *)
+
+(**
+  [struct_equivalent tp1 tp2] evaluates to [true] if [tp1] and [tp2] are
+  structurally equivalent to one another.
+ *)
+val struct_equivalent : t -> t -> bool
+
+(** [free_vars tp] computes the free variables in [tp]. *)
+val free_vars : t -> Identifier.Set.t
+
+(**
+  [subst fvars tp sub] applies the substitution [sub] to [tp], assuming
+  that the identifiers in [fvars] may occur free in the range of [sub].
+*)
+val subst : Identifier.Set.t -> t Identifier.Map.t -> t -> t
+
+(** [to_string tp] computes a string representation of [tp]. *)
+val to_string : t -> string

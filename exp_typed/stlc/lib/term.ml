@@ -51,11 +51,11 @@ let to_type =
       if Type.alpha_equivalent act_arg_tp fml_arg_tp then
         res_tp
       else
-      error arg.loc @@
-          Printf.sprintf
-            "Term.to_type: expected type '%s'; found type '%s'"
-              (Type.to_string fml_arg_tp)
-              (Type.to_string act_arg_tp)
+        error arg.loc @@
+            Printf.sprintf
+              "Term.to_type: expected type '%s'; found type '%s'"
+                (Type.to_string fml_arg_tp)
+                (Type.to_string act_arg_tp)
   in
   to_type Id.Map.empty
 
@@ -98,7 +98,7 @@ let subst : ?fvars : Id.Set.t -> t -> Id.t -> t -> t =
           abs loc arg' tp @@
             subst (Id.Set.add arg' fvars) sub' body
         else
-         abs loc arg tp @@
+          abs loc arg tp @@
             subst (Id.Set.add arg fvars) (Id.Map.del arg sub) body
       | Application (fn, arg) ->
         app loc (subst fvars sub fn) (subst fvars sub arg)
@@ -157,25 +157,23 @@ let beta_reduce ?deep =
 
 let alpha_equivalent =
   let rec alpha_equiv env tm1 tm2 = match tm1.desc, tm2.desc with
-      | Variable id1, Variable id2 ->
-        let id1' = try Id.Map.find id1 env with
-          | Id.Unbound id ->
-            error tm1.loc @@
-              Printf.sprintf
-                "Term.to_type: undefined identifier '%s'"
-                (Id.to_string id)
-        in
-        id1' = id2
-      | Abstraction (arg1, tp1, body1),
-          Abstraction (arg2, tp2, body2) ->
-        if Type.alpha_equivalent tp1 tp2 then
-          alpha_equiv (Id.Map.add arg1 arg2 env) body1 body2
-        else
-          false
-      | Application (fn1, arg1), Application (fn2, arg2) ->
-        alpha_equiv env fn1 fn2 && alpha_equiv env arg1 arg2
-      | _ ->
-        false
+    | Variable id1, Variable id2 ->
+      let id1' = try Id.Map.find id1 env with
+        | Id.Unbound id ->
+          error tm1.loc @@
+            Printf.sprintf
+              "Term.alpha_equivalent: undefined identifier '%s'"
+              (Id.to_string id)
+      in
+      id1' = id2
+    | Abstraction (arg1, tp1, body1),
+        Abstraction (arg2, tp2, body2) ->
+      Type.alpha_equivalent tp1 tp2 &&
+        alpha_equiv (Id.Map.add arg1 arg2 env) body1 body2
+    | Application (fn1, arg1), Application (fn2, arg2) ->
+      alpha_equiv env fn1 fn2 && alpha_equiv env arg1 arg2
+    | _ ->
+      false
   in
   alpha_equiv (Id.Map.empty)
 
