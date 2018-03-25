@@ -45,6 +45,15 @@ val get_forall : t -> Identifier.t * t
  *)
 val struct_equivalent : t -> t -> bool
 
+(**
+  [alpha_equivalent ~env tp1 tp2] evaluates to [true] if [tp1] and [tp2]
+  are equal up renaming of bound variables, or [false] otherwise.  The
+  optional argument, [env], specifies the renaming between bound
+  variables.
+ *)
+val alpha_equivalent :
+  ?env : Identifier.t Identifier.Map.t -> t -> t -> bool
+
 (** [free_vars tp] computes the free variables in [tp]. *)
 val free_vars : t -> Identifier.Set.t
 

@@ -242,9 +242,9 @@ let beta_reduce ?deep =
 
 (**
   [struct_equivalent tp1 tp2] determines whether [tp1] and [tp2] are
-  structurally equivalent.  [struct_equivalent] does the traversal
-  manually, rather than delegating to [Pervasives.(=)], because terms
-  contain source code locations, which it deliberately ignores.
+  structurally equivalent.  It does the traversal manually, rather than
+  delegating to [Pervasives.(=)], because terms contain source code
+  locations, which it deliberately ignores.
  *)
 let rec struct_equivalent tm1 tm2 = match tm1.desc, tm2.desc with
   | Variable id1, Variable id2 ->
@@ -260,6 +260,33 @@ let rec struct_equivalent tm1 tm2 = match tm1.desc, tm2.desc with
     struct_equivalent fn1 fn2 && Type.struct_equivalent arg1 arg2
   | _ ->
     false
+
+let alpha_equivalent =
+  let rec alpha_equiv tp_env tm_env tm1 tm2 = match tm1.desc, tm2.desc with
+    | Variable id1, Variable id2 ->
+      let id1' = try Id.Map.find id1 tm_env with
+        | Id.Unbound id ->
+          error tm1.loc @@
+            Printf.sprintf
+              "Term.alpha_equivalent: undefined identifier '%s'"
+              (Id.to_string id)
+      in
+      id1' = id2
+    | Term_abs (arg1, tp1, body1), Term_abs (arg2, tp2, body2) ->
+      Type.alpha_equivalent ~env:tp_env tp1 tp2 &&
+        alpha_equiv tp_env (Id.Map.add arg1 arg2 tm_env) body1 body2
+    | Term_app (fn1, arg1), Term_app (fn2, arg2) ->
+      alpha_equiv tp_env tm_env fn1 fn2 &&
+        alpha_equiv tp_env tm_env arg1 arg2
+    | Type_abs (arg1, body1), Type_abs (arg2, body2) ->
+      alpha_equiv (Id.Map.add arg1 arg2 tp_env) tm_env body1 body2
+    | Type_app (fn1, arg1), Type_app (fn2, arg2) ->
+      alpha_equiv tp_env tm_env fn1 fn2 &&
+        Type.alpha_equivalent ~env:tp_env arg1 arg2
+    | _ ->
+      false
+  in
+  alpha_equiv (Id.Map.empty) (Id.Map.empty)
 
 let rec to_string tm =
   let to_paren_string tm = Printf.sprintf "(%s)" (to_string tm) in

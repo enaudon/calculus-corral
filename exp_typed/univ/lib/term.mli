@@ -63,5 +63,11 @@ val beta_reduce : ?deep : unit -> t -> t
  *)
 val struct_equivalent : t -> t -> bool
 
+(**
+  [alpha_equivalent tm1 tm2] evaluates to [true] if [tm1] and [tm2] are
+  equal up renaming of bound variables, or [false] otherwise.
+ *)
+val alpha_equivalent : t -> t -> bool
+
 (** [to_string tm] computes a string representation of [tm]. *)
 val to_string : t -> string

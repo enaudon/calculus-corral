@@ -6,7 +6,9 @@ type t =
   | Function of t * t
   | Universal of Id.t * t
 
-(* Internal constructors *)
+(* Internal utilities *)
+
+let error : string -> 'a = fun msg -> failwith msg
 
 let base id = Base id
 
@@ -16,7 +18,7 @@ let func arg res = Function (arg, res)
 
 let univ id tp = Universal (id, tp)
 
-(* Utilities *) 
+(* External utilities *)
 
 (**
   [struct_equivalent tp1 tp2] determines whether [tp1] and [tp2] are
@@ -25,6 +27,27 @@ let univ id tp = Universal (id, tp)
   calls that directly.
  *)
 let struct_equivalent = Pervasives.(=)
+
+let rec alpha_equivalent ?(env=Id.Map.empty) tp1 tp2 =
+  let alpha_equiv env = alpha_equivalent ~env in
+  match tp1, tp2 with
+    | Base id1, Base id2 ->
+      id1 = id2
+    | Variable id1, Variable id2 ->
+      let id1' = try Id.Map.find id1 env with
+        | Id.Unbound id ->
+          error @@
+            Printf.sprintf
+              "Type.alpha_equivalent: undefined identifier '%s'"
+              (Id.to_string id)
+      in
+      id1' = id2
+    | Function (arg1, res1), Function (arg2, res2) ->
+      alpha_equiv env arg1 arg2 && alpha_equiv env res1 res2
+    | Universal (id1, tp1), Universal (id2, tp2) ->
+      alpha_equiv (Id.Map.add id1 id2 env) tp1 tp2
+    | _ ->
+      false
 
 let free_vars =
   let rec free_vars fvars tp = match tp with
@@ -70,7 +93,7 @@ let rec to_string tp =
     | Universal (id, tp) ->
       Printf.sprintf "forall %s . %s" (Id.to_string id) (to_string tp)
 
-(* External constructors *)
+(* Constructors *)
 
 let base id = base id
 

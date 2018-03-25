@@ -166,8 +166,7 @@ let alpha_equivalent =
               (Id.to_string id)
       in
       id1' = id2
-    | Abstraction (arg1, tp1, body1),
-        Abstraction (arg2, tp2, body2) ->
+    | Abstraction (arg1, tp1, body1), Abstraction (arg2, tp2, body2) ->
       Type.alpha_equivalent tp1 tp2 &&
         alpha_equiv (Id.Map.add arg1 arg2 env) body1 body2
     | Application (fn1, arg1), Application (fn2, arg2) ->
