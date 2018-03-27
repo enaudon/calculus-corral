@@ -7,8 +7,8 @@ type t
 
 (** {1 Constructors and Destructors} *)
 
-(** [base name] constructs a base type identified by [name]. *)
-val base : string -> t
+(** [base] is the base type. *)
+val base : t
 
 (** [func arg res] constructs a function from [arg] to [res]. *)
 val func : t -> t -> t
@@ -25,8 +25,14 @@ val get_func : t -> t * t
 (** {1 Utilities} *)
 
 (**
+  [struct_equivalent tp1 tp2] evaluates to [true] if [tp1] and [tp2] are
+  structurally equivalent to one another.
+ *)
+val struct_equivalent : t -> t -> bool
+
+(**
   [alpha_equivalent tp1 tp2] evaluates to [true] if [tp1] and [tp2] are
-  equal up renaming of bound variables, or [false] otherwise.
+  equal upto renaming of bound variables, or [false] otherwise.
  *)
 val alpha_equivalent : t -> t -> bool
 

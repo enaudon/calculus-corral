@@ -18,7 +18,6 @@ let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 
 /* Literals and identifiers */
 %token <string> LOWER_ID
-%token <string> UPPER_ID
 
 /* Symbols */
 %token COLON
@@ -26,6 +25,9 @@ let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 %token PERIOD
 %token SEMICOLON
 %token O_PAREN C_PAREN
+
+/* Keywords */
+%token CAP_B
 
 /* Other */
 %token EOF
@@ -46,7 +48,7 @@ comp_typo :
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
   | O_PAREN typo error            { error "Parser: unclosed parenthesis" }
-  | UPPER_ID                      { Type.base $1 }
+  | CAP_B                         { Type.base }
 
 term :
   | comp_term                     { $1 }

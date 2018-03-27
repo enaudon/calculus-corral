@@ -48,7 +48,7 @@ let to_type =
               "Term.to_type: cannot apply non-function"
       in
       let act_arg_tp = to_type env arg in
-      if Type.alpha_equivalent act_arg_tp fml_arg_tp then
+      if Type.struct_equivalent act_arg_tp fml_arg_tp then
         res_tp
       else
         error arg.loc @@

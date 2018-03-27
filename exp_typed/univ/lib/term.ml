@@ -106,8 +106,9 @@ let free_vars : t -> Id.Set.t =
   free_vars Id.Set.empty
 
 (**
-  [subst_tp fvars tm id tp'] replaces occurences of [id] in [tm] with
-  [tp'].  [fvars] is a set of identifiers that may occur free in [tp'].
+  [subst_tp ~fvars tm id tp'] replaces occurences of [id] in [tm] with
+  [tp'].  The optional argument, [fvars], is a set of identifiers that
+  may occur free in [tp'].
 
   [subst_tp] avoids name capture by renaming binders in [tp] to follow
   the Barendregt convention--i.e. the names of bound variable are chosen
@@ -245,12 +246,6 @@ let beta_reduce ?deep =
 
 (* Utilities *)
 
-(**
-  [struct_equivalent tp1 tp2] determines whether [tp1] and [tp2] are
-  structurally equivalent.  It does the traversal manually, rather than
-  delegating to [Pervasives.(=)], because terms contain source code
-  locations, which it deliberately ignores.
- *)
 let rec struct_equivalent tm1 tm2 = match tm1.desc, tm2.desc with
   | Variable id1, Variable id2 ->
     id1 = id2

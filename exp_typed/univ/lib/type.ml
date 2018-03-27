@@ -22,9 +22,9 @@ let univ id tp = Universal (id, tp)
 
 (**
   [struct_equivalent tp1 tp2] determines whether [tp1] and [tp2] are
-  structurally equivalent.  Since OCaml's [Pervasives.(=)]  implements
-  structural equivalence over abitrary types, [struct_equivalent] just
-  calls that directly.
+  structurally equivalent.  [Pervasives.(=)] implements structural
+  equivalence over abitrary types, so [struct_equivalent] just calls
+  (=).
  *)
 let struct_equivalent = Pervasives.(=)
 

@@ -116,9 +116,9 @@ let or_ =
 let if_ =
   Term.tp_abs "A" @@
     Term.abs'
-      ["b", bool_tp; "x", a; "y", a]
+      ["p", bool_tp; "x", a; "y", a]
       (Term.app'
-        (Term.tp_app (Term.var "b") a)
+        (Term.tp_app (Term.var "p") a)
         [Term.var "x"; Term.var "y"])
 
 (* Church naturals *)

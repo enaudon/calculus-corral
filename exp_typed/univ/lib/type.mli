@@ -52,7 +52,7 @@ val struct_equivalent : t -> t -> bool
 
 (**
   [alpha_equivalent ~env tp1 tp2] evaluates to [true] if [tp1] and [tp2]
-  are equal up renaming of bound variables, or [false] otherwise.  The
+  are equal upto renaming of bound variables, or [false] otherwise.  The
   optional argument, [env], specifies the renaming between bound
   variables.
  *)
