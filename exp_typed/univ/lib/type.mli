@@ -25,6 +25,11 @@ val func' : t list -> t -> t
 val forall : string -> t -> t
 
 (**
+  [forall' ids tp] constructs a universally quantified type.
+ *)
+val forall' : string list -> t -> t
+
+(**
   [get_func tp] computes the argument and result type of [tp], if [tp]
   is a function.  Otherwise, [get_func] raises [Invalid_argument].
  *)

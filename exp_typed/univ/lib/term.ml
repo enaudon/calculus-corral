@@ -49,13 +49,15 @@ let to_type =
       let body_tp = to_type btvs (Id.Map.add arg arg_tp env) body in
       Type.func arg_tp body_tp
     | Term_app (fn, arg) ->
+      let fn' = to_type btvs env fn in
       let fml_arg_tp, res_tp =
         try
-          Type.get_func @@ to_type btvs env fn
+          Type.get_func fn'
         with Invalid_argument _ ->
           error tm.loc @@
             Printf.sprintf
-              "Term.to_type: cannot apply non-function"
+              "Term.to_type: expected function type; found '%s'"
+              (Type.to_string fn')
       in
       let act_arg_tp = to_type btvs env arg in
       if Type.struct_equivalent act_arg_tp fml_arg_tp then
@@ -72,13 +74,16 @@ let to_type =
       Type.forall (Id.to_string arg) @@
         to_type btvs' (Id.Map.add arg tv env) body
     | Type_app (fn, arg) ->
-        let tv, tp = try Type.get_forall @@ to_type btvs env fn with
-          | Invalid_argument _ ->
-            error tm.loc @@
-              Printf.sprintf
-                "Term.to_type: cannot apply non-function"
-        in
-        Type.subst btvs (Id.Map.singleton tv arg) tp
+      let fn' = to_type btvs env fn in
+      let tv, tp =
+        try
+          Type.get_forall fn'
+        with Invalid_argument _ ->
+          error tm.loc @@
+            Printf.sprintf
+              "Term.to_type: cannot apply non-function"
+      in
+      Type.subst btvs (Id.Map.singleton tv arg) tp
   in
   to_type Id.Set.empty Id.Map.empty
 

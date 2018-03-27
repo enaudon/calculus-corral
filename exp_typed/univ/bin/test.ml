@@ -36,7 +36,59 @@ let assert_equal tm exp_tp exp_tm =
   assert_equal ~msg ~cmp ~printer exp_tm act_tm
 
 let a = Type.var "A"
-let b = Type.base "B"
+let b = Type.var "B"
+let c = Type.var "C"
+
+(* Functions *)
+
+let id = Term.tp_abs "A" (Term.abs "x" a (Term.var "x"))
+
+let id_tp = Type.forall "A" (Type.func a a)
+
+let app =
+  Term.tp_abs'
+    ["A"; "B"]
+    (Term.abs'
+      ["f", Type.func a b; "x", a]
+      (Term.app (Term.var "f") (Term.var "x")))
+
+let app_tp = Type.forall' ["A"; "B"] (Type.func' [Type.func a b; a] b)
+
+let rev_app =
+  Term.tp_abs'
+    ["A"; "B"]
+    (Term.abs'
+      ["x", a; "f", Type.func a b]
+      (Term.app (Term.var "f") (Term.var "x")))
+
+let rev_app_tp =
+  Type.forall' ["A"; "B"] (Type.func' [a; Type.func a b] b)
+
+let compose =
+  Term.tp_abs'
+    ["A"; "B"; "C"]
+    (Term.abs'
+      ["f", Type.func a b; "g", Type.func c a; "x", c]
+      (Term.app
+        (Term.var "f")
+        (Term.app (Term.var "g") (Term.var "x"))))
+
+let compose_tp =
+  Type.forall'
+    ["A"; "B"; "C"]
+    (Type.func' [Type.func a b; Type.func c a; c] b)
+
+let arg_swap =
+  Term.tp_abs'
+    ["A"; "B"; "C"]
+    (Term.abs'
+      ["f", Type.func' [a; b] c; "x", b; "y", a]
+      (Term.app' (Term.var "f") [Term.var "y"; Term.var "x"]))
+
+let arg_swap_tp =
+  Type.forall'
+    ["A"; "B"; "C"]
+    (Type.func' [Type.func' [a; b] c; b; a] c)
 
 (* Church booleans *)
 
@@ -45,6 +97,21 @@ let bool_tp = Type.forall "A" @@ Type.func' [a; a] a
 let fls = Term.tp_abs "A" @@ Term.abs' ["x", a; "y", a] (Term.var "y")
 
 let tru = Term.tp_abs "A" @@ Term.abs' ["x", a; "y", a] (Term.var "x")
+
+let not_ =
+  Term.abs
+    "p" bool_tp
+    (Term.app' (Term.tp_app (Term.var "p") bool_tp) [fls; tru])
+
+let and_ =
+  Term.abs'
+    ["p", bool_tp; "q", bool_tp]
+    (Term.app' (Term.tp_app (Term.var "p") bool_tp) [Term.var "q"; fls])
+
+let or_ =
+  Term.abs'
+    ["p", bool_tp; "q", bool_tp]
+    (Term.app' (Term.tp_app (Term.var "p") bool_tp) [tru; Term.var "q"])
 
 let if_ =
   Term.tp_abs "A" @@
@@ -185,44 +252,18 @@ let to_type_tests = "Term.to_type tests", [
 
   ( "Functions", [
 
-    ("id", fun _ ->
-      let tm = Term.abs "x" b (Term.var "x") in
-      assert_equal tm (Type.func b b) tm) ;
+    ("id", fun _ -> assert_equal id id_tp id) ;
 
-    ("app", fun _ ->
-      let tm =
-        Term.abs'
-          ["f", Type.func b b; "x", b]
-          (Term.app (Term.var "f") (Term.var "x"))
-      in
-      assert_equal tm (Type.func' [Type.func b b; b] b) tm) ;
+    ("app", fun _ -> assert_equal app app_tp app) ;
 
     ("rev_app", fun _ ->
-      let tm =
-        Term.abs'
-          ["x", b; "f", Type.func b b]
-          (Term.app (Term.var "f") (Term.var "x"))
-      in
-      assert_equal tm (Type.func' [b; Type.func b b] b) tm) ;
+      assert_equal rev_app rev_app_tp rev_app) ;
 
     ("compose", fun _ ->
-      let tm =
-        Term.abs'
-          ["f", Type.func b b; "g", Type.func b b; "x", b]
-          (Term.app
-            (Term.var "f")
-            (Term.app (Term.var "g") (Term.var "x")))
-      in
-      let exp_tp = Type.func' [Type.func b b; Type.func b b; b] b in
-      assert_equal tm exp_tp tm) ;
+      assert_equal compose compose_tp compose) ;
 
     ("arg_swap", fun _ ->
-      let tm =
-        Term.abs'
-          ["f", Type.func' [b; b] b; "x", b; "y", b]
-          (Term.app' (Term.var "f") [Term.var "y"; Term.var "x"])
-      in
-      assert_equal tm (Type.func' [Type.func' [b; b] b; b; b] b) tm) ;
+      assert_equal arg_swap arg_swap_tp arg_swap) ;
 
   ] ) ;
 
@@ -249,6 +290,7 @@ let to_type_tests = "Term.to_type tests", [
       assert_equal bool_to_nat (Type.func bool_tp nat_tp) exp_tp) ;
 
   ] ) ;
+
 
   ( "Church Naturals", [
 
@@ -285,7 +327,93 @@ let to_type_tests = "Term.to_type tests", [
 
 let beta_reduce_tests = "Term.beta_reduce", [
 
+  ( "Functions", [
+
+    ("id eight", fun _ ->
+      let tm = Term.app (Term.tp_app id nat_tp) eight in
+      assert_equal tm nat_tp eight) ;
+
+    ("app not false", fun _ ->
+      let tm =
+        Term.app' (Term.tp_app' app [bool_tp; bool_tp]) [not_; fls]
+      in
+      assert_equal tm bool_tp tru) ;
+
+    ("rev_app bool_to_nat true", fun _ ->
+      let tm =
+        Term.app'
+          (Term.tp_app' rev_app [bool_tp; nat_tp])
+          [tru; bool_to_nat]
+      in
+      assert_equal tm nat_tp one) ;
+
+    ("compose succ bool_to_nat 2", fun _ ->
+      let tm =
+        Term.app'
+          (Term.tp_app' compose [nat_tp; nat_tp; bool_tp])
+          [succ; bool_to_nat; tru]
+      in
+      assert_equal tm nat_tp two) ;
+
+    ("arg_swap (if_ (true && false)) (succ two) four", fun _ ->
+      let tm =
+        Term.app'
+          (Term.tp_app' arg_swap [nat_tp; nat_tp; nat_tp])
+          [
+            Term.app
+              (Term.tp_app if_ nat_tp)
+              (Term.app' and_ [tru; fls]) ;
+            Term.app succ two ;
+            four
+          ]
+      in
+      assert_equal tm nat_tp three) ;
+
+  ] ) ;
+
   ( "Church Booleans", [
+
+    ("not false", fun _ ->
+      assert_equal (Term.app not_ fls) bool_tp tru) ;
+
+    ("not true", fun _ ->
+      assert_equal (Term.app not_ tru) bool_tp fls) ;
+
+    ("false && false", fun _ ->
+      assert_equal (Term.app' and_ [fls; fls]) bool_tp fls) ;
+
+    ("false && true", fun _ ->
+      assert_equal (Term.app' and_ [fls; tru]) bool_tp fls) ;
+
+    ("true && false", fun _ ->
+      assert_equal (Term.app' and_ [tru; fls]) bool_tp fls) ;
+
+    ("true && true", fun _ ->
+      assert_equal (Term.app' and_ [tru; tru]) bool_tp tru) ;
+
+    ("false || false", fun _ ->
+      assert_equal (Term.app' or_ [fls; fls]) bool_tp fls) ;
+
+    ("false || true", fun _ ->
+      assert_equal (Term.app' or_ [fls; tru]) bool_tp tru) ;
+
+    ("true || false", fun _ ->
+      assert_equal (Term.app' or_ [tru; fls]) bool_tp tru) ;
+
+    ("true || true", fun _ ->
+      assert_equal (Term.app' or_ [tru; tru]) bool_tp tru) ;
+
+    ("if false false true", fun _ ->
+      let tm = Term.app' (Term.tp_app if_ bool_tp) [fls; fls; tru] in
+      assert_equal tm bool_tp tru) ;
+
+    ("if true false true", fun _ ->
+      let tm = Term.app' (Term.tp_app if_ bool_tp) [tru; fls; tru] in
+      assert_equal tm bool_tp fls) ;
+
+    ("if true 3 4", fun _ ->
+      let tm = Term.app' (Term.tp_app if_ nat_tp) [tru; three; four] in
+      assert_equal tm nat_tp three) ;
 
     ("bool_to_nat false", fun _ ->
       assert_equal (Term.app bool_to_nat fls) nat_tp zero) ;

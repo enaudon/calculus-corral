@@ -106,6 +106,9 @@ let func' args res =
 
 let forall id tp = univ (Id.of_string id) tp
 
+let forall' ids tp =
+  List.fold_left (fun tp id -> forall id tp) tp (List.rev ids)
+
 (* Destructors *)
 
 let get_func tp = match tp with
