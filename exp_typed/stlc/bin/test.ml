@@ -15,7 +15,7 @@ let assert_equal_tp tm exp_tp =
         msg
   in
   let msg = Printf.sprintf "For term: '%s'" (Term.to_string tm) in
-  let cmp = Type.struct_equivalent in
+  let cmp = Type.alpha_equivalent in
   let printer tp = Printf.sprintf "'%s'" @@ Type.to_string tp in
   assert_equal ~msg ~cmp ~printer exp_tp act_tp
 
@@ -285,7 +285,7 @@ let beta_reduce_tests = "Term.beta_reduce", [
 
     (* [add one] should be beta-equivalent to [succ] *)
     ("add-one = succ", fun _ ->
-     assert_equal (Term.app add one) (Type.func nat_tp nat_tp) succ) ;
+      assert_equal (Term.app add one) (Type.func nat_tp nat_tp) succ) ;
 
   ] ) ;
 

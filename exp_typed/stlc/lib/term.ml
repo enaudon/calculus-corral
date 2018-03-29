@@ -41,11 +41,15 @@ let to_type =
       let body_tp = to_type (Id.Map.add arg arg_tp env) body in
       Type.func arg_tp body_tp
     | Application (fn, arg) ->
-      let fml_arg_tp, res_tp = try Type.get_func @@ to_type env fn with
-        | Invalid_argument _ ->
+      let fn' = to_type env fn in
+      let fml_arg_tp, res_tp =
+        try
+          Type.get_func fn'
+        with Invalid_argument _ ->
           error tm.loc @@
             Printf.sprintf
-              "Term.to_type: cannot apply non-function"
+              "Term.to_type: expected function type; found '%s'"
+              (Type.to_string fn')
       in
       let act_arg_tp = to_type env arg in
       if Type.struct_equivalent act_arg_tp fml_arg_tp then
@@ -63,51 +67,46 @@ let to_type =
 
 (** [free_vars tm] computes the free variables in [tm]. *)
 let free_vars : t -> Id.Set.t =
-  let rec free_vars fvars tm = match tm.desc with
-    | Variable id ->
-      Id.Set.add id fvars
-    | Abstraction (arg, _, body) ->
-      Id.Set.del arg @@ free_vars fvars body
-    | Application (fn, arg) ->
-      free_vars (free_vars fvars fn) arg
+  let rec free_vars fvs tm = match tm.desc with
+    | Variable id -> Id.Set.add id fvs
+    | Abstraction (arg, _, body) -> Id.Set.del arg @@ free_vars fvs body
+    | Application (fn, arg) -> free_vars (free_vars fvs fn) arg
   in
   free_vars Id.Set.empty
 
 (**
-  [subst ~fvars tm id tm'] replaces occurences of [id] in [tm] with
-  [tm'].  The optional argument, [fvars], is a set of identifiers that
-  may occur free in [tm'].
+  [subst ~fvs tm id tm'] replaces occurences of [id] in [tm] with [tm'].
+  The optional argument, [fvs], is a set of identifiers that may occur
+  free in [tm'].
 
   [subst] avoids name capture by renaming binders in [tm] to follow the
   Barendregt convention--i.e. the names of bound variable are chosen
-  distinct from those of free variables.  The set [fvars] is used for
-  this purpose: while traversing [tm], [subst] renames any identifiers
-  which are members of [fvars], and therefore may occur free in [tm'].
+  distinct from those of free variables.  The set [fvs] is used for this
+  purpose: while traversing [tm], [subst] renames any identifiers which
+  are members of [fvs], and therefore may occur free in [tm'].
  *)
-let subst : ?fvars : Id.Set.t -> t -> Id.t -> t -> t =
-    fun ?fvars tm id tm' ->
-  let rec subst fvars sub tm =
+let subst : ?fvs : Id.Set.t -> t -> Id.t -> t -> t =
+    fun ?fvs tm id tm' ->
+  let rec subst fvs sub tm =
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
         Id.Map.find_default tm id sub
+      | Abstraction (arg, tp, body) when Id.Set.mem arg fvs ->
+        let arg' = Id.fresh () in
+        let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
+        abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
       | Abstraction (arg, tp, body) ->
-        if Id.Set.mem arg fvars then
-          let arg' = Id.fresh () in
-          let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
-          abs loc arg' tp @@
-            subst (Id.Set.add arg' fvars) sub' body
-        else
-          abs loc arg tp @@
-            subst (Id.Set.add arg fvars) (Id.Map.del arg sub) body
+        abs loc arg tp @@
+          subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
       | Application (fn, arg) ->
-        app loc (subst fvars sub fn) (subst fvars sub arg)
+        app loc (subst fvs sub fn) (subst fvs sub arg)
   in
-  let fvars = match fvars with
+  let fvs = match fvs with
     | None -> free_vars tm'
     | Some fvs -> fvs
   in
-  subst fvars (Id.Map.singleton id tm') tm
+  subst fvs (Id.Map.singleton id tm') tm
 
 (**
   [beta_reduce tm] beta-reduces [tm].
@@ -125,11 +124,11 @@ let subst : ?fvars : Id.Set.t -> t -> Id.t -> t -> t =
  *)
 let beta_reduce ?deep =
   let deep = if deep = None then false else true in
-  let rec beta_reduce bvars tm =
+  let rec beta_reduce bvs tm =
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        if Id.Set.mem id bvars then
+        if Id.Set.mem id bvs then
           tm
         else
           error tm.loc @@
@@ -138,16 +137,16 @@ let beta_reduce ?deep =
               (Id.to_string id)
       | Abstraction (arg, tp, body) ->
         if deep then
-          abs loc arg tp @@ beta_reduce (Id.Set.add arg bvars) body
+          abs loc arg tp @@ beta_reduce (Id.Set.add arg bvs) body
         else
           tm
       | Application (fn, act_arg) ->
-        let fn' = beta_reduce bvars fn in
-        let act_arg' = beta_reduce bvars act_arg in
+        let fn' = beta_reduce bvs fn in
+        let act_arg' = beta_reduce bvs act_arg in
         match fn'.desc with
           | Abstraction (fml_arg, _, body) ->
-            let body' = subst ~fvars:bvars body fml_arg act_arg' in
-            beta_reduce bvars body'
+            let body' = subst ~fvs:bvs body fml_arg act_arg' in
+            beta_reduce bvs body'
           | _ ->
             app loc fn' act_arg'
   in
@@ -174,7 +173,7 @@ let alpha_equivalent =
     | _ ->
       false
   in
-  alpha_equiv (Id.Map.empty)
+  alpha_equiv Id.Map.empty
 
 let rec to_string tm =
   let to_paren_string tm = Printf.sprintf "(%s)" (to_string tm) in
@@ -188,14 +187,12 @@ let rec to_string tm =
         (to_string body)
     | Application (fn, arg) ->
       let fn_to_string tm = match tm.desc with
-        | Variable _ -> to_string tm
+        | Variable _ | Application _ -> to_string tm
         | Abstraction _ -> to_paren_string tm
-        | Application _ -> to_string tm
       in
       let arg_to_string tm = match tm.desc with
         | Variable _ -> to_string tm
-        | Abstraction _ -> to_paren_string tm
-        | Application _ -> to_paren_string tm
+        | Abstraction _ | Application _ -> to_paren_string tm
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
 

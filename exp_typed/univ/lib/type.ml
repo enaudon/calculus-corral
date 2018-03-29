@@ -50,32 +50,27 @@ let rec alpha_equivalent ?(env=Id.Map.empty) tp1 tp2 =
       false
 
 let free_vars =
-  let rec free_vars fvars tp = match tp with
-    | Base _ ->
-      fvars
-    | Variable id ->
-      Id.Set.add id fvars
-    | Function (arg, res) ->
-      free_vars (free_vars fvars arg) res
-    | Universal (arg, body) ->
-      Id.Set.del arg @@ free_vars fvars body
+  let rec free_vars fvs tp = match tp with
+    | Base _ -> fvs
+    | Variable id -> Id.Set.add id fvs
+    | Function (arg, res) -> free_vars (free_vars fvs arg) res
+    | Universal (arg, body) -> Id.Set.del arg @@ free_vars fvs body
   in
   free_vars Id.Set.empty
 
-let rec subst fvars sub tp = match tp with
+let rec subst fvs sub tp = match tp with
   | Base _ ->
     tp
   | Variable id ->
     Id.Map.find_default tp id sub
   | Function (arg, res) ->
-    func (subst fvars sub arg) (subst fvars sub res)
+    func (subst fvs sub arg) (subst fvs sub res)
+  | Universal (id, tp) when Id.Set.mem id fvs ->
+    let id' = Id.fresh () in
+    let sub' = Id.Map.add id (var id') sub in
+    univ id' @@ subst (Id.Set.add id' fvs) sub' tp
   | Universal (id, tp) ->
-    if Id.Set.mem id fvars then
-      let id' = Id.fresh () in
-      let sub' = Id.Map.add id (var id') sub in
-      univ id' @@ subst (Id.Set.add id' fvars) sub' tp
-    else
-     univ id @@ subst (Id.Set.add id fvars) (Id.Map.del id sub) tp
+    univ id @@ subst (Id.Set.add id fvs) (Id.Map.del id sub) tp
 
 let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in

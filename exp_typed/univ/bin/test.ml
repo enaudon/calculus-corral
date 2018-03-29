@@ -316,10 +316,8 @@ let to_type_tests = "Term.to_type tests", [
       assert_equal mul (Type.func' [nat_tp; nat_tp] nat_tp) mul) ;
 
     ("if_zero", fun _ ->
-      assert_equal
-        if_zero
-        (Type.func' [nat_tp; nat_tp; nat_tp] nat_tp)
-        if_zero) ;
+      let tp = Type.func' [nat_tp; nat_tp; nat_tp] nat_tp in
+      assert_equal if_zero tp if_zero) ;
 
   ] ) ;
 

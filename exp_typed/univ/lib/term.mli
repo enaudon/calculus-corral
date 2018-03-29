@@ -58,12 +58,6 @@ val beta_reduce : ?deep : unit -> t -> t
 (** {1 Utilities} *)
 
 (**
-  [struct_equivalent tm1 tm2] evaluates to [true] if [tm1] and [tm2] are
-  structurally equivalent to one another.
- *)
-val struct_equivalent : t -> t -> bool
-
-(**
   [alpha_equivalent tm1 tm2] evaluates to [true] if [tm1] and [tm2] are
   equal up renaming of bound variables, or [false] otherwise.
  *)

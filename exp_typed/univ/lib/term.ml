@@ -36,7 +36,7 @@ let tp_app : Loc.t -> t -> Type.t -> t = fun loc fn arg ->
 (* Typing *)
 
 let to_type =
-  let rec to_type btvs env tm = match tm.desc with
+  let rec to_type tp_bvs env tm = match tm.desc with
     | Variable id ->
       begin try Id.Map.find id env with
         | Id.Unbound id ->
@@ -46,10 +46,10 @@ let to_type =
               (Id.to_string id)
       end
     | Term_abs (arg, arg_tp, body) ->
-      let body_tp = to_type btvs (Id.Map.add arg arg_tp env) body in
+      let body_tp = to_type tp_bvs (Id.Map.add arg arg_tp env) body in
       Type.func arg_tp body_tp
     | Term_app (fn, arg) ->
-      let fn' = to_type btvs env fn in
+      let fn' = to_type tp_bvs env fn in
       let fml_arg_tp, res_tp =
         try
           Type.get_func fn'
@@ -59,7 +59,7 @@ let to_type =
               "Term.to_type: expected function type; found '%s'"
               (Type.to_string fn')
       in
-      let act_arg_tp = to_type btvs env arg in
+      let act_arg_tp = to_type tp_bvs env arg in
       if Type.struct_equivalent act_arg_tp fml_arg_tp then
         res_tp
       else
@@ -69,21 +69,22 @@ let to_type =
                 (Type.to_string fml_arg_tp)
                 (Type.to_string act_arg_tp)
     | Type_abs (arg, body) ->
-      let btvs' = Id.Set.add arg btvs in
+      let tp_bvs' = Id.Set.add arg tp_bvs in
       let tv = Type.var @@ Id.to_string arg in
       Type.forall (Id.to_string arg) @@
-        to_type btvs' (Id.Map.add arg tv env) body
+        to_type tp_bvs' (Id.Map.add arg tv env) body
     | Type_app (fn, arg) ->
-      let fn' = to_type btvs env fn in
+      let fn' = to_type tp_bvs env fn in
       let tv, tp =
         try
           Type.get_forall fn'
         with Invalid_argument _ ->
           error tm.loc @@
             Printf.sprintf
-              "Term.to_type: cannot apply non-function"
+              "Term.to_type: expected universal type; found '%s'"
+              (Type.to_string fn')
       in
-      Type.subst btvs (Id.Map.singleton tv arg) tp
+      Type.subst tp_bvs (Id.Map.singleton tv arg) tp
   in
   to_type Id.Set.empty Id.Map.empty
 
@@ -91,99 +92,89 @@ let to_type =
 
 (** [free_vars tm] computes the free term variables in [tm]. *)
 let free_vars : t -> Id.Set.t =
-  let rec free_vars fvars tm = match tm.desc with
-    | Variable id ->
-      Id.Set.add id fvars
-    | Term_abs (arg, _, body) ->
-      Id.Set.del arg @@ free_vars fvars body
-    | Type_abs (_, body) ->
-      free_vars fvars body
-    | Term_app (fn, arg) ->
-      free_vars (free_vars fvars fn) arg
-    | Type_app (fn, _) ->
-      free_vars fvars fn
+  let rec free_vars fvs tm = match tm.desc with
+    | Variable id -> Id.Set.add id fvs
+    | Term_abs (arg, _, body) -> Id.Set.del arg @@ free_vars fvs body
+    | Type_abs (_, body) -> free_vars fvs body
+    | Term_app (fn, arg) -> free_vars (free_vars fvs fn) arg
+    | Type_app (fn, _) -> free_vars fvs fn
   in
   free_vars Id.Set.empty
 
 (**
-  [subst_tp ~fvars tm id tp'] replaces occurences of [id] in [tm] with
-  [tp'].  The optional argument, [fvars], is a set of identifiers that
-  may occur free in [tp'].
+  [subst_tp ~fvs tm id tp'] replaces occurences of [id] in [tm] with
+  [tp'].  The optional argument, [fvs], is a set of identifiers that may
+  occur free in [tp'].
 
   [subst_tp] avoids name capture by renaming binders in [tp] to follow
   the Barendregt convention--i.e. the names of bound variable are chosen
-  distinct from those of free variables.  The set [fvars] is used for
-  this purpose: while traversing [tp], [subst_tp] renames any
-  identifiers which are members of [fvars], and therefore may occur free
-  in [tp'].
+  distinct from those of free variables.  The set [fvs] is used for this
+  purpose: while traversing [tp], [subst_tp] renames any identifiers
+  which are members of [fvs], and therefore may occur free in [tp'].
  *)
-let subst_tp : ?fvars : Id.Set.t -> t -> Id.t -> Type.t -> t =
-    fun ?fvars tm id tp' ->
-  let rec subst fvars sub tm =
+let subst_tp : ?fvs : Id.Set.t -> t -> Id.t -> Type.t -> t =
+    fun ?fvs tm id tp' ->
+  let rec subst fvs sub tm =
     let loc = tm.loc in
     match tm.desc with
       | Variable _ ->
         tm
       | Term_abs (arg, tp, body) ->
         abs loc arg
-          (Type.subst fvars (Id.Map.singleton id tp') tp)
-          (subst fvars sub body)
+          (Type.subst fvs (Id.Map.singleton id tp') tp)
+          (subst fvs sub body)
       | Term_app (fn, arg) ->
-        app loc (subst fvars sub fn) (subst fvars sub arg)
+        app loc (subst fvs sub fn) (subst fvs sub arg)
+      | Type_abs (arg, body) when Id.Set.mem arg fvs ->
+        let arg' = Id.fresh () in
+        let sub' = Id.Map.add arg (Type.var (Id.to_string arg')) sub in
+        tp_abs loc arg' @@ subst (Id.Set.add arg' fvs) sub' body
       | Type_abs (arg, body) ->
-        if Id.Set.mem arg fvars then
-          let arg' = Id.fresh () in
-          let sub' = Id.Map.add arg (Type.var (Id.to_string arg')) sub in
-          tp_abs loc arg' @@
-            subst (Id.Set.add arg' fvars) sub' body
-        else
-          tp_abs loc arg @@
-            subst (Id.Set.add arg fvars) (Id.Map.del arg sub) body
+        tp_abs loc arg @@
+          subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
       | Type_app (fn, arg) ->
-        tp_app loc (subst fvars sub fn) (Type.subst fvars sub arg)
+        tp_app loc (subst fvs sub fn) (Type.subst fvs sub arg)
   in
-  let fvars = match fvars with
+  let fvs = match fvs with
     | None -> Type.free_vars tp'
     | Some fvs -> fvs
   in
-  subst fvars (Id.Map.singleton id tp') tm
+  subst fvs (Id.Map.singleton id tp') tm
 
 (**
-  [subst_tm ~fvars tm id tm'] replaces occurences of [id] in [tm] with
-  [tm'].  The optional argument, [fvars], is a set of identifiers that
-  may occur free in [tm'].
+  [subst_tm ~fvs tm id tm'] replaces occurences of [id] in [tm] with
+  [tm'].  The optional argument, [fvs], is a set of identifiers that may
+  occur free in [tm'].
 
   As with [subst_tp], [subst_tm] avoids name capture by following the
   Barendregt convention.
  *)
-let subst_tm : ?fvars : Id.Set.t -> t -> Id.t -> t -> t =
-    fun ?fvars tm id tm' ->
-  let rec subst fvars sub tm =
+let subst_tm : ?fvs : Id.Set.t -> t -> Id.t -> t -> t =
+    fun ?fvs tm id tm' ->
+  let rec subst fvs sub tm =
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
         Id.Map.find_default tm id sub
+      | Term_abs (arg, tp, body) when Id.Set.mem arg fvs ->
+        let arg' = Id.fresh () in
+        let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
+        abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
       | Term_abs (arg, tp, body) ->
-        if Id.Set.mem arg fvars then
-          let arg' = Id.fresh () in
-          let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
-          abs loc arg' tp @@
-            subst (Id.Set.add arg' fvars) sub' body
-        else
-          abs loc arg tp @@
-            subst (Id.Set.add arg fvars) (Id.Map.del arg sub) body
+        abs loc arg tp @@
+          subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
       | Term_app (fn, arg) ->
-        app loc (subst fvars sub fn) (subst fvars sub arg)
+        app loc (subst fvs sub fn) (subst fvs sub arg)
       | Type_abs (arg, body) ->
-         tp_abs loc arg @@ subst fvars sub body
+         tp_abs loc arg @@ subst fvs sub body
       | Type_app (fn, arg) ->
-        tp_app loc (subst fvars sub fn) arg
+        tp_app loc (subst fvs sub fn) arg
   in
-  let fvars = match fvars with
+  let fvs = match fvs with
     | None -> free_vars tm'
     | Some fvs -> fvs
   in
-  subst fvars (Id.Map.singleton id tm') tm
+  subst fvs (Id.Map.singleton id tm') tm
 
 (**
   [beta_reduce tm] beta-reduces [tm].
@@ -201,11 +192,11 @@ let subst_tm : ?fvars : Id.Set.t -> t -> Id.t -> t -> t =
  *)
 let beta_reduce ?deep =
   let deep = if deep = None then false else true in
-  let rec beta_reduce btvs bvs tm =
+  let rec beta_reduce tp_bvs tm_bvs tm =
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        if Id.Set.mem id bvs then
+        if Id.Set.mem id tm_bvs then
           tm
         else
           error tm.loc @@
@@ -214,30 +205,31 @@ let beta_reduce ?deep =
               (Id.to_string id)
       | Term_abs (arg, tp, body) ->
         if deep then
-          abs loc arg tp @@ beta_reduce btvs (Id.Set.add arg bvs) body
+          abs loc arg tp @@
+            beta_reduce tp_bvs (Id.Set.add arg tm_bvs) body
         else
           tm
       | Term_app (fn, act_arg) ->
-        let fn' = beta_reduce btvs bvs fn in
-        let act_arg' = beta_reduce btvs bvs act_arg in
+        let fn' = beta_reduce tp_bvs tm_bvs fn in
+        let act_arg' = beta_reduce tp_bvs tm_bvs act_arg in
         begin match fn'.desc with
           | Term_abs (fml_arg, _, body) ->
-            let body' = subst_tm ~fvars:bvs body fml_arg act_arg' in
-            beta_reduce btvs bvs body'
+            let body' = subst_tm ~fvs:tm_bvs body fml_arg act_arg' in
+            beta_reduce tp_bvs tm_bvs body'
           | _ ->
             app loc fn' act_arg'
         end
       | Type_abs (arg, body) ->
         if deep then
-          tp_abs loc arg @@ beta_reduce (btvs) bvs body
+          tp_abs loc arg @@ beta_reduce (tp_bvs) tm_bvs body
         else
           tm
       | Type_app (fn, act_arg) ->
-        let fn' = beta_reduce btvs bvs fn in
+        let fn' = beta_reduce tp_bvs tm_bvs fn in
         begin match fn'.desc with
           | Type_abs (fml_arg, body) ->
-            let body' = subst_tp ~fvars:btvs body fml_arg act_arg in
-            beta_reduce btvs bvs body'
+            let body' = subst_tp ~fvs:tp_bvs body fml_arg act_arg in
+            beta_reduce tp_bvs tm_bvs body'
           | _ ->
             tp_app loc fn' act_arg
         end
@@ -245,21 +237,6 @@ let beta_reduce ?deep =
   beta_reduce Id.Set.empty Id.Set.empty
 
 (* Utilities *)
-
-let rec struct_equivalent tm1 tm2 = match tm1.desc, tm2.desc with
-  | Variable id1, Variable id2 ->
-    id1 = id2
-  | Term_abs (arg1, tp1, body1), Term_abs (arg2, tp2, body2) ->
-    arg1 = arg2 && Type.struct_equivalent tp1 tp2 &&
-      struct_equivalent body1 body2
-  | Term_app (fn1, arg1), Term_app (fn2, arg2) ->
-    struct_equivalent fn1 fn2 && struct_equivalent arg1 arg2
-  | Type_abs (arg1, body1), Type_abs (arg2, body2) ->
-    arg1 = arg2 && struct_equivalent body1 body2
-  | Type_app (fn1, arg1), Type_app (fn2, arg2) ->
-    struct_equivalent fn1 fn2 && Type.struct_equivalent arg1 arg2
-  | _ ->
-    false
 
 let alpha_equivalent =
   let rec alpha_equiv tp_env tm_env tm1 tm2 = match tm1.desc, tm2.desc with
@@ -286,7 +263,7 @@ let alpha_equivalent =
     | _ ->
       false
   in
-  alpha_equiv (Id.Map.empty) (Id.Map.empty)
+  alpha_equiv Id.Map.empty Id.Map.empty
 
 let rec to_string tm =
   let to_paren_string tm = Printf.sprintf "(%s)" (to_string tm) in
