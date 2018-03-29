@@ -1,7 +1,6 @@
 module Id = Identifier
 
 type t =
-  | Base of string
   | Variable of Id.t
   | Function of t * t
   | Universal of Id.t * t
@@ -9,8 +8,6 @@ type t =
 (* Internal utilities *)
 
 let error : string -> 'a = fun msg -> failwith msg
-
-let base id = Base id
 
 let var id = Variable id
 
@@ -31,8 +28,6 @@ let struct_equivalent = Pervasives.(=)
 let rec alpha_equivalent ?(env=Id.Map.empty) tp1 tp2 =
   let alpha_equiv env = alpha_equivalent ~env in
   match tp1, tp2 with
-    | Base id1, Base id2 ->
-      id1 = id2
     | Variable id1, Variable id2 ->
       let id1' = try Id.Map.find id1 env with
         | Id.Unbound id ->
@@ -51,7 +46,6 @@ let rec alpha_equivalent ?(env=Id.Map.empty) tp1 tp2 =
 
 let free_vars =
   let rec free_vars fvs tp = match tp with
-    | Base _ -> fvs
     | Variable id -> Id.Set.add id fvs
     | Function (arg, res) -> free_vars (free_vars fvs arg) res
     | Universal (arg, body) -> Id.Set.del arg @@ free_vars fvs body
@@ -59,8 +53,6 @@ let free_vars =
   free_vars Id.Set.empty
 
 let rec subst fvs sub tp = match tp with
-  | Base _ ->
-    tp
   | Variable id ->
     Id.Map.find_default tp id sub
   | Function (arg, res) ->
@@ -75,13 +67,11 @@ let rec subst fvs sub tp = match tp with
 let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
   match tp with
-    | Base id ->
-      id
     | Variable id ->
       Id.to_string id
     | Function (arg, res) ->
       let arg_to_string tp = match tp with
-        | Base _ | Variable _ -> to_string tp
+        | Variable _ -> to_string tp
         | Function _ | Universal _ -> to_paren_string tp
       in
       Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
@@ -89,8 +79,6 @@ let rec to_string tp =
       Printf.sprintf "forall %s . %s" (Id.to_string id) (to_string tp)
 
 (* Constructors *)
-
-let base id = base id
 
 let var id = var @@ Id.of_string id
 

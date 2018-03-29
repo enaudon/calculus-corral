@@ -7,9 +7,6 @@ type t
 
 (** {1 Constructors and Destructors} *)
 
-(** [base name] constructs a base type identified by [name]. *)
-val base : string -> t
-
 (** [var id] constructs a type variable identified by [id]. *)
 val var : string -> t
 
