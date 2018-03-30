@@ -30,7 +30,7 @@ let tp_app fn arg = Term.tp_app ~loc:(get_loc ()) fn arg
 /* Symbols */
 %token B_SLASH
 %token COLON
-%token ARROW
+%token S_ARROW
 %token PERIOD
 %token O_PAREN C_PAREN
 
@@ -49,7 +49,7 @@ typo :
 
 comp_typo :
   | atom_typo                     { $1 }
-  | atom_typo ARROW comp_typo     { Type.func $1 $3 }
+  | atom_typo S_ARROW comp_typo   { Type.func $1 $3 }
 
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }

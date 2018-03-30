@@ -28,9 +28,12 @@ let upper_id = ['A'-'Z'] id_char*
 rule prog = parse
   | whitespace                        { skip_char lexbuf; prog lexbuf }
   | newline                           { skip_line lexbuf; prog lexbuf }
-  | "->"                              { Parser.ARROW }
+  | "=>"                              { Parser.D_ARROW }
+  | "->"                              { Parser.S_ARROW }
+  | "*"                               { Parser.ASTERIKS }
   | "\\"                              { Parser.B_SLASH }
   | ":"                               { Parser.COLON }
+  | "::"                              { Parser.COL_COL }
   | "."                               { Parser.PERIOD }
   | "("                               { Parser.O_PAREN }
   | ")"                               { Parser.C_PAREN }

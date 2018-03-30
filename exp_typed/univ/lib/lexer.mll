@@ -29,7 +29,7 @@ rule prog = parse
   | whitespace                        { skip_char lexbuf; prog lexbuf }
   | newline                           { skip_line lexbuf; prog lexbuf }
   | "forall"                          { Parser.FOR_ALL }
-  | "->"                              { Parser.ARROW }
+  | "->"                              { Parser.S_ARROW }
   | "\\"                              { Parser.B_SLASH }
   | ":"                               { Parser.COLON }
   | "."                               { Parser.PERIOD }

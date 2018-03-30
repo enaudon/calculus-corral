@@ -11,13 +11,16 @@ val cst : string -> t
 (** [var id] constructs a variable with the identifier [id]. *)
 val var : string -> t
 
-(** [abs arg body] constructs the abstraction of [arg] from [body]. *)
-val abs : string -> t -> t
+(**
+  [abs arg kn body] constructs the abstraction of [arg] of kind [kn]
+  from [body].
+ *)
+val abs : string -> Kind.t -> t -> t
 
 (**
   [abs' args body] constructs the abstraction of [args] from [body].
  *)
-val abs' : string list -> t -> t
+val abs' : (string * Kind.t) list -> t -> t
 
 (** [app fn arg] constructs the application of [fn] to [arg]. *)
 val app : t -> t -> t
@@ -36,6 +39,11 @@ val func' : t list -> t -> t
   is a function.  Otherwise, [get_func] raises [Invalid_argument].
  *)
 val get_func : t -> t * t
+
+(** {1 Kinding} *)
+
+(** [to_kind tp] comptutes the kind of [tp]. *)
+val to_kind : t -> Kind.t
 
 (** {1 Utilities} *)
 

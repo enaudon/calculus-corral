@@ -21,9 +21,10 @@ let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 %token <string> UPPER_ID
 
 /* Symbols */
+%token ASTERIKS
 %token B_SLASH
-%token COLON
-%token ARROW
+%token COLON COL_COL
+%token S_ARROW D_ARROW
 %token PERIOD
 %token O_PAREN C_PAREN
 
@@ -33,16 +34,29 @@ let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 %start term
 %type < Term.t > term
 %type < Type.t > typo
+%type < Kind.t > kind
 
 %%
 
+kind :
+  | comp_kind                     { $1 }
+
+comp_kind :
+  | atom_kind                     { $1 }
+  | atom_kind D_ARROW comp_kind   { Kind.func $1 $3 }
+
+atom_kind :
+  | O_PAREN kind C_PAREN          { $2 }
+  | O_PAREN kind error            { error "Parser: unclosed parenthesis" }
+  | ASTERIKS                      { Kind.base }
+
 typo :
   | arrow_typo                    { $1 }
-  | B_SLASH UPPER_ID PERIOD typo  { Type.abs $2 $4 }
+  | B_SLASH UPPER_ID COL_COL kind PERIOD typo   { Type.abs $2 $4 $6 }
 
 arrow_typo :
   | app_typo                      { $1 }
-  | atom_typo ARROW arrow_typo    { Type.func $1 $3 }
+  | atom_typo S_ARROW arrow_typo  { Type.func $1 $3 }
 
 app_typo :
   | atom_typo                     { $1 }

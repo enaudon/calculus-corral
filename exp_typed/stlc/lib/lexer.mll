@@ -28,7 +28,7 @@ rule prog = parse
   | whitespace                        { skip_char lexbuf; prog lexbuf }
   | newline                           { skip_line lexbuf; prog lexbuf }
   | "B"                               { Parser.UPPER_B }
-  | "->"                              { Parser.ARROW }
+  | "->"                              { Parser.S_ARROW }
   | "\\"                              { Parser.B_SLASH }
   | ":"                               { Parser.COLON }
   | "."                               { Parser.PERIOD }
