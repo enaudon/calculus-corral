@@ -23,10 +23,10 @@ let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 %token UPPER_B
 
 /* Symbols */
+%token B_SLASH
 %token COLON
 %token ARROW
 %token PERIOD
-%token SEMICOLON
 %token O_PAREN C_PAREN
 
 /* Other */
@@ -42,8 +42,8 @@ typo :
   | comp_typo                     { $1 }
 
 comp_typo :
-  | atom_typo ARROW comp_typo     { Type.func $1 $3 }
   | atom_typo                     { $1 }
+  | atom_typo ARROW comp_typo     { Type.func $1 $3 }
 
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
@@ -52,7 +52,7 @@ atom_typo :
 
 term :
   | comp_term                     { $1 }
-  | LOWER_ID COLON typo PERIOD term   { abs $1 $3 $5 }
+  | B_SLASH LOWER_ID COLON typo PERIOD term   { abs $2 $4 $6 }
 
 comp_term :
   | atom_term                     { $1 }

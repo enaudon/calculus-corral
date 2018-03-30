@@ -3,8 +3,6 @@
 (** The type of types. *)
 type t
 
-(** {1 Exceptions} *)
-
 (** {1 Constructors and Destructors} *)
 
 (** [var id] constructs a type variable identified by [id]. *)

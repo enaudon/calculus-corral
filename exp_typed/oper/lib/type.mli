@@ -5,8 +5,25 @@ type t
 
 (** {1 Constructors and Destructors} *)
 
-(** [base] is the base type. *)
-val base : t
+(** [cst id] constructs a constant with the identifier [id]. *)
+val cst : string -> t
+
+(** [var id] constructs a variable with the identifier [id]. *)
+val var : string -> t
+
+(** [abs arg body] constructs the abstraction of [arg] from [body]. *)
+val abs : string -> t -> t
+
+(**
+  [abs' args body] constructs the abstraction of [args] from [body].
+ *)
+val abs' : string list -> t -> t
+
+(** [app fn arg] constructs the application of [fn] to [arg]. *)
+val app : t -> t -> t
+
+(** [app' fn arg] constructs the application of [fn] to [args]. *)
+val app' : t -> t list -> t
 
 (** [func arg res] constructs a function from [arg] to [res]. *)
 val func : t -> t -> t

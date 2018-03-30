@@ -29,9 +29,9 @@ rule prog = parse
   | newline                           { skip_line lexbuf; prog lexbuf }
   | "B"                               { Parser.UPPER_B }
   | "->"                              { Parser.ARROW }
+  | "\\"                              { Parser.B_SLASH }
   | ":"                               { Parser.COLON }
   | "."                               { Parser.PERIOD }
-  | ";"                               { Parser.SEMICOLON }
   | "("                               { Parser.O_PAREN }
   | ")"                               { Parser.C_PAREN }
   | lower_id as id                    { Parser.LOWER_ID id }

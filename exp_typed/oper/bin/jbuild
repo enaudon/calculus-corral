@@ -1,0 +1,13 @@
+(jbuild_version 1)
+
+(executable
+  ((name repl)
+   (modules (repl))
+   (libraries (oper))
+   (flags (-w +A-4 -warn-error +A-4))))
+
+(executable
+  ((name test)
+   (modules (test))
+   (libraries (oUnit oper))
+   (flags (-w +A-4 -warn-error +A-4))))
