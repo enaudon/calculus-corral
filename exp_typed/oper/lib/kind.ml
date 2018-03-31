@@ -2,7 +2,7 @@ type t =
   | Base
   | Function of t * t
 
-(* Utilities *) 
+(* Utilities *)
 
 (**
   [struct_equivalent kn1 kn2] determines whether [kn1] and [kn2] are

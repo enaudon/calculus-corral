@@ -24,7 +24,12 @@ let app : t -> t -> t = fun fn arg -> Application (fn, arg)
 
 (* Typing *)
 
-let to_kind =
+let default_env =
+  Id.Map.singleton
+    (Id.of_string func_id)
+    (Kind.func' [Kind.base; Kind.base] Kind.base)
+
+let to_kind ?(env = default_env) =
   let rec to_kind env tm = match tm with
     | Constant id | Variable id ->
       begin try Id.Map.find id env with
@@ -56,10 +61,7 @@ let to_kind =
                 (Kind.to_string fml_arg_tp)
                 (Kind.to_string act_arg_tp)
   in
-  to_kind @@
-    Id.Map.singleton
-      (Id.of_string func_id)
-      (Kind.func' [Kind.base; Kind.base] Kind.base)
+  to_kind env
 
 (* Transformations *)
 
@@ -164,7 +166,7 @@ let rec to_string tp =
     | Constant id | Variable id ->
       Id.to_string id
     | Abstraction (arg, kn, body) ->
-      Printf.sprintf "%s :: %s. %s"
+      Printf.sprintf "%s :: %s . %s"
         (Id.to_string arg)
         (Kind.to_string kn)
         (to_string body)
@@ -172,8 +174,8 @@ let rec to_string tp =
         when Id.to_string id = func_id ->
       Printf.sprintf "%s %s %s"
         (arg_to_string arg)
-        (to_string res)
         func_id
+        (to_string res)
     | Application (fn, arg) ->
       let fn_to_string tp = match tp with
         | Constant _ | Variable _ | Application _ -> to_string tp

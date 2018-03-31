@@ -42,8 +42,11 @@ val get_func : t -> t * t
 
 (** {1 Kinding} *)
 
-(** [to_kind tp] comptutes the kind of [tp]. *)
-val to_kind : t -> Kind.t
+(** [default_env] is the default kinding environment. *)
+val default_env : Kind.t Identifier.Map.t
+
+(** [to_kind ~env tp] comptutes the kind of [tp]. *)
+val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
 
 (** {1 Utilities} *)
 
