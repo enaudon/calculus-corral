@@ -176,6 +176,29 @@ let if_zero =
         (Term.app' (Term.var "n") [Term.var "s"; Term.var "z"])
       ])
 
+(* Church natural pairs *)
+
+let nat_pair_tp = Type.func (Type.func' [nat_tp; nat_tp] nat_tp) nat_tp
+
+let pair =
+  Term.abs'
+    ["f", nat_tp; "s", nat_tp; "p", Type.func' [nat_tp; nat_tp] nat_tp]
+    (Term.app' (Term.var "p") [Term.var "f"; Term.var "s"])
+
+let fst =
+  Term.abs
+    "p" nat_pair_tp
+    (Term.app
+      (Term.var "p")
+      (Term.abs' ["f", nat_tp; "s", nat_tp] (Term.var "f")))
+
+let snd =
+  Term.abs
+    "p" nat_pair_tp
+    (Term.app
+      (Term.var "p")
+      (Term.abs' ["f", nat_tp; "s", nat_tp] (Term.var "s")))
+
 (* Tests *)
 
 let to_type_tests = "Term.to_type tests", [
@@ -233,8 +256,22 @@ let to_type_tests = "Term.to_type tests", [
       assert_equal mul (Type.func' [nat_tp; nat_tp] nat_tp) mul) ;
 
     ("if_zero", fun _ ->
-      let tp = Type.func' [nat_tp; nat_tp; nat_tp] nat_tp in
-      assert_equal if_zero tp if_zero) ;
+      let exp_tp = Type.func' [nat_tp; nat_tp; nat_tp] nat_tp in
+      assert_equal if_zero exp_tp if_zero) ;
+
+  ] ) ;
+
+  ( "Church Natural Pairs", [
+
+    ("pair", fun _ ->
+      let exp_tp = Type.func' [nat_tp; nat_tp] nat_pair_tp in
+      assert_equal pair exp_tp pair) ;
+
+    ("fst", fun _ ->
+      assert_equal fst (Type.func nat_pair_tp nat_tp) fst) ;
+
+    ("snd", fun _ ->
+      assert_equal fst (Type.func nat_pair_tp nat_tp) fst) ;
 
   ] ) ;
 
@@ -286,6 +323,26 @@ let beta_reduce_tests = "Term.beta_reduce", [
     (* [add one] should be beta-equivalent to [succ] *)
     ("add-one = succ", fun _ ->
       assert_equal (Term.app add one) (Type.func nat_tp nat_tp) succ) ;
+
+  ] ) ;
+
+  ( "Church Natural Pairs", [
+
+    ("pair zero one", fun _ ->
+      let exp_tm =
+        Term.abs
+          "p" (Type.func' [nat_tp; nat_tp] nat_tp)
+          (Term.app' (Term.var "p") [zero; one])
+      in
+      assert_equal (Term.app' pair [zero; one]) nat_pair_tp exp_tm) ;
+
+    ("fst (pair zero one)", fun _ ->
+      let tm = Term.app fst (Term.app' pair [zero; one]) in
+      assert_equal tm nat_tp zero) ;
+
+    ("snd (pair zero one)", fun _ ->
+      let tm = Term.app snd (Term.app' pair [zero; one]) in
+      assert_equal tm nat_tp one) ;
 
   ] ) ;
 
