@@ -7,7 +7,9 @@ type t =
 
 (* Internal utilities *)
 
-let error : string -> 'a = fun msg -> failwith msg
+let error : string -> string -> 'a = fun fn_name msg ->
+  failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
+
 
 let var id = Variable id
 
@@ -31,10 +33,8 @@ let rec alpha_equivalent ?(env=Id.Map.empty) tp1 tp2 =
     | Variable id1, Variable id2 ->
       let id1' = try Id.Map.find id1 env with
         | Id.Unbound id ->
-          error @@
-            Printf.sprintf
-              "Type.alpha_equivalent: undefined identifier '%s'"
-              (Id.to_string id)
+          error "alpha_equivalent" @@
+            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       in
       id1' = id2
     | Function (arg1, res1), Function (arg2, res2) ->

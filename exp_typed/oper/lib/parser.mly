@@ -3,10 +3,16 @@
 module Loc = Location
 
 let get_loc () =
-  Loc.of_lex_pos (Parsing.symbol_start_pos ()) (Parsing.symbol_end_pos ())
+  Loc.of_lex_pos
+    (Parsing.symbol_start_pos ())
+    (Parsing.symbol_end_pos ())
 
 let error msg =
-  failwith @@ Printf.sprintf "%s %s" (Loc.to_string @@ get_loc ()) msg
+  failwith @@
+    Printf.sprintf "%s %s: %s"
+      (Loc.to_string @@ get_loc ())
+      __MODULE__
+      msg
 
 let var id = Term.var ~loc:(get_loc ()) id
 
@@ -47,7 +53,7 @@ comp_kind :
 
 atom_kind :
   | O_PAREN kind C_PAREN          { $2 }
-  | O_PAREN kind error            { error "Parser: unclosed parenthesis" }
+  | O_PAREN kind error            { error "unclosed parenthesis" }
   | ASTERIKS                      { Kind.base }
 
 typo :
@@ -64,7 +70,7 @@ app_typo :
 
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
-  | O_PAREN typo error            { error "Parser: unclosed parenthesis" }
+  | O_PAREN typo error            { error "closed parenthesis" }
   | UPPER_ID                      { Type.cst $1 }
 
 term :
@@ -77,5 +83,5 @@ comp_term :
 
 atom_term :
   | O_PAREN term C_PAREN          { $2 }
-  | O_PAREN term error            { error "Parser: unclosed parenthesis" }
+  | O_PAREN term error            { error "closed parenthesis" }
   | LOWER_ID                      { var $1 }

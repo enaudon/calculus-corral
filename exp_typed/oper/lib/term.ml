@@ -13,8 +13,13 @@ and t = {
 
 (* Internal utilities *)
 
-let error : Loc.t -> string -> 'a = fun loc msg ->
-  failwith @@ Printf.sprintf "%s %s" (Loc.to_string loc) msg
+let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
+  failwith @@
+    Printf.sprintf "%s %s.%s: %s"
+      (Loc.to_string loc)
+      __MODULE__
+      fn_name
+      msg
 
 let var : Loc.t -> Id.t -> t = fun loc id ->
   { desc = Variable id; loc }
@@ -32,17 +37,15 @@ let to_type ?(kn_env = Type.default_env) ?(tp_env = Id.Map.empty) =
     | Variable id ->
       begin try Id.Map.find id tp_env with
         | Id.Unbound id ->
-          error tm.loc @@
-            Printf.sprintf
-              "Term.to_type: undefined identifier '%s'"
-              (Id.to_string id)
+          error tm.loc "to_type" @@
+            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Abstraction (arg, arg_tp, body) ->
       let arg_kn = Type.to_kind ~env:kn_env arg_tp in
       if not (Kind.alpha_equivalent arg_kn Kind.base) then
-        error tm.loc @@
+        error tm.loc "to_type" @@
           Printf.sprintf
-            "Term.to_type: expected propper type; found '%s'"
+            "expected propper type; found '%s'"
             (Type.to_string arg_tp);
       let body_tp = to_type (Id.Map.add arg arg_tp tp_env) body in
       Type.func arg_tp body_tp
@@ -52,20 +55,20 @@ let to_type ?(kn_env = Type.default_env) ?(tp_env = Id.Map.empty) =
         try
           Type.get_func fn'
         with Invalid_argument _ ->
-          error tm.loc @@
+          error tm.loc "to_type" @@
             Printf.sprintf
-              "Term.to_type: expected function type; found '%s'"
+              "expected function type; found '%s'"
               (Type.to_string fn')
       in
       let act_arg_tp = to_type tp_env arg in
       if Type.struct_equivalent act_arg_tp fml_arg_tp then
         res_tp
       else
-        error arg.loc @@
+        error arg.loc "to_type" @@
             Printf.sprintf
-              "Term.to_type: expected type '%s'; found type '%s'"
-                (Type.to_string fml_arg_tp)
-                (Type.to_string act_arg_tp)
+              "expected type '%s'; found type '%s'"
+              (Type.to_string fml_arg_tp)
+              (Type.to_string act_arg_tp)
   in
   to_type tp_env
 
@@ -137,9 +140,9 @@ let beta_reduce ?deep =
         if Id.Set.mem id bvs then
           tm
         else
-          error tm.loc @@
+          error tm.loc "beta_reduce" @@
             Printf.sprintf
-              "Term.beta_reduce: undefined identifier '%s'"
+              "undefined identifier '%s'"
               (Id.to_string id)
       | Abstraction (arg, tp, body) ->
         if deep then
@@ -165,9 +168,9 @@ let alpha_equivalent =
     | Variable id1, Variable id2 ->
       let id1' = try Id.Map.find id1 env with
         | Id.Unbound id ->
-          error tm1.loc @@
+          error tm1.loc "alpha_equivalent" @@
             Printf.sprintf
-              "Term.alpha_equivalent: undefined identifier '%s'"
+              "undefined identifier '%s'"
               (Id.to_string id)
       in
       id1' = id2

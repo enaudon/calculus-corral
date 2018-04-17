@@ -8,7 +8,10 @@ let get_loc lexbuf =
 
 let error lexbuf msg =
   failwith @@
-    Printf.sprintf "%s %s" (Loc.to_string @@ get_loc lexbuf) msg
+    Printf.sprintf "%s %s: %s"
+      (Loc.to_string @@ get_loc lexbuf)
+      __MODULE__
+      msg
 
 let skip_line = Lexing.new_line
 
@@ -40,5 +43,5 @@ rule prog = parse
   | eof                               { Parser.EOF }
   | _ as c                            { error lexbuf @@
                                           Printf.sprintf
-                                            "Lexer: unexpected character '%c'"
+                                            "unexpected character '%c'"
                                             c }

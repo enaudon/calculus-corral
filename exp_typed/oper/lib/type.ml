@@ -85,7 +85,8 @@ let subst : ?fvs : Id.Set.t -> t -> Id.t -> t -> t =
       let sub' = Id.Map.add arg (var arg') sub in
       abs arg' kn @@ subst (Id.Set.add arg' fvs) sub' body
     | Abstraction (arg, kn, body) ->
-      abs arg kn @@ subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
+      abs arg kn @@
+        subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
     | Application (fn, arg) ->
       app (subst fvs sub fn) (subst fvs sub arg)
   in

@@ -15,8 +15,13 @@ and t = {
 
 (* Internal utilities *)
 
-let error : Loc.t -> string -> 'a = fun loc msg ->
-  failwith @@ Printf.sprintf "%s %s" (Loc.to_string loc) msg
+let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
+  failwith @@
+    Printf.sprintf "%s %s.%s: %s"
+      (Loc.to_string loc)
+      __MODULE__
+      fn_name
+      msg
 
 let var : Loc.t -> Id.t -> t = fun loc id ->
   { desc = Variable id; loc }
@@ -40,10 +45,8 @@ let to_type =
     | Variable id ->
       begin try Id.Map.find id env with
         | Id.Unbound id ->
-          error tm.loc @@
-            Printf.sprintf
-              "Term.to_type: undefined identifier '%s'"
-              (Id.to_string id)
+          error tm.loc "to_type" @@
+            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Term_abs (arg, arg_tp, body) ->
       let body_tp = to_type tp_bvs (Id.Map.add arg arg_tp env) body in
@@ -54,20 +57,20 @@ let to_type =
         try
           Type.get_func fn'
         with Invalid_argument _ ->
-          error tm.loc @@
+          error tm.loc "to_type" @@
             Printf.sprintf
-              "Term.to_type: expected function type; found '%s'"
+              "expected function type; found '%s'"
               (Type.to_string fn')
       in
       let act_arg_tp = to_type tp_bvs env arg in
       if Type.struct_equivalent act_arg_tp fml_arg_tp then
         res_tp
       else
-        error arg.loc @@
+        error arg.loc "to_type" @@
             Printf.sprintf
-              "Term.to_type: expected type '%s'; found type '%s'"
-                (Type.to_string fml_arg_tp)
-                (Type.to_string act_arg_tp)
+              "expected type '%s'; found type '%s'"
+              (Type.to_string fml_arg_tp)
+              (Type.to_string act_arg_tp)
     | Type_abs (arg, body) ->
       let tp_bvs' = Id.Set.add arg tp_bvs in
       let tv = Type.var @@ Id.to_string arg in
@@ -79,9 +82,9 @@ let to_type =
         try
           Type.get_forall fn'
         with Invalid_argument _ ->
-          error tm.loc @@
+          error tm.loc "to_type" @@
             Printf.sprintf
-              "Term.to_type: expected universal type; found '%s'"
+              "expected universal type; found '%s'"
               (Type.to_string fn')
       in
       Type.subst tp_bvs (Id.Map.singleton tv arg) tp
@@ -199,9 +202,9 @@ let beta_reduce ?deep =
         if Id.Set.mem id tm_bvs then
           tm
         else
-          error tm.loc @@
+          error tm.loc "beta_reduce" @@
             Printf.sprintf
-              "Term.beta_reduce: undefined identifier '%s'"
+              "undefined identifier '%s'"
               (Id.to_string id)
       | Term_abs (arg, tp, body) ->
         if deep then
@@ -239,29 +242,30 @@ let beta_reduce ?deep =
 (* Utilities *)
 
 let alpha_equivalent =
-  let rec alpha_equiv tp_env tm_env tm1 tm2 = match tm1.desc, tm2.desc with
-    | Variable id1, Variable id2 ->
-      let id1' = try Id.Map.find id1 tm_env with
-        | Id.Unbound id ->
-          error tm1.loc @@
-            Printf.sprintf
-              "Term.alpha_equivalent: undefined identifier '%s'"
-              (Id.to_string id)
-      in
-      id1' = id2
-    | Term_abs (arg1, tp1, body1), Term_abs (arg2, tp2, body2) ->
-      Type.alpha_equivalent ~env:tp_env tp1 tp2 &&
-        alpha_equiv tp_env (Id.Map.add arg1 arg2 tm_env) body1 body2
-    | Term_app (fn1, arg1), Term_app (fn2, arg2) ->
-      alpha_equiv tp_env tm_env fn1 fn2 &&
-        alpha_equiv tp_env tm_env arg1 arg2
-    | Type_abs (arg1, body1), Type_abs (arg2, body2) ->
-      alpha_equiv (Id.Map.add arg1 arg2 tp_env) tm_env body1 body2
-    | Type_app (fn1, arg1), Type_app (fn2, arg2) ->
-      alpha_equiv tp_env tm_env fn1 fn2 &&
-        Type.alpha_equivalent ~env:tp_env arg1 arg2
-    | _ ->
-      false
+  let rec alpha_equiv tp_env tm_env tm1 tm2 =
+    match tm1.desc, tm2.desc with
+      | Variable id1, Variable id2 ->
+        let id1' = try Id.Map.find id1 tm_env with
+          | Id.Unbound id ->
+            error tm1.loc "alpha_equivalent" @@
+              Printf.sprintf
+                "undefined identifier '%s'"
+                (Id.to_string id)
+        in
+        id1' = id2
+      | Term_abs (arg1, tp1, body1), Term_abs (arg2, tp2, body2) ->
+        Type.alpha_equivalent ~env:tp_env tp1 tp2 &&
+          alpha_equiv tp_env (Id.Map.add arg1 arg2 tm_env) body1 body2
+      | Term_app (fn1, arg1), Term_app (fn2, arg2) ->
+        alpha_equiv tp_env tm_env fn1 fn2 &&
+          alpha_equiv tp_env tm_env arg1 arg2
+      | Type_abs (arg1, body1), Type_abs (arg2, body2) ->
+        alpha_equiv (Id.Map.add arg1 arg2 tp_env) tm_env body1 body2
+      | Type_app (fn1, arg1), Type_app (fn2, arg2) ->
+        alpha_equiv tp_env tm_env fn1 fn2 &&
+          Type.alpha_equivalent ~env:tp_env arg1 arg2
+      | _ ->
+        false
   in
   alpha_equiv Id.Map.empty Id.Map.empty
 
