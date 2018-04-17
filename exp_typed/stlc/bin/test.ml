@@ -176,7 +176,7 @@ let if_zero =
         (Term.app' (Term.var "n") [Term.var "s"; Term.var "z"])
       ])
 
-(* Church natural pairs *)
+(* Church pairs *)
 
 let nat_pair_tp = Type.func (Type.func' [nat_tp; nat_tp] nat_tp) nat_tp
 
@@ -261,7 +261,7 @@ let to_type_tests = "Term.to_type tests", [
 
   ] ) ;
 
-  ( "Church Natural Pairs", [
+  ( "Church Pairs", [
 
     ("pair", fun _ ->
       let exp_tp = Type.func' [nat_tp; nat_tp] nat_pair_tp in
@@ -271,7 +271,7 @@ let to_type_tests = "Term.to_type tests", [
       assert_equal fst (Type.func nat_pair_tp nat_tp) fst) ;
 
     ("snd", fun _ ->
-      assert_equal fst (Type.func nat_pair_tp nat_tp) fst) ;
+      assert_equal snd (Type.func nat_pair_tp nat_tp) snd) ;
 
   ] ) ;
 
@@ -326,7 +326,7 @@ let beta_reduce_tests = "Term.beta_reduce", [
 
   ] ) ;
 
-  ( "Church Natural Pairs", [
+  ( "Church Pairs", [
 
     ("pair zero one", fun _ ->
       let exp_tm =
