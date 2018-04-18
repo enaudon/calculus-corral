@@ -25,13 +25,13 @@ val app' : ?loc : Location.t -> t -> t list -> t
 (** {1 Typing} *)
 
 (**
-  [to_type_hm tm] comptutes the type of [tm], via Algorithm W-style
+  [to_type_hm tm] computes the type of [tm], via Algorithm W-style
   Hindley-Milner type inference.
  *)
 val to_type_hm : t -> Type.t
 
 (**
-  [to_type_pr tm] comptutes the type of [tm], via constraint-based type
+  [to_type_pr tm] computes the type of [tm], via constraint-based type
   inference a la Pottier and Remy.
  *)
 val to_type_pr : t -> Type.t

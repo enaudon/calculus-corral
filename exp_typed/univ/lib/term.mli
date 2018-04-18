@@ -43,7 +43,7 @@ val tp_app' : ?loc : Location.t -> t -> Type.t list -> t
 
 (** {1 Typing} *)
 
-(** [to_type tm] comptutes the type of [tm]. *)
+(** [to_type tm] computes the type of [tm]. *)
 val to_type : t -> Type.t
 
 (** {1 Transformations} *)

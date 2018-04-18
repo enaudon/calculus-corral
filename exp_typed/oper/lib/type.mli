@@ -45,7 +45,7 @@ val get_func : t -> t * t
 (** [default_env] is the default kinding environment. *)
 val default_env : Kind.t Identifier.Map.t
 
-(** [to_kind ~env tp] comptutes the kind of [tp]. *)
+(** [to_kind ~env tp] computes the kind of [tp]. *)
 val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
 
 (** {1 Transformations} *)
