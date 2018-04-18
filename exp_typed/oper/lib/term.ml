@@ -42,7 +42,7 @@ let to_type ?(kn_env = Type.default_env) ?(tp_env = Id.Map.empty) =
       end
     | Abstraction (arg, arg_tp, body) ->
       let arg_kn = Type.to_kind ~env:kn_env arg_tp in
-      if not (Kind.alpha_equivalent arg_kn Kind.base) then
+      if not (Kind.struct_equivalent arg_kn Kind.base) then
         error tm.loc "to_type" @@
           Printf.sprintf
             "expected propper type; found '%s'"
@@ -53,7 +53,7 @@ let to_type ?(kn_env = Type.default_env) ?(tp_env = Id.Map.empty) =
       let fn' = to_type tp_env fn in
       let fml_arg_tp, res_tp =
         try
-          Type.get_func fn'
+          Type.get_func (Type.beta_reduce ~deep:() fn')
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf

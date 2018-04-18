@@ -48,6 +48,15 @@ val default_env : Kind.t Identifier.Map.t
 (** [to_kind ~env tp] comptutes the kind of [tp]. *)
 val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
 
+(** {1 Transformations} *)
+
+(**
+  [beta_reduce tp] evaluates any applications in [tp]. If the [deep]
+  argument is passed, then [beta_reduce] will evaluate the body of
+  abstractions.
+ *)
+val beta_reduce : ?deep : unit -> t -> t
+
 (** {1 Utilities} *)
 
 (**
