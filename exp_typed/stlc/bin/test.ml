@@ -178,21 +178,47 @@ let if_zero =
 
 (* Church pairs *)
 
+let bool_pair_tp =
+  Type.func (Type.func' [bool_tp; bool_tp] bool_tp) bool_tp
+
+let bool_pair =
+  Term.abs'
+    [
+      "f", bool_tp ;
+      "s", bool_tp ;
+      "p", Type.func' [bool_tp; bool_tp] bool_tp ;
+    ]
+    (Term.app' (Term.var "p") [Term.var "f"; Term.var "s"])
+
+let bool_pair_fst =
+  Term.abs
+    "p" bool_pair_tp
+    (Term.app
+      (Term.var "p")
+      (Term.abs' ["f", bool_tp; "s", bool_tp] (Term.var "f")))
+
+let bool_pair_snd =
+  Term.abs
+    "p" bool_pair_tp
+    (Term.app
+      (Term.var "p")
+      (Term.abs' ["f", bool_tp; "s", bool_tp] (Term.var "s")))
+
 let nat_pair_tp = Type.func (Type.func' [nat_tp; nat_tp] nat_tp) nat_tp
 
-let pair =
+let nat_pair =
   Term.abs'
     ["f", nat_tp; "s", nat_tp; "p", Type.func' [nat_tp; nat_tp] nat_tp]
     (Term.app' (Term.var "p") [Term.var "f"; Term.var "s"])
 
-let fst =
+let nat_pair_fst =
   Term.abs
     "p" nat_pair_tp
     (Term.app
       (Term.var "p")
       (Term.abs' ["f", nat_tp; "s", nat_tp] (Term.var "f")))
 
-let snd =
+let nat_pair_snd =
   Term.abs
     "p" nat_pair_tp
     (Term.app
@@ -263,15 +289,29 @@ let to_type_tests = "Term.to_type tests", [
 
   ( "Church Pairs", [
 
-    ("pair", fun _ ->
+    ("nat_pair", fun _ ->
       let exp_tp = Type.func' [nat_tp; nat_tp] nat_pair_tp in
-      assert_equal pair exp_tp pair) ;
+      assert_equal nat_pair exp_tp nat_pair) ;
 
-    ("fst", fun _ ->
-      assert_equal fst (Type.func nat_pair_tp nat_tp) fst) ;
+    ("nat_pair_fst", fun _ ->
+      let exp_tp = Type.func nat_pair_tp nat_tp in
+      assert_equal nat_pair_fst exp_tp nat_pair_fst) ;
 
-    ("snd", fun _ ->
-      assert_equal snd (Type.func nat_pair_tp nat_tp) snd) ;
+    ("nat_pair_snd", fun _ ->
+      let exp_tp = Type.func nat_pair_tp nat_tp in
+      assert_equal nat_pair_snd exp_tp nat_pair_snd) ;
+
+    ("bool_pair", fun _ ->
+      let exp_tp = Type.func' [bool_tp; bool_tp] bool_pair_tp in
+      assert_equal bool_pair exp_tp bool_pair) ;
+
+    ("bool_pair_fst", fun _ ->
+      let exp_tp = Type.func bool_pair_tp bool_tp in
+      assert_equal bool_pair_fst exp_tp bool_pair_fst) ;
+
+    ("bool_pair_snd", fun _ ->
+      let exp_tp = Type.func bool_pair_tp bool_tp in
+      assert_equal bool_pair_snd exp_tp bool_pair_snd) ;
 
   ] ) ;
 
@@ -328,21 +368,43 @@ let beta_reduce_tests = "Term.beta_reduce", [
 
   ( "Church Pairs", [
 
-    ("pair zero one", fun _ ->
+    ("nat_pair 0 1", fun _ ->
+      let tm = Term.app' nat_pair [zero; one] in
       let exp_tm =
         Term.abs
           "p" (Type.func' [nat_tp; nat_tp] nat_tp)
           (Term.app' (Term.var "p") [zero; one])
       in
-      assert_equal (Term.app' pair [zero; one]) nat_pair_tp exp_tm) ;
+      assert_equal tm nat_pair_tp exp_tm) ;
 
-    ("fst (pair zero one)", fun _ ->
-      let tm = Term.app fst (Term.app' pair [zero; one]) in
+    ("nat_pair_fst (nat_pair 0 1)", fun _ ->
+      let tm = Term.app nat_pair_fst (Term.app' nat_pair [zero; one]) in
       assert_equal tm nat_tp zero) ;
 
-    ("snd (pair zero one)", fun _ ->
-      let tm = Term.app snd (Term.app' pair [zero; one]) in
+    ("nat_pair_snd (nat_pair 0 1)", fun _ ->
+      let tm = Term.app nat_pair_snd (Term.app' nat_pair [zero; one]) in
       assert_equal tm nat_tp one) ;
+
+    ("bool_pair false true", fun _ ->
+      let tm = Term.app' bool_pair [fls; tru] in
+      let exp_tm =
+        Term.abs
+          "p" (Type.func' [bool_tp; bool_tp] bool_tp)
+          (Term.app' (Term.var "p") [fls; tru])
+      in
+      assert_equal tm bool_pair_tp exp_tm) ;
+
+    ("bool_pair_fst (bool_pair false true)", fun _ ->
+      let tm =
+        Term.app bool_pair_fst (Term.app' bool_pair [fls; tru])
+      in
+      assert_equal tm bool_tp fls) ;
+
+    ("bool_pair_snd (bool_pair false true)", fun _ ->
+      let tm =
+        Term.app bool_pair_snd (Term.app' bool_pair [fls; tru])
+      in
+      assert_equal tm bool_tp tru) ;
 
   ] ) ;
 

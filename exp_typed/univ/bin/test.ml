@@ -534,7 +534,7 @@ let beta_reduce_tests = "Term.beta_reduce", [
 
   ( "Church Pairs", [
 
-    ("pair zero one", fun _ ->
+    ("pair 0 1", fun _ ->
       let tm =
         Term.app' (Term.tp_app' pair [nat_tp; nat_tp]) [zero; one]
       in
@@ -550,7 +550,7 @@ let beta_reduce_tests = "Term.beta_reduce", [
       in
       assert_equal tm exp_tp exp_tm) ;
 
-    ("fst (pair zero one)", fun _ ->
+    ("fst (pair 0 1)", fun _ ->
       let tm =
         Term.app
           (Term.tp_app' fst [nat_tp; nat_tp])
@@ -558,13 +558,46 @@ let beta_reduce_tests = "Term.beta_reduce", [
       in
       assert_equal tm nat_tp zero) ;
 
-    ("snd (pair zero one)", fun _ ->
+    ("snd (pair 0 1)", fun _ ->
       let tm =
         Term.app
           (Term.tp_app' snd [nat_tp; nat_tp])
           (Term.app' (Term.tp_app' pair [nat_tp; nat_tp]) [zero; one])
       in
       assert_equal tm nat_tp one) ;
+
+    ("pair false true", fun _ ->
+      let tm =
+        Term.app' (Term.tp_app' pair [bool_tp; bool_tp]) [fls; tru]
+      in
+      let bool_pair_tp =
+        Type.forall "C" (Type.func (Type.func' [bool_tp; bool_tp] c) c)
+      in
+      let exp_tm =
+        Term.tp_abs
+          "C"
+          (Term.abs
+            "p" (Type.func' [bool_tp; bool_tp] c)
+            (Term.app' (Term.var "p") [fls; tru]))
+      in
+      assert_equal tm bool_pair_tp exp_tm) ;
+
+    ("fst (pair false true)", fun _ ->
+      let tm =
+        Term.app
+          (Term.tp_app' fst [bool_tp; bool_tp])
+          (Term.app' (Term.tp_app' pair [bool_tp; bool_tp]) [fls; tru])
+      in
+      assert_equal tm bool_tp fls) ;
+
+    ("snd (pair false true)", fun _ ->
+      let tm =
+        Term.app
+          (Term.tp_app' snd [bool_tp; bool_tp])
+          (Term.app' (Term.tp_app' pair [bool_tp; bool_tp]) [fls; tru])
+      in
+      assert_equal tm bool_tp tru) ;
+
 
     ("pair false zero", fun _ ->
       let tm =
@@ -590,7 +623,7 @@ let beta_reduce_tests = "Term.beta_reduce", [
       in
       assert_equal tm bool_tp fls) ;
 
-    ("snd (pair zero one)", fun _ ->
+    ("snd (pair false zero)", fun _ ->
       let tm =
         Term.app
           (Term.tp_app' snd [bool_tp; nat_tp])
