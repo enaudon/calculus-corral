@@ -5,8 +5,8 @@ type t
 
 (** {1 Constructors and Destructors} *)
 
-(** [cst id] constructs a constant with the identifier [id]. *)
-val cst : string -> t
+(** [base] is the base type. *)
+val base : t
 
 (** [var id] constructs a variable with the identifier [id]. *)
 val var : string -> t
@@ -42,17 +42,14 @@ val get_func : t -> t * t
 
 (** {1 Kinding} *)
 
-(** [default_env] is the default kinding environment. *)
-val default_env : Kind.t Identifier.Map.t
-
-(** [to_kind ~env tp] computes the kind of [tp]. *)
-val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
+(** [to_kind tp] computes the kind of [tp]. *)
+val to_kind : t -> Kind.t
 
 (** {1 Transformations} *)
 
 (**
-  [beta_reduce tp] evaluates any applications in [tp]. If the [deep]
-  argument is passed, then [beta_reduce] will evaluate the body of
+  [beta_reduce ~deep tp] reduces any applications in [tp]. If the [deep]
+  argument is passed, then [beta_reduce] will reduce the body of
   abstractions.
  *)
 val beta_reduce : ?deep : unit -> t -> t

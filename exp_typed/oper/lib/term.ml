@@ -32,25 +32,25 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 
 (* Typing *)
 
-let to_type ?(kn_env = Type.default_env) ?(tp_env = Id.Map.empty) =
-  let rec to_type tp_env tm = match tm.desc with
+let to_type =
+  let rec to_type env tm = match tm.desc with
     | Variable id ->
-      begin try Id.Map.find id tp_env with
+      begin try Id.Map.find id env with
         | Id.Unbound id ->
           error tm.loc "to_type" @@
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Abstraction (arg, arg_tp, body) ->
-      let arg_kn = Type.to_kind ~env:kn_env arg_tp in
+      let arg_kn = Type.to_kind arg_tp in
       if not (Kind.alpha_equivalent arg_kn Kind.base) then
         error tm.loc "to_type" @@
           Printf.sprintf
             "expected propper type; found '%s'"
             (Type.to_string arg_tp);
-      let body_tp = to_type (Id.Map.add arg arg_tp tp_env) body in
+      let body_tp = to_type (Id.Map.add arg arg_tp env) body in
       Type.func arg_tp body_tp
     | Application (fn, arg) ->
-      let fn' = to_type tp_env fn in
+      let fn' = to_type env fn in
       let fml_arg_tp, res_tp =
         try
           Type.get_func (Type.beta_reduce ~deep:() fn')
@@ -60,7 +60,7 @@ let to_type ?(kn_env = Type.default_env) ?(tp_env = Id.Map.empty) =
               "expected function type; found '%s'"
               (Type.to_string fn')
       in
-      let act_arg_tp = to_type tp_env arg in
+      let act_arg_tp = to_type env arg in
       if Type.alpha_equivalent act_arg_tp fml_arg_tp then
         res_tp
       else
@@ -70,7 +70,7 @@ let to_type ?(kn_env = Type.default_env) ?(tp_env = Id.Map.empty) =
               (Type.to_string fml_arg_tp)
               (Type.to_string act_arg_tp)
   in
-  to_type tp_env
+  to_type Id.Map.empty
 
 (* Transformations *)
 

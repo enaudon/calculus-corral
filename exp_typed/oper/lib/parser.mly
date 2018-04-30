@@ -71,7 +71,8 @@ app_typo :
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
   | O_PAREN typo error            { error "closed parenthesis" }
-  | UPPER_ID                      { Type.cst $1 }
+  | ASTERIKS                      { Type.base }
+  | UPPER_ID                      { Type.var $1 }
 
 term :
   | comp_term                     { $1 }

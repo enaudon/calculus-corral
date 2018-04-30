@@ -4,23 +4,10 @@ open OUnit
 module Id = Identifier
 module Loc = Location
 
-let base_id = "B"
-
-let b = Type.cst base_id
-
-let a' = Type.var "A"
-
-let b' = Type.var "B"
-
-let c' = Type.var "C"
-
-let kn_env =
-  Id.Map.add (Id.of_string base_id) Kind.base Type.default_env
-
 let assert_equal_tp tm exp_tp =
   let act_tp =
     try
-      Term.to_type ~kn_env tm
+      Term.to_type tm
     with Failure msg ->
       assert_failure @@
         Printf.sprintf "Failure typing '%s'\n%s"
@@ -47,6 +34,8 @@ let assert_equal tm exp_tp exp_tm =
   let cmp = Term.alpha_equivalent in
   let printer tp = Printf.sprintf "'%s'" @@ Term.to_string tp in
   assert_equal ~msg ~cmp ~printer exp_tm act_tm
+
+let b = Type.base
 
 (* Functions *)
 
@@ -192,7 +181,9 @@ let if_zero =
 let pair_tp =
   Type.abs'
     ["A", Kind.base; "B", Kind.base; "C", Kind.base]
-    (Type.func (Type.func' [a'; b'] c') c')
+    (Type.func
+      (Type.func' [Type.var "A"; Type.var "B"] (Type.var "C"))
+      (Type.var "C"))
 
 let bool_pair_tp = Type.app' pair_tp [bool_tp; bool_tp; bool_tp]
 

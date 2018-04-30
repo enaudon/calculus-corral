@@ -22,6 +22,9 @@ module Set : sig
   (** [empty] is the empty set. *)
   val empty : t
 
+  (** [of_list] constructs a set from the elements in [l]. *)
+  val of_list : elt list -> t
+
   (** [add id set] extends [set] with [id]. *)
   val add : elt -> t -> t
 
@@ -68,6 +71,11 @@ module Map : sig
     [map].  If no such binding exists, [find] evaluates to [x].
    *)
   val find_default : 'a -> key -> 'a t -> 'a
+
+  (**
+    [bindings env] computes a list of the bindings in [env].
+   *)
+   val bindings : 'a t -> (key * 'a) list
 
 end
 

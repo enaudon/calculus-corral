@@ -27,18 +27,14 @@ val app' : ?loc : Location.t -> t -> t list -> t
 
 (** {1 Typing} *)
 
-(** [to_type ~kn_env ~tp_env tm] computes the type of [tm]. *)
-val to_type :
-  ?kn_env : Kind.t Identifier.Map.t ->
-  ?tp_env : Type.t Identifier.Map.t ->
-  t ->
-  Type.t
+(** [to_type tm] computes the type of [tm]. *)
+val to_type : t -> Type.t
 
 (** {1 Transformations} *)
 
 (**
-  [beta_reduce tm] evaluates any applications in [tm]. If the [deep]
-  argument is passed, then [beta_reduce] will evaluate the body of
+  [beta_reduce ~deep tm] reduces any applications in [tm]. If the [deep]
+  argument is passed, then [beta_reduce] will reduce the body of
   abstractions.
  *)
 val beta_reduce : ?deep : unit -> t -> t
