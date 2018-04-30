@@ -52,7 +52,7 @@ let to_kind ?(env = default_env) =
               (Kind.to_string fn')
       in
       let act_arg_tp = to_kind env arg in
-      if Kind.struct_equivalent act_arg_tp fml_arg_tp then
+      if Kind.alpha_equivalent act_arg_tp fml_arg_tp then
         res_tp
       else
           error "to_kind" @@
@@ -125,13 +125,6 @@ let beta_reduce ?deep =
   beta_reduce Id.Set.empty
 
 (* Utilities *) 
-
-(**
-  [struct_equivalent tp1 tp2] determines whether [tp1] and [tp2] are
-  structurally equivalent.  Using [Pervasives.(=)] here is cheating a
-  little bit, because it relies on the fact that kinds do the same.
- *)
-let struct_equivalent = Pervasives.(=)
 
 let alpha_equivalent tp1 tp2 =
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with

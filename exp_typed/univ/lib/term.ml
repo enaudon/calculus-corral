@@ -63,7 +63,7 @@ let to_type =
               (Type.to_string fn')
       in
       let act_arg_tp = to_type tp_bvs env arg in
-      if Type.struct_equivalent act_arg_tp fml_arg_tp then
+      if Type.alpha_equivalent act_arg_tp fml_arg_tp then
         res_tp
       else
         error arg.loc "to_type" @@

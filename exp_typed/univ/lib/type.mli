@@ -40,16 +40,9 @@ val get_forall : t -> Identifier.t * t
 (** {1 Utilities} *)
 
 (**
-  [struct_equivalent tp1 tp2] evaluates to [true] if [tp1] and [tp2] are
-  structurally equivalent to one another.
- *)
-val struct_equivalent : t -> t -> bool
-
-(**
-  [alpha_equivalent ~env tp1 tp2] evaluates to [true] if [tp1] and [tp2]
-  are equal upto renaming of bound variables, or [false] otherwise.  The
-  optional argument, [env], specifies the renaming between bound
-  variables.
+  [alpha_equivalent ~env tp1 tp2] determines whether [tp1] and [tp2] are
+  equivalent up to renaming of variables.  The optional argument, [env],
+  specifies the renaming between bound variables.
  *)
 val alpha_equivalent :
   ?env : Identifier.t Identifier.Map.t -> t -> t -> bool

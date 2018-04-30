@@ -7,10 +7,6 @@ type t =
 
 (* Internal utilities *)
 
-let error : string -> string -> 'a = fun fn_name msg ->
-  failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
-
-
 let var id = Variable id
 
 let func arg res = Function (arg, res)
@@ -19,22 +15,13 @@ let univ id tp = Universal (id, tp)
 
 (* External utilities *)
 
-(**
-  [struct_equivalent tp1 tp2] determines whether [tp1] and [tp2] are
-  structurally equivalent.  [Pervasives.(=)] implements structural
-  equivalence over abitrary types, so [struct_equivalent] just calls
-  (=).
- *)
-let struct_equivalent = Pervasives.(=)
-
 let rec alpha_equivalent ?(env=Id.Map.empty) tp1 tp2 =
   let alpha_equiv env = alpha_equivalent ~env in
   match tp1, tp2 with
     | Variable id1, Variable id2 ->
-      let id1' = try Id.Map.find id1 env with
-        | Id.Unbound id ->
-          error "alpha_equivalent" @@
-            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
+      let id1' =
+        try Id.Map.find id1 env
+        with Id.Unbound _ -> id1
       in
       id1' = id2
     | Function (arg1, res1), Function (arg2, res2) ->

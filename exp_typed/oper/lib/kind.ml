@@ -5,19 +5,10 @@ type t =
 (* Utilities *)
 
 (**
-  [struct_equivalent kn1 kn2] determines whether [kn1] and [kn2] are
-  structurally equivalent.  [Pervasives.(=)] implements structural
-  equivalence over abitrary types, so [struct_equivalent] just calls
-  (=).
+  There are no kind variables, so alpha-equivalence is just structural
+  equivalence.
  *)
-let struct_equivalent = Pervasives.(=)
-
-(**
-  [alpha_equivalent kn1 kn2] determines whether [kn1] and [kn2] are
-  equivalent up to renaming of variables.  There are no variables in
-  kinds, so [alpha_equivalent] just calls [struct_equivalent].
- *)
-let alpha_equivalent = struct_equivalent
+let alpha_equivalent = Pervasives.(=)
 
 let rec to_string kn =
   let to_paren_string kn = Printf.sprintf "(%s)" (to_string kn) in

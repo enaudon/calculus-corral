@@ -23,14 +23,8 @@ val get_func : t -> t * t
 (** {1 Utilities} *)
 
 (**
-  [struct_equivalent kn1 kn2] evaluates to [true] if [kn1] and [kn2] are
-  structurally equivalent to one another.
- *)
-val struct_equivalent : t -> t -> bool
-
-(**
-  [alpha_equivalent kn1 kn2] evaluates to [true] if [kn1] and [kn2] are
-  equal upto renaming of bound variables, or [false] otherwise.
+  [alpha_equivalent kn1 kn2] determines whether [kn1] and [kn2] are
+  equivalent up to renaming of variables.
  *)
 val alpha_equivalent : t -> t -> bool
 
