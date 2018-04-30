@@ -105,18 +105,13 @@ let free_vars : t -> Id.Set.t =
   free_vars Id.Set.empty
 
 (**
-  [subst_tp ~fvs tm id tp'] replaces occurences of [id] in [tm] with
-  [tp'].  The optional argument, [fvs], is a set of identifiers that may
-  occur free in [tp'].
+  [subst_tp tm id tp'] replaces occurences of [id] in [tm] with [tp'].
 
   [subst_tp] avoids name capture by renaming binders in [tp] to follow
   the Barendregt convention--i.e. the names of bound variable are chosen
-  distinct from those of free variables.  The set [fvs] is used for this
-  purpose: while traversing [tp], [subst_tp] renames any identifiers
-  which are members of [fvs], and therefore may occur free in [tp'].
+  distinct from those of free variables.
  *)
-let subst_tp : ?fvs : Id.Set.t -> t -> Id.t -> Type.t -> t =
-    fun ?fvs tm id tp' ->
+let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
   let rec subst fvs sub tm =
     let loc = tm.loc in
     match tm.desc with
@@ -138,22 +133,15 @@ let subst_tp : ?fvs : Id.Set.t -> t -> Id.t -> Type.t -> t =
       | Type_app (fn, arg) ->
         tp_app loc (subst fvs sub fn) (Type.subst fvs sub arg)
   in
-  let fvs = match fvs with
-    | None -> Type.free_vars tp'
-    | Some fvs -> fvs
-  in
-  subst fvs (Id.Map.singleton id tp') tm
+  subst (Type.free_vars tp') (Id.Map.singleton id tp') tm
 
 (**
-  [subst_tm ~fvs tm id tm'] replaces occurences of [id] in [tm] with
-  [tm'].  The optional argument, [fvs], is a set of identifiers that may
-  occur free in [tm'].
+  [subst_tm tm id tm'] replaces occurences of [id] in [tm] with [tm'].
 
   As with [subst_tp], [subst_tm] avoids name capture by following the
   Barendregt convention.
  *)
-let subst_tm : ?fvs : Id.Set.t -> t -> Id.t -> t -> t =
-    fun ?fvs tm id tm' ->
+let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
   let rec subst fvs sub tm =
     let loc = tm.loc in
     match tm.desc with
@@ -173,71 +161,42 @@ let subst_tm : ?fvs : Id.Set.t -> t -> Id.t -> t -> t =
       | Type_app (fn, arg) ->
         tp_app loc (subst fvs sub fn) arg
   in
-  let fvs = match fvs with
-    | None -> free_vars tm'
-    | Some fvs -> fvs
-  in
-  subst fvs (Id.Map.singleton id tm') tm
+  subst (free_vars tm') (Id.Map.singleton id tm') tm
 
-(**
-  [beta_reduce tm] beta-reduces [tm].
-
-  In order to make calls to [subst] more efficient, [beta_reduce] tracks
-  bound variables as it traverses [tm].  These bound variables may occur
-  free in sub-expressions of [tm], such as the argument in function
-  applications.  Therefore, they become the free variables passed to
-  [subst].  Doing this, means [subst] can skip the call to [free_vars],
-  saving an extra traversal over the [tm'] argument to [subst].
-
-  This technique is due to Jones, et al.:
-    Peyton Jones, Simon; Marlow, Simon. Secrets of the Glasgow Haskell
-    Compiler inliner.  Journal of Functional Programming, 2002.
- *)
-let beta_reduce ?deep =
-  let deep = if deep = None then false else true in
-  let rec beta_reduce tp_bvs tm_bvs tm =
-    let loc = tm.loc in
-    match tm.desc with
-      | Variable id ->
-        if Id.Set.mem id tm_bvs then
-          tm
-        else
-          error tm.loc "beta_reduce" @@
-            Printf.sprintf
-              "undefined identifier '%s'"
-              (Id.to_string id)
-      | Term_abs (arg, tp, body) ->
-        if deep then
-          abs loc arg tp @@
-            beta_reduce tp_bvs (Id.Set.add arg tm_bvs) body
-        else
-          tm
-      | Term_app (fn, act_arg) ->
-        let fn' = beta_reduce tp_bvs tm_bvs fn in
-        let act_arg' = beta_reduce tp_bvs tm_bvs act_arg in
-        begin match fn'.desc with
-          | Term_abs (fml_arg, _, body) ->
-            let body' = subst_tm ~fvs:tm_bvs body fml_arg act_arg' in
-            beta_reduce tp_bvs tm_bvs body'
-          | _ ->
-            app loc fn' act_arg'
-        end
-      | Type_abs (arg, body) ->
-        if deep then
-          tp_abs loc arg @@ beta_reduce (tp_bvs) tm_bvs body
-        else
-          tm
-      | Type_app (fn, act_arg) ->
-        let fn' = beta_reduce tp_bvs tm_bvs fn in
-        begin match fn'.desc with
-          | Type_abs (fml_arg, body) ->
-            let body' = subst_tp ~fvs:tp_bvs body fml_arg act_arg in
-            beta_reduce tp_bvs tm_bvs body'
-          | _ ->
-            tp_app loc fn' act_arg
-        end
-  in
-  beta_reduce Id.Set.empty Id.Set.empty
+let rec beta_reduce ?deep tm =
+  let beta_reduce = beta_reduce ?deep in
+  let loc = tm.loc in
+  match tm.desc with
+    | Variable _ ->
+      tm
+    | Term_abs (arg, tp, body) ->
+      if deep <> None then
+        abs loc arg tp @@ beta_reduce body
+      else
+        tm
+    | Term_app (fn, act_arg) ->
+      let fn' = beta_reduce fn in
+      let act_arg' = beta_reduce act_arg in
+      begin match fn'.desc with
+        | Term_abs (fml_arg, _, body) ->
+          let body' = subst_tm body fml_arg act_arg' in
+          beta_reduce body'
+        | _ ->
+          app loc fn' act_arg'
+      end
+    | Type_abs (arg, body) ->
+      if deep <> None then
+        tp_abs loc arg @@ beta_reduce body
+      else
+        tm
+    | Type_app (fn, act_arg) ->
+      let fn' = beta_reduce fn in
+      match fn'.desc with
+        | Type_abs (fml_arg, body) ->
+          let body' = subst_tp body fml_arg act_arg in
+          beta_reduce body'
+        | _ ->
+          tp_app loc fn' act_arg
 
 (* Utilities *)
 

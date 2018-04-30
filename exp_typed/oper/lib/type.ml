@@ -75,8 +75,14 @@ let free_vars : t -> Id.Set.t =
   in
   free_vars Id.Set.empty
 
-let subst : ?fvs : Id.Set.t -> t -> Id.t -> t -> t =
-    fun ?fvs tp id tp' ->
+(**
+  [subst tp id tp'] replaces occurences of [id] in [tp] with [tp'].
+
+  [subst] avoids name capture by renaming binders in [tp] to follow the
+  Barendregt convention--i.e. the names of bound variable are chosen
+  distinct from those of free variables.
+ *)
+let subst : t -> Id.t -> t -> t = fun tp id tp' ->
   let rec subst fvs sub tp = match tp with
     | Variable id ->
       Id.Map.find_default tp id sub
@@ -90,37 +96,28 @@ let subst : ?fvs : Id.Set.t -> t -> Id.t -> t -> t =
     | Application (fn, arg) ->
       app (subst fvs sub fn) (subst fvs sub arg)
   in
-  let fvs = match fvs with
-    | None -> free_vars tp'
-    | Some fvs -> fvs
-  in
-  subst fvs (Id.Map.singleton id tp') tp
+  subst (free_vars tp') (Id.Map.singleton id tp') tp
 
-let beta_reduce ?deep tp =
-  let deep = if deep = None then false else true in
-  let rec beta_reduce fvs tp = match tp with
+let rec beta_reduce ?deep tp =
+  let beta_reduce = beta_reduce ?deep in
+  match tp with
     | Variable _ ->
       tp
     | Abstraction (arg, kn, body) ->
-      if deep then
-        abs arg kn @@ beta_reduce (Id.Set.add arg fvs) body
+      if deep <> None then
+        abs arg kn @@ beta_reduce body
       else
         tp
     | Application (fn, act_arg) ->
-      let fn' = beta_reduce fvs fn in
-      let act_arg' = beta_reduce fvs act_arg in
+      let fn' = beta_reduce fn in
+      let act_arg' = beta_reduce act_arg in
       begin match fn' with
         | Abstraction (fml_arg, _, body) ->
-          let body' = subst ~fvs body fml_arg act_arg' in
-          beta_reduce fvs body'
+          let body' = subst body fml_arg act_arg' in
+          beta_reduce body'
         | _ ->
           app fn' act_arg'
       end
-  in
-  let env =
-    Id.Set.of_list (List.map fst @@ Id.Map.bindings default_env)
-  in
-  beta_reduce env tp
 
 (* Utilities *) 
 
