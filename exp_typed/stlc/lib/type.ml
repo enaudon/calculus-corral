@@ -14,7 +14,7 @@ let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
   match tp with
     | Base ->
-      "B"
+      "*"
     | Function (arg, res) ->
       let arg_to_string tp = match tp with
         | Base -> to_string tp

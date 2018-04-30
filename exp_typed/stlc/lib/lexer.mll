@@ -30,7 +30,7 @@ let lower_id = ['a'-'z'] id_char*
 rule prog = parse
   | whitespace                        { skip_char lexbuf; prog lexbuf }
   | newline                           { skip_line lexbuf; prog lexbuf }
-  | "B"                               { Parser.UPPER_B }
+  | "*"                               { Parser.ASTERIKS }
   | "->"                              { Parser.S_ARROW }
   | "\\"                              { Parser.B_SLASH }
   | ":"                               { Parser.COLON }

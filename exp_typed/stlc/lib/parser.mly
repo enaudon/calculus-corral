@@ -25,10 +25,8 @@ let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 /* Literals and identifiers */
 %token <string> LOWER_ID
 
-/* Keywords */
-%token UPPER_B
-
 /* Symbols */
+%token ASTERIKS
 %token B_SLASH
 %token COLON
 %token S_ARROW
@@ -54,7 +52,7 @@ comp_typo :
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
   | O_PAREN typo error            { error "unclosed parenthesis" }
-  | UPPER_B                       { Type.base }
+  | ASTERIKS                      { Type.base }
 
 term :
   | comp_term                     { $1 }
