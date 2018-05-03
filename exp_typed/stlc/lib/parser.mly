@@ -24,23 +24,33 @@ let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 
 /* Literals and identifiers */
 %token <string> LOWER_ID
+%token <string> UPPER_ID
 
 /* Symbols */
 %token ASTERIKS
 %token B_SLASH
-%token COLON
 %token S_ARROW
 %token PERIOD
+%token COLON
+%token SEMICOLON
+%token EQ
 %token O_PAREN C_PAREN
 
 /* Other */
 %token EOF
 
+%start typo
 %start term
-%type < Term.t > term
+%start command
 %type < Type.t > typo
+%type < Term.t > term
+%type < (Type.t, Term.t) Command.t > command
 
 %%
+
+command :
+  | LOWER_ID EQ term SEMICOLON    { Command.bind_term $1 $3 }
+  | term SEMICOLON                { Command.eval_term $1 }
 
 typo :
   | comp_typo                     { $1 }

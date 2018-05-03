@@ -16,18 +16,31 @@ let parse_cmd_args () =
   in
   Arg.parse [] parse_file usage_msg
 
-let evaluate lexbuf =
+let evaluate env lexbuf =
   try
-    let tm = Parser.term Lexer.prog lexbuf in
-    let tp = Term.to_type tm in
-    let vl = Term.beta_reduce tm in
-    Printf.printf "%s\n  : %s\n  = %s\n%!"
-      (Term.to_string tm)
-      (Type.to_string tp)
-      (Term.to_string vl);
+    match Parser.command Lexer.prog lexbuf with
+      | Command.Bind_term (id, tm) ->
+        let tp = Term.to_type ~env tm in
+        Printf.printf "%s\n  : %s\n  = %s ;\n%!"
+          (Id.to_string id)
+          (Type.to_string tp)
+          (Term.to_string tm);
+        Id.Map.add id (Term.to_type tm) env
+      | Command.Eval_term tm ->
+        let tp = Term.to_type ~env tm in
+        let vl = Term.beta_reduce tm in
+        Printf.printf "%s\n  : %s\n  = %s ;\n%!"
+          (Term.to_string tm)
+          (Type.to_string tp)
+          (Term.to_string vl);
+        env
   with
-    | Parsing.Parse_error -> Printf.printf "Parser: error\n%!"
-    | Failure msg -> Printf.printf "%s\n%!" msg
+    | Parsing.Parse_error ->
+      Printf.printf "Parser: error\n%!";
+      exit (-1)
+    | Failure msg ->
+      Printf.printf "%s\n%!" msg;
+      exit (-1)
 
 let main () =
 
@@ -35,16 +48,18 @@ let main () =
 
   match !mode with
     | Repl ->
-      let rec eval_phrase () =
+      let rec eval_phrase (env : Type.t Id.Map.t) =
         Printf.printf "> %!";
-        evaluate (Lexing.from_string @@ input_line stdin);
-        eval_phrase ()
+        let env' =
+          evaluate env (Lexing.from_string @@ input_line stdin)
+        in
+        eval_phrase env'
       in
-      eval_phrase ()
+      eval_phrase Id.Map.empty
     | File fs ->
       let eval_file f =
         let chan = open_in f in
-        evaluate @@ Lexing.from_channel chan;
+        ignore (evaluate Id.Map.empty @@ Lexing.from_channel chan);
         close_in chan;
       in
       List.iter eval_file @@ List.rev fs
