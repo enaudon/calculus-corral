@@ -32,8 +32,9 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 
 (* Typing *)
 
-let to_type =
-  let rec to_type env tm = match tm.desc with
+let rec to_type ?(env = Id.Map.empty) tm =
+  let to_type env = to_type ~env in
+  match tm.desc with
     | Variable id ->
       begin try Id.Map.find id env with
         | Id.Unbound id ->
@@ -63,8 +64,6 @@ let to_type =
               "expected type '%s'; found type '%s'"
               (Type.to_string fml_arg_tp)
               (Type.to_string act_arg_tp)
-  in
-  to_type Id.Map.empty
 
 (* Transformations *)
 
