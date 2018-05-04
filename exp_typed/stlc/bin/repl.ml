@@ -17,23 +17,28 @@ let parse_cmd_args () =
   Arg.parse [] parse_file usage_msg
 
 let evaluate env lexbuf =
+
+  let evaluate_command env cmd = match cmd with
+    | Command.Bind_term (id, tm) ->
+      let tp = Term.to_type ~env tm in
+      Printf.printf "%s\n  : %s\n  = %s ;\n%!"
+        (Id.to_string id)
+        (Type.to_string tp)
+        (Term.to_string tm);
+      Id.Map.add id (Term.to_type tm) env
+    | Command.Eval_term tm ->
+      let tp = Term.to_type ~env tm in
+      let vl = Term.beta_reduce tm in
+      Printf.printf "%s\n  : %s\n  = %s ;\n%!"
+        (Term.to_string tm)
+        (Type.to_string tp)
+        (Term.to_string vl);
+      env
+  in
+
   try
-    match Parser.command Lexer.prog lexbuf with
-      | Command.Bind_term (id, tm) ->
-        let tp = Term.to_type ~env tm in
-        Printf.printf "%s\n  : %s\n  = %s ;\n%!"
-          (Id.to_string id)
-          (Type.to_string tp)
-          (Term.to_string tm);
-        Id.Map.add id (Term.to_type tm) env
-      | Command.Eval_term tm ->
-        let tp = Term.to_type ~env tm in
-        let vl = Term.beta_reduce tm in
-        Printf.printf "%s\n  : %s\n  = %s ;\n%!"
-          (Term.to_string tm)
-          (Type.to_string tp)
-          (Term.to_string vl);
-        env
+    let cmds = Parser.commands Lexer.prog lexbuf in
+    List.fold_left evaluate_command env cmds
   with
     | Parsing.Parse_error ->
       Printf.printf "Parser: error\n%!";

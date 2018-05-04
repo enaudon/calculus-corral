@@ -41,16 +41,20 @@ let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 
 %start typo
 %start term
-%start command
+%start commands
 %type < Type.t > typo
 %type < Term.t > term
-%type < (Type.t, Term.t) Command.t > command
+%type < (Type.t, Term.t) Command.t list > commands
 
 %%
 
+commands :
+  | /* empty */                   { [] }
+  | command SEMICOLON commands    { $1 :: $3 }
+
 command :
-  | LOWER_ID EQ term SEMICOLON    { Command.bind_term $1 $3 }
-  | term SEMICOLON                { Command.eval_term $1 }
+  | LOWER_ID EQ term              { Command.bind_term $1 $3 }
+  | term                          { Command.eval_term $1 }
 
 typo :
   | comp_typo                     { $1 }
