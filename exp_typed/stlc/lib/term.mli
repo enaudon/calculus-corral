@@ -33,11 +33,11 @@ val to_type : ?env : Type.t Identifier.Map.t -> t -> Type.t
 (** {1 Transformations} *)
 
 (**
-  [beta_reduce tm] evaluates any applications in [tm]. If the [deep]
-  argument is passed, then [beta_reduce] will evaluate the body of
-  abstractions.
+  [beta_reduce tm] evaluates any applications in [tm] under [env]. If
+  the [deep] argument is passed, then [beta_reduce] will evaluate the
+  body of abstractions.
  *)
-val beta_reduce : ?deep : unit -> t -> t
+val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
 
 (** {1 Utilities} *)
 

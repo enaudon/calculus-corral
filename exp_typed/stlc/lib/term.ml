@@ -101,12 +101,12 @@ let subst : t -> Id.t -> t -> t = fun tm id tm' ->
   in
   subst (free_vars tm') (Id.Map.singleton id tm') tm
 
-let rec beta_reduce ?deep tm =
-  let beta_reduce = beta_reduce ?deep in
+let rec beta_reduce ?deep ?(env = Id.Map.empty) tm =
+  let beta_reduce = beta_reduce ?deep ~env in
   let loc = tm.loc in
   match tm.desc with
-    | Variable _ ->
-      tm
+    | Variable id ->
+      Id.Map.find_default tm id env
     | Abstraction (arg, tp, body) ->
       if deep <> None then
         abs loc arg tp @@ beta_reduce body
