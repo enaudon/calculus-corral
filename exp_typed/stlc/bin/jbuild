@@ -8,6 +8,6 @@
 
 (executable
   ((name test)
-   (modules (test test_term))
+   (modules (test test_term test_repl))
    (libraries (oUnit stlc))
    (flags (-w +A-4 -warn-error +A-4))))
