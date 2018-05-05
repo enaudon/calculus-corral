@@ -45,7 +45,7 @@ val get_forall : t -> Identifier.t * t
   specifies the renaming between bound variables.
  *)
 val alpha_equivalent :
-  ?env : Identifier.t Identifier.Map.t -> t -> t -> bool
+  ?env : (Identifier.t * Identifier.t) list -> t -> t -> bool
 
 (** [free_vars tp] computes the free variables in [tp]. *)
 val free_vars : t -> Identifier.Set.t

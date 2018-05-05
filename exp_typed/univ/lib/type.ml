@@ -15,19 +15,15 @@ let univ id tp = Universal (id, tp)
 
 (* External utilities *)
 
-let rec alpha_equivalent ?(env=Id.Map.empty) tp1 tp2 =
+let rec alpha_equivalent ?(env=[]) tp1 tp2 =
   let alpha_equiv env = alpha_equivalent ~env in
   match tp1, tp2 with
     | Variable id1, Variable id2 ->
-      let id1' =
-        try Id.Map.find id1 env
-        with Id.Unbound _ -> id1
-      in
-      id1' = id2
+      Id.alpha_equivalent env id1 id2
     | Function (arg1, res1), Function (arg2, res2) ->
       alpha_equiv env arg1 arg2 && alpha_equiv env res1 res2
     | Universal (id1, tp1), Universal (id2, tp2) ->
-      alpha_equiv (Id.Map.add id1 id2 env) tp1 tp2
+      alpha_equiv ((id1, id2) :: env) tp1 tp2
     | _ ->
       false
 

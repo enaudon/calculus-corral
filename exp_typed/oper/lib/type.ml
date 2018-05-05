@@ -124,23 +124,16 @@ let rec beta_reduce ?deep tp =
 let alpha_equivalent tp1 tp2 =
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
     | Variable id1, Variable id2 ->
-      let id1' =
-        try Id.Map.find id1 env
-        with Id.Unbound _ -> id1
-      in
-      id1' = id2
+      Id.alpha_equivalent env id1 id2
     | Abstraction (arg1, kn1, body1), Abstraction (arg2, kn2, body2) ->
       Kind.alpha_equivalent kn1 kn2 &&
-        alpha_equiv (Id.Map.add arg1 arg2 env) body1 body2
+        alpha_equiv ((arg1, arg2) :: env) body1 body2
     | Application (fn1, arg1), Application (fn2, arg2) ->
       alpha_equiv env fn1 fn2 && alpha_equiv env arg1 arg2
     | _ ->
       false
   in
-  alpha_equiv
-    Id.Map.empty
-    (beta_reduce ~deep:() tp1)
-    (beta_reduce ~deep:() tp2)
+  alpha_equiv [] (beta_reduce ~deep:() tp1) (beta_reduce ~deep:() tp2)
 
 let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in

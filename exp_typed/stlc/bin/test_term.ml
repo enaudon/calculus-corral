@@ -41,7 +41,7 @@ let assert_alpha_equivalent tm1 tm2 exp =
   let act = Term.alpha_equivalent tm1 tm2 in
   let msg =
     Printf.sprintf
-      "For terms `%s` and `%s`\nExpect: %b\nActua; %b\n"
+      "For terms `%s` and `%s`\nExpect: %b\nActual %b\n"
       (Term.to_string tm1)
       (Term.to_string tm2)
       exp
@@ -56,6 +56,7 @@ let id_tp = Type.func Type.base Type.base
 let id v = Term.abs v Type.base @@ Term.var v
 
 let id_fn_tp = Type.func id_tp id_tp
+
 let id_fn v = Term.abs v (Type.func Type.base Type.base) (Term.var v)
 
 let to_type_tests = "to_type tests", [
@@ -97,6 +98,15 @@ let alpha_equivalent_tests = "alpha_equivalent", [
 
   ("id_fn <> id", fun _ ->
     assert_alpha_equivalent (id_fn "x") (id "x") false ) ;
+
+  ("\\y : * . x = \\y : * . x", fun _ ->
+    let tm = Term.abs "y" Type.base @@ Term.var "x" in
+    assert_alpha_equivalent tm tm true ) ;
+
+  ("\\y : * . x <> \\x : * . x", fun _ ->
+    let tm1 = Term.abs "y" Type.base @@ Term.var "x" in
+    let tm2 = Term.abs "x" Type.base @@ Term.var "x" in
+    assert_alpha_equivalent tm1 tm2 false ) ;
 
 ]
 

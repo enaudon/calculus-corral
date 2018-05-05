@@ -40,3 +40,9 @@ let fresh, reset =
 let of_string str = str
 
 let to_string id = id
+
+let rec alpha_equivalent env id1 id2 = match env with
+  | [] -> id1 = id2
+  | (id1', id2') :: env' ->
+    (id1 = id1' && id2 = id2') ||
+      (id1 <> id1' && id2 <> id2' && alpha_equivalent env' id1 id2)

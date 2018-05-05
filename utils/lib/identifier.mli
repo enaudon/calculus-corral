@@ -95,3 +95,9 @@ val of_string : string -> t
 
 (** [to_string id] computes a string representation of [id]. *)
 val to_string : t -> string
+
+(**
+  [alpha_equivalent env id1 id2] determines whether [id1] and [id2] are
+  equivalent, given the renamings specified in [env].
+ *)
+val alpha_equivalent : (t * t) list -> t -> t -> bool
