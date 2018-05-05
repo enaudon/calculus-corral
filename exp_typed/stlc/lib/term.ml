@@ -127,14 +127,7 @@ let rec beta_reduce ?deep ?(env = Id.Map.empty) tm =
 let alpha_equivalent =
   let rec alpha_equiv env tm1 tm2 = match tm1.desc, tm2.desc with
     | Variable id1, Variable id2 ->
-      let id1' = try Id.Map.find id1 env with
-        | Id.Unbound id ->
-          error tm1.loc "alpha_equivalent" @@
-            Printf.sprintf
-              "undefined identifier '%s'"
-              (Id.to_string id)
-      in
-      id1' = id2
+      Id.Map.find_default id1 id1 env = id2
     | Abstraction (arg1, tp1, body1), Abstraction (arg2, tp2, body2) ->
       Type.alpha_equivalent tp1 tp2 &&
         alpha_equiv (Id.Map.add arg1 arg2 env) body1 body2

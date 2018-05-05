@@ -20,5 +20,5 @@ let make repl_exe case_dir =
     let fs = Array.to_list (Sys.readdir case_dir) in
     List.filter is_lc_file @@ List.map (Filename.concat case_dir) fs
   in
-  "repl" >:::
+  "Repl" >:::
     List.map (fun f -> f >:: assert_command repl_exe f) test_files
