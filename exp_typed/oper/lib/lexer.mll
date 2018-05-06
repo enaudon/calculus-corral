@@ -35,9 +35,11 @@ rule prog = parse
   | "->"                              { Parser.S_ARROW }
   | "*"                               { Parser.ASTERIKS }
   | "\\"                              { Parser.B_SLASH }
+  | "."                               { Parser.PERIOD }
   | ":"                               { Parser.COLON }
   | "::"                              { Parser.COL_COL }
-  | "."                               { Parser.PERIOD }
+  | ";"                               { Parser.SEMICOLON }
+  | "="                               { Parser.EQ }
   | "("                               { Parser.O_PAREN }
   | ")"                               { Parser.C_PAREN }
   | lower_id as id                    { Parser.LOWER_ID id }

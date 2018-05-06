@@ -32,8 +32,9 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 
 (* Typing *)
 
-let to_type =
-  let rec to_type env tm = match tm.desc with
+let rec to_type ?(env = Id.Map.empty) tm =
+  let to_type env = to_type ~env in
+  match tm.desc with
     | Variable id ->
       begin try Id.Map.find id env with
         | Id.Unbound id ->
@@ -69,8 +70,6 @@ let to_type =
               "expected type '%s'; found type '%s'"
               (Type.to_string fml_arg_tp)
               (Type.to_string act_arg_tp)
-  in
-  to_type Id.Map.empty
 
 (* Transformations *)
 
@@ -108,12 +107,12 @@ let subst : t -> Id.t -> t -> t = fun tm id tm' ->
   in
   subst (free_vars tm') (Id.Map.singleton id tm') tm
 
-let rec beta_reduce ?deep tm =
-  let beta_reduce = beta_reduce ?deep in
+let rec beta_reduce ?deep ?(env = Id.Map.empty) tm =
+  let beta_reduce = beta_reduce ?deep ~env in
   let loc = tm.loc in
   match tm.desc with
-    | Variable _ ->
-      tm
+    | Variable id ->
+      Id.Map.find_default tm id env
     | Abstraction (arg, tp, body) ->
       if deep <> None then
         abs loc arg tp @@ beta_reduce body

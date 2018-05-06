@@ -34,8 +34,10 @@ rule prog = parse
   | "forall"                          { Parser.FOR_ALL }
   | "->"                              { Parser.S_ARROW }
   | "\\"                              { Parser.B_SLASH }
-  | ":"                               { Parser.COLON }
   | "."                               { Parser.PERIOD }
+  | ":"                               { Parser.COLON }
+  | ";"                               { Parser.SEMICOLON }
+  | "="                               { Parser.EQ }
   | "("                               { Parser.O_PAREN }
   | ")"                               { Parser.C_PAREN }
   | lower_id as id                    { Parser.LOWER_ID id }

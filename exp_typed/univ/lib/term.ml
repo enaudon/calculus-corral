@@ -40,7 +40,7 @@ let tp_app : Loc.t -> t -> Type.t -> t = fun loc fn arg ->
 
 (* Typing *)
 
-let to_type =
+let to_type ?(env = Id.Map.empty) =
   let rec to_type tp_bvs env tm = match tm.desc with
     | Variable id ->
       begin try Id.Map.find id env with
@@ -89,7 +89,7 @@ let to_type =
       in
       Type.subst tp_bvs (Id.Map.singleton tv arg) tp
   in
-  to_type Id.Set.empty Id.Map.empty
+  to_type Id.Set.empty env
 
 (* Transformations *)
 
@@ -163,12 +163,12 @@ let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
   in
   subst (free_vars tm') (Id.Map.singleton id tm') tm
 
-let rec beta_reduce ?deep tm =
-  let beta_reduce = beta_reduce ?deep in
+let rec beta_reduce ?deep ?(env = Id.Map.empty) tm =
+  let beta_reduce = beta_reduce ?deep ~env in
   let loc = tm.loc in
   match tm.desc with
-    | Variable _ ->
-      tm
+    | Variable id ->
+      Id.Map.find_default tm id env
     | Term_abs (arg, tp, body) ->
       if deep <> None then
         abs loc arg tp @@ beta_reduce body
