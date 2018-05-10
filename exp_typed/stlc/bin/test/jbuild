@@ -2,5 +2,20 @@
 
 (executable
   ((name test)
-   (libraries (oUnit stlc))
-   (flags (-w +A-4 -warn-error +A-4))))
+    (libraries (oUnit stlc))
+    (flags (-w +A-4 -warn-error +A-4))))
+
+(rule (
+  (targets (cases))
+  (action (run
+    cp -r
+      ${ROOT}/../../exp_typed/stlc/bin/test/cases/
+      .))))
+
+(alias
+  ((name runtest)
+   (deps (test.exe ../repl/repl.exe cases))
+   (action (run
+    ${exe:test.exe}
+      -repl-exe ${exe:../repl/repl.exe}
+      -case-dir ./cases/))))
