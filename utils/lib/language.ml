@@ -51,11 +51,19 @@ module Repl (Input : Sig) = struct
     let usage_msg = Printf.sprintf "Usage: %s [file]" Sys.argv.(0) in
     Arg.parse specs parse_file usage_msg
   
-  let evaluate tp_env vl_env lexbuf =
+  let evaluate kn_env tp_env vl_env lexbuf =
   
     let deep = !deep in
   
-    let evaluate_command (tp_env, vl_env) cmd = match cmd with
+    let evaluate_command (kn_env, tp_env, vl_env) cmd = match cmd with
+      | Command.Bind_type (id, tp) ->
+        let kn = Type.to_kind ~env:kn_env tp in
+        let tp' = Type.beta_reduce ?deep ~env:tp_env tp in
+        Printf.printf "%s\n  : %s\n  = %s ;\n%!"
+          (Id.to_string id)
+          (Kind.to_string kn)
+          (Type.to_string tp');
+        Id.Map.add id kn kn_env, Id.Map.add id tp' tp_env, vl_env
       | Command.Bind_term (id, tm) ->
         let tp = Term.to_type ~env:tp_env tm in
         let vl = Term.beta_reduce ?deep ~env:vl_env tm in
@@ -63,7 +71,7 @@ module Repl (Input : Sig) = struct
           (Id.to_string id)
           (Type.to_string tp)
           (Term.to_string vl);
-        Id.Map.add id tp tp_env, Id.Map.add id vl vl_env
+        kn_env, Id.Map.add id tp tp_env, Id.Map.add id vl vl_env
       | Command.Eval_term tm ->
         let tp = Term.to_type ~env:tp_env tm in
         let vl = Term.beta_reduce ?deep ~env:vl_env tm in
@@ -71,11 +79,14 @@ module Repl (Input : Sig) = struct
           (Term.to_string tm)
           (Type.to_string tp)
           (Term.to_string vl);
-        (tp_env, vl_env)
+        kn_env, tp_env, vl_env
     in
   
     try
-      List.fold_left evaluate_command (tp_env, vl_env) (parse lexbuf)
+      List.fold_left
+        evaluate_command
+        (kn_env, tp_env, vl_env)
+        (parse lexbuf)
     with
       | Parsing.Parse_error ->
         Printf.printf "Parser: error\n%!";
@@ -90,23 +101,23 @@ module Repl (Input : Sig) = struct
   
     match !mode with
       | Repl ->
-        let rec eval_phrase tp_env vl_env =
+        let rec eval_phrase kn_env tp_env vl_env =
           Printf.printf "> %!";
-          let tp_env', vl_env' =
-            evaluate tp_env vl_env @@
+          let kn_env', tp_env', vl_env' =
+            evaluate kn_env tp_env vl_env @@
               Lexing.from_string (input_line stdin)
           in
-          eval_phrase tp_env' vl_env'
+          eval_phrase kn_env' tp_env' vl_env'
         in
-        eval_phrase Id.Map.empty Id.Map.empty
+        eval_phrase Id.Map.empty Id.Map.empty Id.Map.empty
       | File fs ->
         let eval_file f =
           let chan = open_in f in
           ignore @@
-            evaluate Id.Map.empty Id.Map.empty @@
+            evaluate Id.Map.empty Id.Map.empty Id.Map.empty @@
               Lexing.from_channel chan;
           close_in chan;
         in
         List.iter eval_file @@ List.rev fs
- 
+
  end
