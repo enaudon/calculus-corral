@@ -31,7 +31,7 @@ let default_env =
     Id.Map.add (Id.of_string base_id) base |>
     Id.Map.add (Id.of_string func_id) (func' [base; base] base)
 
-let to_kind =
+let to_kind ?(env = default_env) =
   let rec to_kind env tp = match tp with
     | Variable id ->
       begin try Id.Map.find id env with
@@ -63,7 +63,7 @@ let to_kind =
                 (Kind.to_string fml_arg_tp)
                 (Kind.to_string act_arg_tp)
   in
-  to_kind default_env
+  to_kind env
 
 (* Transformations *)
 
@@ -98,11 +98,11 @@ let subst : t -> Id.t -> t -> t = fun tp id tp' ->
   in
   subst (free_vars tp') (Id.Map.singleton id tp') tp
 
-let rec beta_reduce ?deep tp =
-  let beta_reduce = beta_reduce ?deep in
+let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
+  let beta_reduce = beta_reduce ?deep ~env in
   match tp with
-    | Variable _ ->
-      tp
+    | Variable id ->
+      Id.Map.find_default tp id env
     | Abstraction (arg, kn, body) ->
       if deep <> None then
         abs arg kn @@ beta_reduce body

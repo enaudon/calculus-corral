@@ -22,8 +22,17 @@ val get_func : t -> t * t
 
 (** {1 Kinding} *)
 
-(** [to_kind tp] computes the kind of [tp]. *)
-val to_kind : t -> Kind.t
+(** [to_kind tp] computes the kind of [tp] under [env]. *)
+val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
+
+(** {1 Transformations} *)
+
+(**
+  [beta_reduce ~deep tp] reduces any applications in [tp] under [env].
+  If the [deep] argument is passed, then [beta_reduce] will reduce the
+  body of abstractions.
+ *)
+val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
 
 (** {1 Utilities} *)
 

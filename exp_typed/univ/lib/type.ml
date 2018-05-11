@@ -16,7 +16,17 @@ let univ id tp = Universal (id, tp)
 (* Kinding *)
 
 (** There are no type operators, so all types are of kind [*]. *)
-let to_kind _ = Kind.base
+let to_kind ?env _ =
+  ignore env;
+  Kind.base
+
+(* Transformations *)
+
+(** There are no type operators, so there is nothing to beta-reduce. *)
+let beta_reduce ?deep ?env tm =
+  ignore deep;
+  ignore env;
+  tm
 
 (* External utilities *)
 

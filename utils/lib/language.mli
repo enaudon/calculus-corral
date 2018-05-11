@@ -12,7 +12,10 @@ module type Sig = sig
 
     type t
 
-    val to_kind : t -> Kind.t
+    val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
+
+    val beta_reduce :
+      ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
 
     val to_string : t -> string
 
