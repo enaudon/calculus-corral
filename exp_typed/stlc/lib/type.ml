@@ -2,6 +2,11 @@ type t =
   | Base
   | Function of t * t
 
+(* Kinding *)
+
+(** There are no type operators, so all types are of kind [*]. *)
+let to_kind _ = Kind.base
+
 (* Utilities *) 
 
 (**
@@ -21,7 +26,6 @@ let rec to_string tp =
         | Function _ -> to_paren_string tp
       in
       Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
-
 (* Constructors *)
 
 let base = Base

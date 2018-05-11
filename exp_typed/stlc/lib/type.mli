@@ -20,6 +20,11 @@ val func' : t list -> t -> t
  *)
 val get_func : t -> t * t
 
+(** {1 Kinding} *)
+
+(** [to_kind tp] computes the kind of [tp]. *)
+val to_kind : t -> Kind.t
+
 (** {1 Utilities} *)
 
 (**

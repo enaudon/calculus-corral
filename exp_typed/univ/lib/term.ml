@@ -49,6 +49,12 @@ let to_type ?(env = Id.Map.empty) =
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Term_abs (arg, arg_tp, body) ->
+      let arg_kn = Type.to_kind arg_tp in
+      if not (Kind.alpha_equivalent arg_kn Kind.base) then
+        error tm.loc "to_type" @@
+          Printf.sprintf
+            "expected propper type; found '%s'"
+            (Type.to_string arg_tp);
       let body_tp = to_type tp_bvs (Id.Map.add arg arg_tp env) body in
       Type.func arg_tp body_tp
     | Term_app (fn, arg) ->

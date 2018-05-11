@@ -1,8 +1,18 @@
 module type Sig = sig
 
+  module Kind : sig
+
+    type t
+
+    val to_string : t -> string
+
+  end
+
   module Type : sig
 
     type t
+
+    val to_kind : t -> Kind.t
 
     val to_string : t -> string
 

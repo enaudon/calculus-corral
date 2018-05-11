@@ -13,6 +13,11 @@ let func arg res = Function (arg, res)
 
 let univ id tp = Universal (id, tp)
 
+(* Kinding *)
+
+(** There are no type operators, so all types are of kind [*]. *)
+let to_kind _ = Kind.base
+
 (* External utilities *)
 
 let rec alpha_equivalent ?(env=[]) tp1 tp2 =
