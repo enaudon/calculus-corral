@@ -1,3 +1,5 @@
+module Id = Identifier
+
 module type Sig = sig
 
   module Kind : sig
@@ -7,18 +9,17 @@ module type Sig = sig
 
   module Type : sig
     type t
-    val default_env : Kind.t Identifier.Map.t
-    val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
-    val beta_reduce :
-      ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
+    val default_env : Kind.t Id.Map.t
+    val to_kind : ?env : Kind.t Id.Map.t -> t -> Kind.t
+    val beta_reduce : ?deep : unit -> ?env : t Id.Map.t -> t -> t
     val to_string : t -> string
   end
 
   module Term : sig
     type t
-    val to_type : ?env : Type.t Identifier.Map.t -> t -> Type.t
-    val beta_reduce :
-      ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
+    val to_type :
+      ?env : (Kind.t Id.Map.t * Type.t Id.Map.t) -> t -> Type.t
+    val beta_reduce : ?deep : unit -> ?env : t Id.Map.t -> t -> t
     val to_string : t -> string
   end
 
@@ -29,8 +30,6 @@ end
 module Repl (Input : Sig) = struct
 
   open Input
-  
-  module Id = Identifier
   
   type mode =
     | Repl
@@ -66,7 +65,7 @@ module Repl (Input : Sig) = struct
           (Type.to_string tp');
         Id.Map.add id kn kn_env, Id.Map.add id tp' tp_env, vl_env
       | Command.Bind_term (id, tm) ->
-        let tp = Term.to_type ~env:tp_env tm in
+        let tp = Term.to_type ~env:(kn_env, tp_env) tm in
         let vl = Term.beta_reduce ?deep ~env:vl_env tm in
         Printf.printf "%s\n  : %s\n  = %s ;\n%!"
           (Id.to_string id)
@@ -74,7 +73,7 @@ module Repl (Input : Sig) = struct
           (Term.to_string vl);
         kn_env, Id.Map.add id tp tp_env, Id.Map.add id vl vl_env
       | Command.Eval_term tm ->
-        let tp = Term.to_type ~env:tp_env tm in
+        let tp = Term.to_type ~env:(kn_env, tp_env) tm in
         let vl = Term.beta_reduce ?deep ~env:vl_env tm in
         Printf.printf "%s\n  : %s\n  = %s ;\n%!"
           (Term.to_string tm)

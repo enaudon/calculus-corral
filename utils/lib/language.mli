@@ -27,7 +27,10 @@ module type Sig = sig
 
     type t
 
-    val to_type : ?env : Type.t Identifier.Map.t -> t -> Type.t
+    val to_type :
+      ?env : (Kind.t Identifier.Map.t * Type.t Identifier.Map.t) ->
+      t ->
+      Type.t
 
     val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
 
