@@ -12,6 +12,8 @@ module type Sig = sig
 
     type t
 
+    val default_env : Kind.t Identifier.Map.t
+
     val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
 
     val beta_reduce :

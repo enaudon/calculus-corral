@@ -15,6 +15,8 @@ let univ id tp = Universal (id, tp)
 
 (* Kinding *)
 
+let default_env = Id.Map.empty
+
 (** There are no type operators, so all types are of kind [*]. *)
 let to_kind ?env _ =
   ignore env;

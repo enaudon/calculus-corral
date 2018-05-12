@@ -7,6 +7,7 @@ module type Sig = sig
 
   module Type : sig
     type t
+    val default_env : Kind.t Identifier.Map.t
     val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
     val beta_reduce :
       ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
@@ -109,12 +110,12 @@ module Repl (Input : Sig) = struct
           in
           eval_phrase kn_env' tp_env' vl_env'
         in
-        eval_phrase Id.Map.empty Id.Map.empty Id.Map.empty
+        eval_phrase Type.default_env Id.Map.empty Id.Map.empty
       | File fs ->
         let eval_file f =
           let chan = open_in f in
           ignore @@
-            evaluate Id.Map.empty Id.Map.empty Id.Map.empty @@
+            evaluate Type.default_env Id.Map.empty Id.Map.empty @@
               Lexing.from_channel chan;
           close_in chan;
         in

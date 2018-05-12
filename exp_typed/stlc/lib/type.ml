@@ -1,8 +1,12 @@
+module Id = Identifier
+
 type t =
   | Base
   | Function of t * t
 
 (* Kinding *)
+
+let default_env = Id.Map.empty
 
 (** There are no type operators, so all types are of kind [*]. *)
 let to_kind ?env _ =
