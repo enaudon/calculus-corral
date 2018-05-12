@@ -12,7 +12,7 @@ let assert_to_type tm exp =
         msg
   in
   let msg = Printf.sprintf "For term: '%s'" (Term.to_string tm) in
-  let cmp = Type.alpha_equivalent in
+  let cmp tp1 tp2 = Type.alpha_equivalent tp1 tp2 in
   let printer tp = Printf.sprintf "'%s'" @@ Type.to_string tp in
   assert_equal ~msg ~cmp ~printer exp act
 

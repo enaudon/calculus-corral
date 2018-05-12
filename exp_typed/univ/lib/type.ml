@@ -32,7 +32,8 @@ let beta_reduce ?deep ?env tm =
 
 (* External utilities *)
 
-let rec alpha_equivalent ?(env=[]) tp1 tp2 =
+let rec alpha_equivalent ?beta_env ?(env=[]) tp1 tp2 =
+  ignore beta_env;
   let alpha_equiv env = alpha_equivalent ~env in
   match tp1, tp2 with
     | Variable id1, Variable id2 ->

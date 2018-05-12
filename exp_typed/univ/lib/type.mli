@@ -57,12 +57,17 @@ val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
 (** {1 Utilities} *)
 
 (**
-  [alpha_equivalent ~env tp1 tp2] determines whether [tp1] and [tp2] are
-  equivalent up to renaming of variables.  The optional argument, [env],
-  specifies the renaming between bound variables.
+  [alpha_equivalent ~beta_env ~env tp1 tp2] determines whether [tp1] and
+  [tp2] are equivalent up to renaming of variables.  The optional
+  argument, [env], specifies the renaming between bound variables, while
+  [beta_env] is the beta-reduction environment.
  *)
 val alpha_equivalent :
-  ?env : (Identifier.t * Identifier.t) list -> t -> t -> bool
+  ?beta_env : t Identifier.Map.t ->
+  ?env : (Identifier.t * Identifier.t) list ->
+  t ->
+  t ->
+  bool
 
 (** [free_vars tp] computes the free variables in [tp]. *)
 val free_vars : t -> Identifier.Set.t

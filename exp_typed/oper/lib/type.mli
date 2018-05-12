@@ -60,10 +60,11 @@ val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
 (** {1 Utilities} *)
 
 (**
-  [alpha_equivalent tp1 tp2] determines whether [tp1] and [tp2] are
-  equivalent up to renaming of variables.
+  [alpha_equivalent ~beta_env tp1 tp2] determines whether [tp1] and
+  [tp2] are equivalent up to renaming of variables.  The optional
+  [beta_env] argument is the beta-reduction environment.
  *)
-val alpha_equivalent : t -> t -> bool
+val alpha_equivalent : ?beta_env : t Identifier.Map.t -> t -> t -> bool
 
 (** [to_string tp] computes a string representation of [tp]. *)
 val to_string : t -> string

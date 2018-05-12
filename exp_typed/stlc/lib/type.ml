@@ -27,7 +27,9 @@ let beta_reduce ?deep ?env tm =
   There are no type variables, so alpha-equivalence is just structural
   equivalence.
  *)
-let alpha_equivalent = Pervasives.(=)
+let alpha_equivalent ?beta_env =
+  ignore beta_env;
+  Pervasives.(=)
 
 let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
