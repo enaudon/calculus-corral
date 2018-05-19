@@ -1,0 +1,36 @@
+Bool
+  : *
+  = * -> * -> * ;
+fls
+  : * -> * -> *
+  = x : * . y : * . y ;
+tru
+  : * -> * -> *
+  = x : * . y : * . x ;
+if
+  : Bool -> * -> * -> *
+  = p : Bool . x : * . y : * . p x y ;
+Pair
+  : * => * => * => *
+  = A :: * . B :: * . C :: * . (A -> B -> C) -> C ;
+BoolPair
+  : *
+  = ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> * ;
+pair
+  : Bool -> Bool -> (Bool -> Bool -> Bool) -> * -> * -> *
+  = x : Bool . y : Bool . p : Bool -> Bool -> Bool . p x y ;
+fst
+  : BoolPair -> * -> * -> *
+  = p : BoolPair . p (x : Bool . y : Bool . x) ;
+snd
+  : BoolPair -> * -> * -> *
+  = p : BoolPair . p (x : Bool . y : Bool . y) ;
+pair fls tru
+  : ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> *
+  = p : Bool -> Bool -> Bool . p (x : * . y : * . y) (x : * . y : * . x) ;
+fst (pair fls tru)
+  : * -> * -> *
+  = x : * . y : * . y ;
+snd (pair fls tru)
+  : * -> * -> *
+  = x : * . y : * . x ;

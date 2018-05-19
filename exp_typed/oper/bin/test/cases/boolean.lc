@@ -1,0 +1,23 @@
+Bool = * -> * -> * ;
+
+fls = \x : * . \y : * . y ;
+
+tru = \x : * . \y : * . x ;
+
+if = \p : Bool . \x : * . \y : * . p x y ;
+
+Pair = \A :: * . \B :: * . \C :: * . (A -> B -> C) -> C ;
+
+BoolPair = Pair Bool Bool Bool ;
+
+pair = \x : Bool . \y : Bool . \p : Bool -> Bool -> Bool . p x y ;
+
+fst = \p : BoolPair . p (\x : Bool . \y : Bool . x) ;
+
+snd = \p : BoolPair . p (\x : Bool . \y : Bool . y) ;
+
+pair fls tru ;
+
+fst (pair fls tru) ;
+
+snd (pair fls tru) ;
