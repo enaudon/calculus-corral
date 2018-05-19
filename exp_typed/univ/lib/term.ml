@@ -90,7 +90,7 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
       let fn' = to_type tp_bvs kn_env tp_env fn in
       let tv, tp =
         try
-          Type.get_forall fn'
+          Type.get_forall @@ Type.beta_reduce ~deep:() ~env:tp_env fn'
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf

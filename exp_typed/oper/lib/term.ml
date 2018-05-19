@@ -53,7 +53,7 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
       let fn' = to_type kn_env tp_env fn in
       let fml_arg_tp, res_tp =
         try
-          Type.get_func (Type.beta_reduce ~deep:() ~env:tp_env fn')
+          Type.get_func @@ Type.beta_reduce ~deep:() ~env:tp_env fn'
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf

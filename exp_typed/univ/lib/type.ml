@@ -24,18 +24,23 @@ let to_kind ?env _ =
 
 (* Transformations *)
 
-(** There are no type operators, so there is nothing to beta-reduce. *)
-let beta_reduce ?deep ?env tm =
-  ignore deep;
-  ignore env;
-  tm
+let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
+  let beta_reduce = beta_reduce ?deep ~env in
+  match tp with
+    | Variable id ->
+      Id.Map.find_default tp id env
+    | Function (arg, res) ->
+      func (beta_reduce arg) (beta_reduce res)
+    | Universal (arg, body) ->
+      if deep <> None then
+        univ arg @@ beta_reduce body
+      else
+        tp
 
 (* External utilities *)
 
-let rec alpha_equivalent ?beta_env ?(env=[]) tp1 tp2 =
-  ignore beta_env;
-  let alpha_equiv env = alpha_equivalent ~env in
-  match tp1, tp2 with
+let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env=[]) tp1 tp2 =
+  let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
     | Variable id1, Variable id2 ->
       Id.alpha_equivalent env id1 id2
     | Function (arg1, res1), Function (arg2, res2) ->
@@ -44,6 +49,11 @@ let rec alpha_equivalent ?beta_env ?(env=[]) tp1 tp2 =
       alpha_equiv ((id1, id2) :: env) tp1 tp2
     | _ ->
       false
+  in
+  alpha_equiv
+    env
+    (beta_reduce ~deep:() ~env:beta_env tp1)
+    (beta_reduce ~deep:() ~env:beta_env tp2)
 
 let free_vars =
   let rec free_vars fvs tp = match tp with
