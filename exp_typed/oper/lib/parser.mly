@@ -53,8 +53,8 @@ commands :
   | command SEMICOLON commands    { $1 :: $3 }
 
 command :
-  | LOWER_ID EQ term              { Command.bind_term $1 $3 }
   | UPPER_ID EQ typo              { Command.bind_type $1 $3 }
+  | LOWER_ID EQ term              { Command.bind_term $1 $3 }
   | term                          { Command.eval_term $1 }
 
 kind :
