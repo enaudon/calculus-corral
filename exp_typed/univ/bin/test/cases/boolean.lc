@@ -1,0 +1,69 @@
+Bool = forall A . A -> A -> A ;
+
+fls = \A . \x : A . \y : A . y ;
+
+tru = \A . \x : A . \y : A . x ;
+
+not = \p : Bool . p Bool fls tru ;
+
+and = \p : Bool . \q : Bool . p Bool q fls ;
+
+or = \p : Bool . \q : Bool . p  Bool tru q ;
+
+if = \A . \p : Bool . \x : A . \y : A . p A x y ;
+
+not fls ;
+
+not tru ;
+
+and fls fls ;
+
+and fls tru ;
+
+and tru fls ;
+
+and tru tru ;
+
+or fls fls ;
+
+or fls tru ;
+
+or tru fls ;
+
+or tru tru ;
+
+if Bool fls fls tru ;
+
+if Bool tru fls tru ;
+
+if (forall A . A -> A) fls (\A . \x : A . x) (\B . \y : B . y) ;
+
+pair = \A . \B . \f : A . \s : B . \C . \p : A -> B -> C . p f s ;
+
+fst =
+  \A . \B . \p : forall C . (A -> B -> C) -> C .
+    p A (\f : A . \s : B . f) ;
+
+snd =
+  \A . \B . \p : forall C . (A -> B -> C) -> C .
+    p B (\f : A . \s : B . s) ;
+
+BoolPair = (Bool -> Bool -> Bool) -> Bool ;
+
+pair Bool Bool fls tru ;
+
+fst Bool Bool (pair Bool Bool fls tru) ;
+
+snd Bool Bool (pair Bool Bool fls tru) ;
+
+pair Bool (forall A . A -> A) fls (\A . \x : A . x) ;
+
+fst
+  Bool
+  (forall A . A -> A)
+  (pair Bool (forall A . A -> A) fls (\A . \x : A . x)) ;
+
+snd
+  Bool
+  (forall A . A -> A)
+  (pair Bool (forall A . A -> A) fls (\A . \x : A . x)) ;

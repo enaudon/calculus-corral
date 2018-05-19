@@ -5,9 +5,3 @@
    (modules (repl))
    (libraries (univ))
    (flags (-w +A-4 -warn-error +A-4))))
-
-(executable
-  ((name test)
-   (modules (test))
-   (libraries (oUnit univ))
-   (flags (-w +A-4 -warn-error +A-4))))
