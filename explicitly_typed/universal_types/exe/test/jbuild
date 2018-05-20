@@ -2,7 +2,7 @@
 
 (executable
   ((name test)
-    (libraries (oUnit univ))
+    (libraries (oUnit universal_types))
     (flags (-w +A-4 -warn-error +A-4))))
 
 (rule (

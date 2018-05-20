@@ -1,4 +1,4 @@
-open Stlc
+open Simply_typed
 open OUnit
 
 let assert_to_type tm exp =

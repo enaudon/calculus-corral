@@ -1,8 +1,8 @@
 module Repl = Language.Repl (struct
-  module Kind = Stlc.Kind
-  module Type = Stlc.Type
-  module Term = Stlc.Term
-  let parse = Stlc.Parser.commands Stlc.Lexer.prog
+  module Kind = Simply_typed.Kind
+  module Type = Simply_typed.Type
+  module Term = Simply_typed.Term
+  let parse = Simply_typed.Parser.commands Simply_typed.Lexer.prog
 end)
 
 let () = Repl.main ()

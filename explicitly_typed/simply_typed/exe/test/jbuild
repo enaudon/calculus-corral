@@ -2,7 +2,7 @@
 
 (executable
   ((name test)
-    (libraries (oUnit stlc))
+    (libraries (oUnit simply_typed))
     (flags (-w +A-4 -warn-error +A-4))))
 
 (rule (

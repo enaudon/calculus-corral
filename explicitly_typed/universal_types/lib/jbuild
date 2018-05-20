@@ -8,6 +8,6 @@
    (action (chdir . (run ocamlyacc --strict -v ${<})))))
 
 (library
-  ((name univ)
+  ((name universal_types)
    (libraries (utils))
    (flags (-w +A-4 -warn-error +A-4))))

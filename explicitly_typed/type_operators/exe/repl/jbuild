@@ -3,5 +3,5 @@
 (executable
   ((name repl)
    (modules (repl))
-   (libraries (oper))
+   (libraries (type_operators))
    (flags (-w +A-4 -warn-error +A-4))))

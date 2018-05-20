@@ -1,4 +1,4 @@
-open Univ
+open Universal_types
 open OUnit
 
 let assert_to_type tm exp =

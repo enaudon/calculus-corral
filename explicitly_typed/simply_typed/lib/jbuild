@@ -8,6 +8,6 @@
    (action (chdir . (run ocamlyacc --strict -v ${<})))))
 
 (library
-  ((name stlc)
+  ((name simply_typed)
    (libraries (utils))
    (flags (-w +A-4 -warn-error +A-4))))

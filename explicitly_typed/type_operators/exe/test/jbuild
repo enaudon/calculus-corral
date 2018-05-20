@@ -2,7 +2,7 @@
 
 (executable
   ((name test)
-    (libraries (oUnit oper))
+    (libraries (oUnit type_operators))
     (flags (-w +A-4 -warn-error +A-4))))
 
 (rule (

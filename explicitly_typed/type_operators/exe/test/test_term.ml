@@ -1,4 +1,4 @@
-open Oper
+open Type_operators
 open OUnit
 
 let assert_to_type tm exp =
