@@ -42,37 +42,37 @@ let id_fn v = Term.abs v (Type.func Type.base Type.base) (Term.var v)
 
 let alpha_equivalent_tests = "alpha_equivalent", [
 
-  ("x = x", fun _ ->
+  ( "x = x", fun _ ->
     let tm = Term.var "x" in
     assert_alpha_equivalent tm tm true ) ;
 
-  ("x <> y", fun _ ->
+  ( "x <> y", fun _ ->
     assert_alpha_equivalent (Term.var "x") (Term.var "y") false ) ;
 
-  ("id = id", fun _ ->
+  ( "id = id", fun _ ->
     let tm = id "x" in
     assert_alpha_equivalent tm tm true ) ;
 
-  ("id = id'", fun _ ->
+  ( "id = id'", fun _ ->
     assert_alpha_equivalent (id "x") (id "y") true ) ;
 
-  ("id_fn id = id_fn id", fun _ ->
+  ( "id_fn id = id_fn id", fun _ ->
     let tm = Term.app (id_fn "x") (id "x") in
     assert_alpha_equivalent tm tm true ) ;
 
-  ("id_fn id = id_fn' id'", fun _ ->
+  ( "id_fn id = id_fn' id'", fun _ ->
     let tm1 = Term.app (id_fn "x") (id "x") in
     let tm2 = Term.app (id_fn "y") (id "y") in
     assert_alpha_equivalent tm1 tm2 true ) ;
 
-  ("id_fn <> id", fun _ ->
+  ( "id_fn <> id", fun _ ->
     assert_alpha_equivalent (id_fn "x") (id "x") false ) ;
 
-  ("\\y : * . x = \\y : * . x", fun _ ->
+  ( "\\y : * . x = \\y : * . x", fun _ ->
     let tm = Term.abs "y" Type.base @@ Term.var "x" in
     assert_alpha_equivalent tm tm true ) ;
 
-  ("\\y : * . x <> \\x : * . x", fun _ ->
+  ( "\\y : * . x <> \\x : * . x", fun _ ->
     let tm1 = Term.abs "y" Type.base @@ Term.var "x" in
     let tm2 = Term.abs "x" Type.base @@ Term.var "x" in
     assert_alpha_equivalent tm1 tm2 false ) ;
@@ -81,20 +81,20 @@ let alpha_equivalent_tests = "alpha_equivalent", [
 
 let beta_reduce_tests = "beta_reduce", [
 
-  ("x", fun _ ->
+  ( "x", fun _ ->
     let tm = Term.var "x" in
     assert_beta_reduce tm tm tm ) ;
 
-  ("id", fun _ ->
+  ( "id", fun _ ->
     let tm = id "x" in
     assert_beta_reduce tm tm tm ) ;
 
-  ("id_fn id", fun _ ->
+  ( "id_fn id", fun _ ->
     let tm = id "x" in
     let redux = Term.app (id_fn "x") tm in
     assert_beta_reduce redux tm tm ) ;
 
-  ("\\x : * . id_fn id", fun _ ->
+  ( "\\x : * . id_fn id", fun _ ->
     let redux =
       Term.abs "x" Type.base @@ Term.app (id_fn "x") (id "x")
     in

@@ -7,9 +7,11 @@ let assert_command repl file () =
   let foutput stream =
     let actual = Misc.char_stream_to_string stream in
     let expect = Misc.file_to_string (file ^ ".exp") in
-    assert_equal expect actual
+    let printer str = str in
+    assert_equal ~printer expect actual
   in
-  assert_command ~exit_code ~foutput repl [file]
+  let args = ["--deep-beta-reduction"; file] in
+  assert_command ~exit_code ~foutput repl args
 
 let make repl_exe case_dir =
   let test_files =

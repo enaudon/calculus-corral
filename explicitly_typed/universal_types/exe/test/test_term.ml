@@ -48,42 +48,42 @@ let id_fn v = Term.tp_app (id v) id_tp
 
 let alpha_equivalent_tests = "alpha_equivalent", [
 
-  ("x = x", fun _ ->
+  ( "x = x", fun _ ->
     let tm = Term.var "x" in
     assert_alpha_equivalent tm tm true ) ;
 
-  ("x <> y", fun _ ->
+  ( "x <> y", fun _ ->
     assert_alpha_equivalent (Term.var "x") (Term.var "y") false ) ;
 
-  ("id = id", fun _ ->
+  ( "id = id", fun _ ->
     let tm = id "x" in
     assert_alpha_equivalent tm tm true ) ;
 
-  ("id = id'", fun _ ->
+  ( "id = id'", fun _ ->
     assert_alpha_equivalent (id "x") (id "y") true ) ;
 
-  ("id_fn id = id_fn id", fun _ ->
+  ( "id_fn id = id_fn id", fun _ ->
     let tm = Term.app (id_fn "x") (id "x") in
     assert_alpha_equivalent tm tm true ) ;
 
-  ("id_fn id = id_fn' id'", fun _ ->
+  ( "id_fn id = id_fn' id'", fun _ ->
     let tm1 = Term.app (id_fn "x") (id "x") in
     let tm2 = Term.app (id_fn "y") (id "y") in
     assert_alpha_equivalent tm1 tm2 true ) ;
 
-  ("id_fn <> id", fun _ ->
+  ( "id_fn <> id", fun _ ->
     assert_alpha_equivalent (id_fn "x") (id "x") false ) ;
 
-  ("\\A . \\y : A . x = \\A . \\y : A . x", fun _ ->
+  ( "\\A . \\y : A . x = \\A . \\y : A . x", fun _ ->
     let tm = Term.tp_abs "A" (Term.abs "y" a @@ Term.var "x") in
     assert_alpha_equivalent tm tm true ) ;
 
-  ("\\A . \\y : A . x <> \\A . \\x : A . x", fun _ ->
+  ( "\\A . \\y : A . x <> \\A . \\x : A . x", fun _ ->
     let tm1 = Term.tp_abs "A" (Term.abs "y" a @@ Term.var "x") in
     let tm2 = Term.tp_abs "A" (Term.abs "x" a @@ Term.var "x") in
     assert_alpha_equivalent tm1 tm2 false ) ;
 
-  ("\\A . \\y : B . y = \\A . \\y : A . x", fun _ ->
+  ( "\\A . \\y : B . y = \\A . \\y : A . x", fun _ ->
     let tm1 = Term.tp_abs "A" (Term.abs "y" b @@ Term.var "y") in
     let tm2 = Term.tp_abs "A" (Term.abs "x" a @@ Term.var "x") in
     assert_alpha_equivalent tm1 tm2 false ) ;
@@ -92,20 +92,20 @@ let alpha_equivalent_tests = "alpha_equivalent", [
 
 let beta_reduce_tests = "beta_reduce", [
 
-  ("x", fun _ ->
+  ( "x", fun _ ->
     let tm = Term.var "x" in
     assert_beta_reduce tm tm tm ) ;
 
-  ("id", fun _ ->
+  ( "id", fun _ ->
     let tm = id "x" in
     assert_beta_reduce tm tm tm ) ;
 
-  ("id_fn id", fun _ ->
+  ( "id_fn id", fun _ ->
     let tm = id "x" in
     let redux = Term.app (id_fn "x") tm in
     assert_beta_reduce redux tm tm ) ;
 
-  ("\\A . \\x : A . id_fn id", fun _ ->
+  ( "\\A . \\x : A . id_fn id", fun _ ->
     let redux =
       Term.tp_abs "A" (Term.abs "x" a @@ Term.app (id_fn "x") (id "x"))
     in
