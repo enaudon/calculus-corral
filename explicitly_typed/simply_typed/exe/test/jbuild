@@ -9,7 +9,7 @@
   (targets (cases))
   (action (run
     cp -r
-      ${ROOT}/../../exp_typed/stlc/bin/test/cases/
+      ${ROOT}/../../explicitly_typed/simply_typed/exe/test/cases/
       .))))
 
 (alias
