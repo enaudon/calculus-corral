@@ -14,8 +14,6 @@ let func_id = "->"
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
-let cst : Id.t -> t = fun id -> Variable id
-
 let var : Id.t -> t = fun id -> Variable id
 
 let abs : Id.t -> Kind.t -> t -> t =
@@ -167,9 +165,9 @@ let rec to_string tp =
 
 (* Constructors *)
 
-let base = cst (Id.of_string base_id)
-
 let var id = var (Id.of_string id)
+
+let base = var base_id
 
 let abs arg kn body = abs (Id.of_string arg) kn body
 
@@ -182,7 +180,7 @@ let app = app
 let app' fn args =
   List.fold_left (fun fn args -> app fn args) fn args
 
-let func arg res = app' (cst (Id.of_string func_id)) [arg; res]
+let func arg res = app' (var func_id) [arg; res]
 
 let func' args res =
   List.fold_left (fun res arg -> func arg res) res (List.rev args)
