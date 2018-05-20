@@ -1,21 +1,6 @@
 open Simply_typed
 open OUnit
 
-let assert_to_type tm exp =
-  let act =
-    try
-      Term.to_type tm
-    with Failure msg ->
-      assert_failure @@
-        Printf.sprintf "Failure typing '%s'\n%s"
-        (Term.to_string tm)
-        msg
-  in
-  let msg = Printf.sprintf "For term: '%s'" (Term.to_string tm) in
-  let cmp tp1 tp2 = Type.alpha_equivalent tp1 tp2 in
-  let printer tp = Printf.sprintf "'%s'" @@ Type.to_string tp in
-  assert_equal ~msg ~cmp ~printer exp act
-
 let assert_beta_reduce tm exp_shallow exp_deep =
 
   let assert_beta_reduce ?deep tm exp =
@@ -51,25 +36,9 @@ let assert_alpha_equivalent tm1 tm2 exp =
 
 (* Utility functions *)
 
-let id_tp = Type.func Type.base Type.base
-
 let id v = Term.abs v Type.base @@ Term.var v
 
-let id_fn_tp = Type.func id_tp id_tp
-
 let id_fn v = Term.abs v (Type.func Type.base Type.base) (Term.var v)
-
-let to_type_tests = "to_type tests", [
-
-  ("id'", fun _ -> assert_to_type (id "x") id_tp ) ;
-
-  ("id_fn", fun _ -> assert_to_type (id_fn "x") id_fn_tp ) ;
-
-  ("id_fn id", fun _ ->
-    let tm = Term.app (id_fn "x") (id "x") in
-    assert_to_type tm id_tp ) ;
-
-]
 
 let alpha_equivalent_tests = "alpha_equivalent", [
 
@@ -139,7 +108,6 @@ let make_test_suite (name, tests) =
   name >::: List.map mapper tests
 
 let make () = "Term" >::: [
-  make_test_suite to_type_tests ;
   make_test_suite alpha_equivalent_tests ;
   make_test_suite beta_reduce_tests ;
 ]
