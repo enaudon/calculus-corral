@@ -108,8 +108,8 @@ let free_vars : t -> Id.Set.t =
   let rec free_vars fvs tm = match tm.desc with
     | Variable id -> Id.Set.add id fvs
     | Term_abs (arg, _, body) -> Id.Set.del arg @@ free_vars fvs body
-    | Type_abs (_, body) -> free_vars fvs body
     | Term_app (fn, arg) -> free_vars (free_vars fvs fn) arg
+    | Type_abs (_, body) -> free_vars fvs body
     | Type_app (fn, _) -> free_vars fvs fn
   in
   free_vars Id.Set.empty
@@ -128,14 +128,12 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
       | Variable _ ->
         tm
       | Term_abs (arg, tp, body) ->
-        abs loc arg
-          (Type.subst fvs (Id.Map.singleton id tp') tp)
-          (subst fvs sub body)
+        abs loc arg (Type.subst fvs sub tp) (subst fvs sub body)
       | Term_app (fn, arg) ->
         app loc (subst fvs sub fn) (subst fvs sub arg)
       | Type_abs (arg, body) when Id.Set.mem arg fvs ->
         let arg' = Id.fresh () in
-        let sub' = Id.Map.add arg (Type.var (Id.to_string arg')) sub in
+        let sub' = Id.Map.add arg (Type.var @@ Id.to_string arg') sub in
         tp_abs loc arg' @@ subst (Id.Set.add arg' fvs) sub' body
       | Type_abs (arg, body) ->
         tp_abs loc arg @@

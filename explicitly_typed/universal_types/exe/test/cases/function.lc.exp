@@ -15,7 +15,7 @@ arg_swap
   = A . B . C . f : A -> B -> C . x : B . y : A . f y x ;
 rev_app'
   : forall A . forall B . A -> (A -> B) -> B
-  = A . B . x : B . y : A -> B . y x ;
+  = A . B . x : A . y : A -> B . y x ;
 id forall A . A -> A id
   : forall A . A -> A
   = A . x : A . x ;
