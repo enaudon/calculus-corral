@@ -78,8 +78,8 @@ atom_typo :
 
 term :
   | comp_term                     { $1 }
-  | B_SLASH LOWER_ID COLON typo PERIOD term   { abs $2 $4 $6 }
   | B_SLASH UPPER_ID PERIOD term  { tp_abs $2 $4 }
+  | B_SLASH LOWER_ID COLON typo PERIOD term   { abs $2 $4 $6 }
 
 comp_term :
   | atom_term                     { $1 }
