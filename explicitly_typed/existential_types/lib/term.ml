@@ -112,7 +112,7 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
               (Type.to_string tm_tp)
     | Unpack (tp_id, tm_id, pack, body) ->
       let pack_tp = to_type tp_bvs kn_env tp_env pack in
-      let _, pack_tp_tp =
+      let pack_tp_tv, pack_tp_tp =
         try
           Type.get_exists @@
             Type.beta_reduce ~deep:() ~env:tp_env pack_tp
@@ -122,11 +122,25 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
               "expected existential type; found '%s'"
               (Type.to_string pack_tp)
       in
-      to_type
-        (Id.Set.add tp_id tp_bvs)
-        (Id.Map.add tp_id Kind.base kn_env)
-        (Id.Map.add tm_id pack_tp_tp tp_env)
-        body
+      let pack_tp_tp' =
+        Type.subst
+          tp_bvs
+          (Id.Map.singleton pack_tp_tv (Type.var @@ Id.to_string tp_id))
+          pack_tp_tp
+      in
+      let res_tp =
+        to_type
+          (Id.Set.add tp_id tp_bvs)
+          (Id.Map.add tp_id Kind.base kn_env)
+          (Id.Map.add tm_id pack_tp_tp' tp_env)
+          body
+      in
+      if Id.Set.mem tp_id @@ Type.free_vars res_tp then
+        error body.loc "to_type" @@
+          Printf.sprintf
+            "type '%s' would escape it's scope"
+            (Id.to_string tp_id);
+      res_tp
   in
   to_type Id.Set.empty (fst env) (snd env)
 
