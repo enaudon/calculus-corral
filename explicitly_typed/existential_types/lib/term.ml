@@ -343,4 +343,4 @@ let pack ?(loc = Loc.dummy) tp1 tm tp2 =
   pack loc tp1 tm tp2
 
 let unpack ?(loc = Loc.dummy) tp_id tm_id pack body =
-  unpack loc tp_id  tm_id pack body
+  unpack loc (Id.of_string tp_id) (Id.of_string tm_id) pack body

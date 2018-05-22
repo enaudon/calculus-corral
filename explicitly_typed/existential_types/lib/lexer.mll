@@ -35,11 +35,17 @@ rule prog = parse
   | "*"                               { Parser.ASTERIKS }
   | "\\"                              { Parser.B_SLASH }
   | "."                               { Parser.PERIOD }
+  | ","                               { Parser.COMMA }
   | ":"                               { Parser.COLON }
   | ";"                               { Parser.SEMICOLON }
   | "="                               { Parser.EQ }
   | "("                               { Parser.O_PAREN }
   | ")"                               { Parser.C_PAREN }
+  | "as"                              { Parser.AS }
+  | "exists"                          { Parser.EXISTS }
+  | "in"                              { Parser.IN }
+  | "pack"                            { Parser.PACK }
+  | "unpack"                          { Parser.UNPACK }
   | lower_id as id                    { Parser.LOWER_ID id }
   | upper_id as id                    { Parser.UPPER_ID id }
   | eof                               { Parser.EOF }

@@ -34,8 +34,7 @@ val pack : ?loc : Location.t -> Type.t -> t -> Type.t -> t
   [unpack tp_id tm_id pack body] constructs a term of the form
   [unpack tp_id, tm_id = pack in body].
  *)
-val unpack :
-  ?loc : Location.t -> Identifier.t -> Identifier.t -> t -> t -> t
+val unpack : ?loc : Location.t -> string -> string -> t -> t -> t
 
 (** {1 Typing} *)
 
