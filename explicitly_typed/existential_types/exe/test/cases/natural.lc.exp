@@ -82,3 +82,18 @@ fst (pair zero one)
 snd (pair zero one)
   : (* -> *) -> * -> *
   = s : * -> * . z : * . s z ;
+NatBinOp
+  : *
+  = ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> * ;
+NatBinOpPair
+  : *
+  = ((((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> * ;
+op_pair
+  : NatBinOp -> NatBinOp -> (NatBinOp -> NatBinOp -> NatBinOp) -> ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *
+  = m : NatBinOp . n : NatBinOp . p : NatBinOp -> NatBinOp -> NatBinOp . p m n ;
+nat_ops
+  : exists A . (A -> A -> A) -> A
+  = pack NatBinOp, p : NatBinOp -> NatBinOp -> NatBinOp . p (m : Nat . n : Nat . s : * -> * . z : * . m s (n s z)) (m : Nat . n : Nat . s : * -> * . m (n s)) : exists A . (A -> A -> A) -> A ;
+nat_ops'
+  : exists A . (A -> A -> A) -> A
+  = pack NatBinOp, p : NatBinOp -> NatBinOp -> NatBinOp . p (m : Nat . n : Nat . s : * -> * . m (n s)) (m : Nat . n : Nat . s : * -> * . z : * . m s (n s z)) : exists A . (A -> A -> A) -> A ;

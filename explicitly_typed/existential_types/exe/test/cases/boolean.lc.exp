@@ -31,3 +31,9 @@ fst (pair fls tru)
 snd (pair fls tru)
   : * -> * -> *
   = x : * . y : * . x ;
+bool_lits
+  : exists A . (A -> A -> A) -> A
+  = pack Bool, p : Bool -> Bool -> Bool . p (x : * . y : * . y) (x : * . y : * . x) : exists A . (A -> A -> A) -> A ;
+bool_lits'
+  : exists A . (A -> A -> A) -> A
+  = pack Bool, p : Bool -> Bool -> Bool . p (x : * . y : * . x) (x : * . y : * . y) : exists A . (A -> A -> A) -> A ;

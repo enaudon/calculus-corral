@@ -31,7 +31,7 @@ let parse_cmd_args () =
 
 let _ =
   let repl_exe, case_dir = parse_cmd_args () in
-  let test_suite = "type_operators" >::: [
+  let test_suite = "existential_types" >::: [
       Test_term.make () ;
       Test_repl.make repl_exe case_dir ;
   ] in

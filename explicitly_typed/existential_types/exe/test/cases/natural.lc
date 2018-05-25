@@ -58,3 +58,25 @@ pair zero one ;
 fst (pair zero one) ;
 
 snd (pair zero one) ;
+
+NatBinOp = Nat -> Nat -> Nat ;
+
+NatBinOpPair = (NatBinOp -> NatBinOp -> NatBinOp) -> NatBinOp ;
+
+op_pair =
+  \m : NatBinOp .
+  \n : NatBinOp .
+  \p : NatBinOp -> NatBinOp -> NatBinOp .
+    p m n ;
+
+nat_ops = pack NatBinOp, op_pair add mul as exists A . (A -> A -> A) -> A ;
+
+nat_ops' =
+  unpack T, ops = nat_ops in
+  pack
+    T,
+    (\x : T . \y : T . \p : T -> T -> T . p x y)
+      ((\p : (T -> T -> T) -> T . p (\f : T . \s : T . s)) ops)
+      ((\p : (T -> T -> T) -> T . p (\f : T . \s : T . f)) ops)
+  as
+  exists A . (A -> A -> A) -> A ;

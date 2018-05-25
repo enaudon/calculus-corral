@@ -26,8 +26,6 @@ let to_kind ?env _ =
 
 (* Transformations *)
 
-(* Transformations *)
-
 let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
   let beta_reduce = beta_reduce ?deep ~env in
   match tp with
