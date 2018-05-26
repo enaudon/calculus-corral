@@ -75,7 +75,7 @@ nat_ops' =
   unpack T, ops = nat_ops in
   pack
     T,
-    (\x : T . \y : T . \p : T -> T -> T . p x y)
+    (\f : T . \s : T . \p : T -> T -> T . p f s)
       ((\p : (T -> T -> T) -> T . p (\f : T . \s : T . s)) ops)
       ((\p : (T -> T -> T) -> T . p (\f : T . \s : T . f)) ops)
   as

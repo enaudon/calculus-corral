@@ -1,8 +1,8 @@
 Bool = forall A . A -> A -> A ;
 
-fls = \A . \x : A . \y : A . y ;
+fls = \A . \t : A . \f : A . f ;
 
-tru = \A . \x : A . \y : A . x ;
+tru = \A . \t : A . \f : A . t ;
 
 not = \p : Bool . p Bool fls tru ;
 
@@ -10,7 +10,7 @@ and = \p : Bool . \q : Bool . p Bool q fls ;
 
 or = \p : Bool . \q : Bool . p  Bool tru q ;
 
-if = \A . \p : Bool . \x : A . \y : A . p A x y ;
+if = \A . \p : Bool . \t : A . \e : A . p A t e ;
 
 not fls ;
 
