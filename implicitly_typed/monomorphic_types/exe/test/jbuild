@@ -1,0 +1,21 @@
+(jbuild_version 1)
+
+(executable
+  ((name test)
+    (libraries (oUnit mono))
+    (flags (-w +A-4 -warn-error +A-4))))
+
+(rule (
+  (targets (cases))
+  (action (run
+    cp -r
+      ${ROOT}/../../implicitly_typed/monomorphic_types/exe/test/cases/
+      .))))
+
+(alias
+  ((name runtest)
+   (deps (test.exe ../repl/repl.exe cases))
+   (action (run
+    ${exe:test.exe}
+      -repl-exe ${exe:../repl/repl.exe}
+      -case-dir ./cases/))))

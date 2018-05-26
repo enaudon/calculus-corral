@@ -25,7 +25,7 @@ module Repl = Language.Repl (struct
 
     include Mono.Term
 
-    let to_type = to_type_pr
+    let to_type = to_type_hm
 
     let beta_reduce ?deep ?env tm =
       ignore deep;

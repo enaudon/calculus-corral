@@ -1,0 +1,78 @@
+zero
+  : _0 -> _1 -> _1
+  = s . z . z ;
+one
+  : (_0 -> _1) -> _0 -> _1
+  = s . z . s z ;
+two
+  : (_0 -> _0) -> _0 -> _0
+  = s . z . s (s z) ;
+three
+  : (_0 -> _0) -> _0 -> _0
+  = s . z . s (s (s z)) ;
+four
+  : (_0 -> _0) -> _0 -> _0
+  = s . z . s (s (s (s z))) ;
+eight
+  : (_0 -> _0) -> _0 -> _0
+  = s . z . s (s (s (s (s (s (s (s z))))))) ;
+succ
+  : ((_0 -> _1) -> _2 -> _0) -> (_0 -> _1) -> _2 -> _1
+  = n . s . z . s (n s z) ;
+add
+  : (_0 -> _1 -> _2) -> (_0 -> _3 -> _1) -> _0 -> _3 -> _2
+  = m . n . s . z . m s (n s z) ;
+mul
+  : (_0 -> _1) -> (_2 -> _0) -> _2 -> _1
+  = m . n . s . m (n s) ;
+if_zero
+  : ((_0 -> _1) -> _2 -> _3) -> (_4 -> _5 -> _2) -> (_4 -> _5 -> _1) -> _4 -> _5 -> _3
+  = m . n . o . s . z . m (x . o s z) (n s z) ;
+succ one
+  : (_0 -> _0) -> _0 -> _0
+  = succ one ;
+add one zero
+  : (_0 -> _1) -> _0 -> _0
+  = add one zero ;
+add one two
+  : (_0 -> _0) -> _0 -> _0
+  = add one two ;
+mul two two
+  : (_0 -> _0) -> _0 -> _0
+  = mul two two ;
+mul two zero
+  : (_0 -> _0) -> _0 -> _0
+  = mul two zero ;
+mul two (mul two two)
+  : (_0 -> _0) -> _0 -> _0
+  = mul two (mul two two) ;
+if_zero zero one two
+  : (_0 -> _0) -> _0 -> _0
+  = if_zero zero one two ;
+if_zero one one two
+  : (_0 -> _0) -> _0 -> _0
+  = if_zero one one two ;
+if_zero two one two
+  : (_0 -> _0) -> _0 -> _0
+  = if_zero two one two ;
+if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
+  : (_0 -> _0) -> _0 -> _0
+  = if_zero (add (mul four four) one) (mul eight two) (add one (add two one)) ;
+pair
+  : _0 -> _1 -> (_0 -> _1 -> _2) -> _2
+  = m . n . p . p m n ;
+fst
+  : ((_0 -> _1 -> _0) -> _2) -> _2
+  = p . p (m . n . m) ;
+snd
+  : ((_0 -> _1 -> _1) -> _2) -> _2
+  = p . p (m . n . n) ;
+pair zero one
+  : (((_0 -> _0) -> _0 -> _0) -> ((_0 -> _0) -> _0 -> _0) -> _1) -> _1
+  = pair zero one ;
+fst (pair zero one)
+  : (_0 -> _0) -> _0 -> _0
+  = fst (pair zero one) ;
+snd (pair zero one)
+  : (_0 -> _0) -> _0 -> _0
+  = snd (pair zero one) ;

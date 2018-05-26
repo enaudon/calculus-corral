@@ -1,0 +1,27 @@
+fls
+  : _0 -> _1 -> _1
+  = x . y . y ;
+tru
+  : _0 -> _1 -> _0
+  = x . y . x ;
+if
+  : (_0 -> _1 -> _2) -> _0 -> _1 -> _2
+  = p . x . y . p x y ;
+pair
+  : _0 -> _1 -> (_0 -> _1 -> _2) -> _2
+  = x . y . p . p x y ;
+fst
+  : ((_0 -> _1 -> _0) -> _2) -> _2
+  = p . p (x . y . x) ;
+snd
+  : ((_0 -> _1 -> _1) -> _2) -> _2
+  = p . p (x . y . y) ;
+pair fls tru
+  : ((_0 -> _1 -> _1) -> (_2 -> _3 -> _2) -> _4) -> _4
+  = pair fls tru ;
+fst (pair fls tru)
+  : _0 -> _1 -> _1
+  = fst (pair fls tru) ;
+snd (pair fls tru)
+  : _0 -> _0 -> _0
+  = snd (pair fls tru) ;
