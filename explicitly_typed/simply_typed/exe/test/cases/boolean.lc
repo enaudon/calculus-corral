@@ -1,22 +1,18 @@
-fls = \t : * . \f : * . f ;
+Bool = * -> * -> * ;
 
-tru = \t : * . \f : * . t ;
+fls = \x : * . \y : * . y ;
 
-if = \p : * -> * -> * . \t : * . \e : * . p t e ;
+tru = \x : * . \y : * . x ;
 
-pair =
-  \f : * -> * -> * .
-  \s : * -> * -> * .
-  \p : (* -> * -> *) -> (* -> * -> *) -> * -> * -> * .
-    p f s ;
+if = \p : Bool . \x : * . \y : * . p x y ;
 
-fst = 
-  \p : ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> * .
-    p (\f : * -> * -> * . \s : * -> * -> * . f) ;
+BoolPair = (Bool -> Bool -> Bool) -> Bool ;
 
-snd = 
-  \p : ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> * .
-    p (\f : * -> * -> * . \s : * -> * -> * . s) ;
+pair = \x : Bool . \y : Bool . \p : Bool -> Bool -> Bool . p x y ;
+
+fst = \p : BoolPair . p (\x : Bool . \y : Bool . x) ;
+
+snd = \p : BoolPair . p (\x : Bool . \y : Bool . y) ;
 
 pair fls tru ;
 

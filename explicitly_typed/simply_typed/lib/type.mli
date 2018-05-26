@@ -8,6 +8,9 @@ type t
 (** [base] is the base type. *)
 val base : t
 
+(** [var id] constructs a type variable identified by [id]. *)
+val var : string -> t
+
 (** [func arg res] constructs a function from [arg] to [res]. *)
 val func : t -> t -> t
 
@@ -40,11 +43,17 @@ val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
 (** {1 Utilities} *)
 
 (**
-  [alpha_equivalent ~beta_env tp1 tp2] determines whether [tp1] and
+  [alpha_equivalent ~beta_env ~env tp1 tp2] determines whether [tp1] and
   [tp2] are equivalent up to renaming of variables.  The optional
-  [beta_env] argument is the beta-reduction environment.
+  argument, [env], specifies the renaming between bound variables, while
+  [beta_env] is the beta-reduction environment.
  *)
-val alpha_equivalent : ?beta_env : t Identifier.Map.t -> t -> t -> bool
+val alpha_equivalent :
+  ?beta_env : t Identifier.Map.t ->
+  ?env : (Identifier.t * Identifier.t) list ->
+  t ->
+  t ->
+  bool
 
 (** [to_string tp] computes a string representation of [tp]. *)
 val to_string : t -> string
