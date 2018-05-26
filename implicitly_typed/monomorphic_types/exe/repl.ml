@@ -1,25 +1,41 @@
-open Mono
+module Repl = Language.Repl (struct
 
-module Id = Identifier
+  module Kind = Mono.Kind
 
-let main () = 
+  module Type = struct
 
-  let rec loop () = 
-    Printf.printf "> %!";
-    let lexbuf = Lexing.from_string (input_line stdin) in
-    begin try
-      let tm = Parser.term Lexer.prog lexbuf in
-      let tp = Term.to_type_pr tm in
-      Printf.printf "%s : %s\n%!"
-        (Term.to_string tm)
-        (Type.to_string tp);
-    with
-      | Parsing.Parse_error -> Printf.printf "Parsing error\n%!"
-      | Failure msg -> Printf.printf "%s\n%!" msg
-    end;
-    loop ()
-  in
+    include Mono.Type
 
-  loop ()
+    let default_env = Identifier.Map.empty
 
-let () = main ()
+    let to_kind ?env _ =
+      ignore env;
+      Kind.base
+
+    let beta_reduce ?deep ?env _ =
+      ignore deep;
+      ignore env;
+      assert false
+
+    let to_string tp = to_string tp
+
+  end
+
+  module Term = struct
+
+    include Mono.Term
+
+    let to_type = to_type_pr
+
+    let beta_reduce ?deep ?env tm =
+      ignore deep;
+      ignore env;
+      tm
+
+  end
+
+  let parse = Mono.Parser.commands Mono.Lexer.prog
+
+end)
+
+let () = Repl.main ()

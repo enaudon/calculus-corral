@@ -13,7 +13,7 @@ and t = {
 
 (* Typing *)
 
-let to_type_hm =
+let to_type_hm ?(env = Id.Map.empty, Id.Map.empty) =
   let rec to_type env tm = match tm.desc with
     | Variable id ->
       begin try Id.Map.find id env with
@@ -43,14 +43,21 @@ let to_type_hm =
       end;
       res_tp
   in
-  to_type Id.Map.empty
+  to_type (snd env)
 
-let rec constrain : Type.t -> t -> Type_constraint.t = fun exp_tp tm ->
+let rec constrain :
+    Type.t Identifier.Map.t -> Type.t -> t -> Type_constraint.t =
+    fun env exp_tp tm ->
   let module TC = Type_constraint in
+  let constrain = constrain env in
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
-      TC.var_eq ~loc id exp_tp
+      begin try
+        TC.type_eq exp_tp @@ Id.Map.find id env
+      with Id.Unbound _ ->
+        TC.var_eq ~loc id exp_tp
+      end
     | Abstraction (arg, body) ->
       TC.exists ~loc @@ fun id1 ->
         let arg_tp = Type.var id1 in
@@ -66,9 +73,10 @@ let rec constrain : Type.t -> t -> Type_constraint.t = fun exp_tp tm ->
           (constrain (Type.func arg_tp exp_tp) fn)
           (constrain arg_tp arg)
 
-let to_type_pr tm =
+let to_type_pr ?(env = Id.Map.empty, Id.Map.empty) tm =
+  ignore env;
   let tp = Type.var @@ Id.fresh () in
-  Type_constraint.solve @@ constrain tp tm;
+  Type_constraint.solve @@ constrain (snd env) tp tm;
   tp
 
 (* Utilities *)

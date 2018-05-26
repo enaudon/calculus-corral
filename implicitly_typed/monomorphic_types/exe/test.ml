@@ -300,8 +300,10 @@ let make_test_suite tests =
         tests
   in
   "Tests" >::: [
-    "Hindley-Milner" >::: List.map (mapper Term.to_type_hm) tests ;
-    "Pottier-Remy" >::: List.map (mapper Term.to_type_pr) tests ;
+    "Hindley-Milner" >:::
+      List.map (mapper (fun tm -> Term.to_type_hm tm)) tests ;
+    "Pottier-Remy" >:::
+      List.map (mapper (fun tm -> Term.to_type_pr tm)) tests ;
   ]
 
 let _ = run_test_tt_main (make_test_suite tests)

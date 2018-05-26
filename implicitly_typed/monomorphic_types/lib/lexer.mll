@@ -1,5 +1,18 @@
 {
 
+module Loc = Location
+
+let get_loc lexbuf =
+  let curr_pos = lexbuf.Lexing.lex_curr_p in
+  Loc.of_lex_pos curr_pos curr_pos
+
+let error lexbuf msg =
+  failwith @@
+    Printf.sprintf "%s %s: %s"
+      (Loc.to_string @@ get_loc lexbuf)
+      __MODULE__
+      msg
+
 let skip_line = Lexing.new_line
 
 let skip_char lexbuf =
@@ -10,20 +23,25 @@ let skip_char lexbuf =
 }
 
 let whitespace = [' ' '\009' '\012']
-let newline = ("\r")?"\n"
+let newline = "\r" ? "\n"
 let id_char =  ['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']
 let lower_id = ['a'-'z'] id_char*
+let upper_id = ['A'-'Z'] id_char*
 
 rule prog = parse
   | whitespace                        { skip_char lexbuf; prog lexbuf }
   | newline                           { skip_line lexbuf; prog lexbuf }
-  | "->"                              { Parser.ARROW }
+  | "->"                              { Parser.S_ARROW }
+  | "\\"                              { Parser.B_SLASH }
   | "."                               { Parser.PERIOD }
   | ";"                               { Parser.SEMICOLON }
+  | "="                               { Parser.EQ }
   | "("                               { Parser.O_PAREN }
   | ")"                               { Parser.C_PAREN }
   | lower_id as id                    { Parser.LOWER_ID id }
-  | _ as c                            { failwith @@
+  | upper_id as id                    { Parser.UPPER_ID id }
+  | eof                               { Parser.EOF }
+  | _ as c                            { error lexbuf @@
                                           Printf.sprintf
-                                            "Lexing error -- unexpected character '%c'"
+                                            "unexpected character '%c'"
                                             c }
