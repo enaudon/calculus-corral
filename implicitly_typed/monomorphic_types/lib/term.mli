@@ -44,5 +44,12 @@ val to_type_pr :
 
 (** {1 Utilities} *)
 
+(**
+  [beta_reduce tm] evaluates any applications in [tm] under [env]. If
+  the [deep] argument is passed, then [beta_reduce] will evaluate the
+  body of abstractions.
+ *)
+val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
+
 (** [to_string tm] computes a string representation of [tm]. *)
 val to_string : t -> string

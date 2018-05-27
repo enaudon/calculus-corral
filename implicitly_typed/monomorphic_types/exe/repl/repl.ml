@@ -27,11 +27,6 @@ module Repl = Language.Repl (struct
 
     let to_type = to_type_hm
 
-    let beta_reduce ?deep ?env tm =
-      ignore deep;
-      ignore env;
-      tm
-
   end
 
   let parse = Mono.Parser.commands Mono.Lexer.prog

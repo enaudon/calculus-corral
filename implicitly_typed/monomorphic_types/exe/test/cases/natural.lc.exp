@@ -30,34 +30,34 @@ if_zero
   = m . n . o . s . z . m (x . o s z) (n s z) ;
 succ one
   : (_0 -> _0) -> _0 -> _0
-  = succ one ;
+  = s . z . s (s z) ;
 add one zero
   : (_0 -> _1) -> _0 -> _0
-  = add one zero ;
+  = s . z . s z ;
 add one two
   : (_0 -> _0) -> _0 -> _0
-  = add one two ;
+  = s . z . s (s (s z)) ;
 mul two two
   : (_0 -> _0) -> _0 -> _0
-  = mul two two ;
+  = s . z . s (s (s (s z))) ;
 mul two zero
   : (_0 -> _0) -> _0 -> _0
-  = mul two zero ;
+  = s . z . z ;
 mul two (mul two two)
   : (_0 -> _0) -> _0 -> _0
-  = mul two (mul two two) ;
+  = s . z . s (s (s (s (s (s (s (s z))))))) ;
 if_zero zero one two
   : (_0 -> _0) -> _0 -> _0
-  = if_zero zero one two ;
+  = s . z . s z ;
 if_zero one one two
   : (_0 -> _0) -> _0 -> _0
-  = if_zero one one two ;
+  = s . z . s (s z) ;
 if_zero two one two
   : (_0 -> _0) -> _0 -> _0
-  = if_zero two one two ;
+  = s . z . s (s z) ;
 if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
   : (_0 -> _0) -> _0 -> _0
-  = if_zero (add (mul four four) one) (mul eight two) (add one (add two one)) ;
+  = s . z . s (s (s (s z))) ;
 pair
   : _0 -> _1 -> (_0 -> _1 -> _2) -> _2
   = m . n . p . p m n ;
@@ -69,10 +69,10 @@ snd
   = p . p (m . n . n) ;
 pair zero one
   : (((_0 -> _0) -> _0 -> _0) -> ((_0 -> _0) -> _0 -> _0) -> _1) -> _1
-  = pair zero one ;
+  = p . p (s . z . z) (s . z . s z) ;
 fst (pair zero one)
   : (_0 -> _0) -> _0 -> _0
-  = fst (pair zero one) ;
+  = s . z . z ;
 snd (pair zero one)
   : (_0 -> _0) -> _0 -> _0
-  = snd (pair zero one) ;
+  = s . z . s z ;

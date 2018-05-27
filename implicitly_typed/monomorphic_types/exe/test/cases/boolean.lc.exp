@@ -18,10 +18,10 @@ snd
   = p . p (x . y . y) ;
 pair fls tru
   : ((_0 -> _1 -> _1) -> (_2 -> _3 -> _2) -> _4) -> _4
-  = pair fls tru ;
+  = p . p (x . y . y) (x . y . x) ;
 fst (pair fls tru)
   : _0 -> _1 -> _1
-  = fst (pair fls tru) ;
+  = x . y . y ;
 snd (pair fls tru)
   : _0 -> _0 -> _0
-  = snd (pair fls tru) ;
+  = x . y . x ;
