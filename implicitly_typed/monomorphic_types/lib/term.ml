@@ -21,39 +21,33 @@ let app loc fn arg = { desc = Application (fn, arg); loc }
 
 (* Typing *)
 
-let to_type_hm ?(env = Id.Map.empty, Id.Map.empty) =
+let to_type_hm ?(env = Id.Map.empty, Id.Map.empty) tm =
 
-  let rec to_type env tm = match tm.desc with
+  let rec to_type env exp_tp tm = match tm.desc with
     | Variable id ->
-      begin try Id.Map.find id env with
+      let tp = try Id.Map.find id env with
         | Id.Unbound id ->
           failwith @@
             Printf.sprintf
               "%s: Undefined identifier '%s'\n%!"
               (Loc.to_string tm.loc)
               (Id.to_string id)
-      end
+      in
+      Type.unify tp exp_tp
     | Abstraction (arg, body) ->
       let arg_tp = Type.var @@ Id.fresh () in
-      let body_tp = to_type (Id.Map.add arg arg_tp env) body in
-      Type.func arg_tp body_tp
+      let body_tp = Type.var @@ Id.fresh () in
+      to_type (Id.Map.add arg arg_tp env) body_tp body;
+      Type.unify exp_tp @@ Type.func arg_tp body_tp
     | Application (fn, arg) ->
-      let res_tp = Type.var @@ Id.fresh () in
-      let fn_tp = to_type env fn in
-      let arg_tp = to_type env arg in
-      begin try Type.unify fn_tp @@ Type.func arg_tp res_tp with
-        | Type.Occurs (id, tp) ->
-          failwith @@
-            Printf.sprintf
-              "%s: Occurs check failed -- '%s' occurs in '%s'"
-              (Loc.to_string tm.loc)
-              (Id.to_string id)
-              (Type.to_string tp)
-      end;
-      res_tp
+      let tp = Type.var @@ Id.fresh () in
+      to_type env (Type.func tp exp_tp) fn;
+      to_type env tp arg
   in
 
-  to_type (snd env)
+  let tp = Type.var @@ Id.fresh () in
+  to_type (snd env) tp tm;
+  tp
 
 let to_type_pr ?(env = Id.Map.empty, Id.Map.empty) tm =
 
@@ -65,7 +59,7 @@ let to_type_pr ?(env = Id.Map.empty, Id.Map.empty) tm =
     match tm.desc with
       | Variable id ->
         begin try
-          TC.type_eq ~loc exp_tp @@ Id.Map.find id env
+          TC.type_eq ~loc (Id.Map.find id env) exp_tp
         with Id.Unbound _ ->
           TC.var_eq ~loc id exp_tp
         end
