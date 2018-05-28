@@ -22,6 +22,7 @@ let app loc fn arg = { desc = Application (fn, arg); loc }
 (* Typing *)
 
 let to_type_hm ?(env = Id.Map.empty, Id.Map.empty) =
+
   let rec to_type env tm = match tm.desc with
     | Variable id ->
       begin try Id.Map.find id env with
@@ -40,7 +41,7 @@ let to_type_hm ?(env = Id.Map.empty, Id.Map.empty) =
       let res_tp = Type.var @@ Id.fresh () in
       let fn_tp = to_type env fn in
       let arg_tp = to_type env arg in
-      begin try Type.unify fn_tp (Type.func arg_tp res_tp) with
+      begin try Type.unify fn_tp @@ Type.func arg_tp res_tp with
         | Type.Occurs (id, tp) ->
           failwith @@
             Printf.sprintf
@@ -51,40 +52,41 @@ let to_type_hm ?(env = Id.Map.empty, Id.Map.empty) =
       end;
       res_tp
   in
+
   to_type (snd env)
 
-let rec constrain :
-    Type.t Identifier.Map.t -> Type.t -> t -> Type_constraint.t =
-    fun env exp_tp tm ->
-  let module TC = Type_constraint in
-  let constrain = constrain env in
-  let loc = tm.loc in
-  match tm.desc with
-    | Variable id ->
-      begin try
-        TC.type_eq exp_tp @@ Id.Map.find id env
-      with Id.Unbound _ ->
-        TC.var_eq ~loc id exp_tp
-      end
-    | Abstraction (arg, body) ->
-      TC.exists ~loc @@ fun id1 ->
-        let arg_tp = Type.var id1 in
-        TC.exists (fun id2 ->
-          let body_tp = Type.var id2 in
-          TC.conj
-            (TC.def arg arg_tp @@ constrain body_tp body)
-            (TC.type_eq exp_tp @@ Type.func arg_tp body_tp))
-    | Application (fn, arg) ->
-      TC.exists ~loc @@ fun id ->
-        let arg_tp = Type.var id in
-        TC.conj
-          (constrain (Type.func arg_tp exp_tp) fn)
-          (constrain arg_tp arg)
-
 let to_type_pr ?(env = Id.Map.empty, Id.Map.empty) tm =
-  ignore env;
+
+  let module TC = Type_constraint in
+
+  let rec constrain env exp_tp tm =
+    let constrain = constrain env in
+    let loc = tm.loc in
+    match tm.desc with
+      | Variable id ->
+        begin try
+          TC.type_eq ~loc exp_tp @@ Id.Map.find id env
+        with Id.Unbound _ ->
+          TC.var_eq ~loc id exp_tp
+        end
+      | Abstraction (arg, body) ->
+        TC.exists ~loc @@ fun id1 ->
+          let arg_tp = Type.var id1 in
+          TC.exists (fun id2 ->
+            let body_tp = Type.var id2 in
+            TC.conj
+              (TC.def arg arg_tp @@ constrain body_tp body)
+              (TC.type_eq exp_tp @@ Type.func arg_tp body_tp))
+      | Application (fn, arg) ->
+        TC.exists ~loc @@ fun id ->
+          let arg_tp = Type.var id in
+          TC.conj
+            (constrain (Type.func arg_tp exp_tp) fn)
+            (constrain arg_tp arg)
+  in
+
   let tp = Type.var @@ Id.fresh () in
-  Type_constraint.solve @@ constrain (snd env) tp tm;
+  TC.solve @@ constrain (snd env) tp tm;
   tp
 
 (* Utilities *)

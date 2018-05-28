@@ -30,5 +30,8 @@ val solve : t -> unit
 
 (** {1 Utilities} *)
 
-(** [to_string c] computes a string representation of [c]. *)
-val to_string : t -> string
+(**
+  [to_string tp] computes a string representation of [c].  Unless
+  [no_simp] is passed, the types in [c] are simplified first.
+ *)
+val to_string : ?no_simp : unit -> t -> string

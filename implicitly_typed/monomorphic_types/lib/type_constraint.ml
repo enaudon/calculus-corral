@@ -45,13 +45,14 @@ let solve =
 
 (* Utilities *)
 
-let rec to_string =
+let rec to_string ?no_simp =
+  let type_to_string = Type.to_string ?no_simp in
   let to_paren_string c = Printf.sprintf "(%s)" (to_string c) in
   fun c -> match c with
     | Variable_equality (id, tp) ->
-      Printf.sprintf "%s = %s" (Id.to_string id) (Type.to_string tp)
+      Printf.sprintf "%s = %s" (Id.to_string id) (type_to_string tp)
     | Type_equality (lhs, rhs) ->
-      Printf.sprintf "%s = %s" (Type.to_string lhs) (Type.to_string rhs)
+      Printf.sprintf "%s = %s" (type_to_string lhs) (type_to_string rhs)
     | Conjunction (lhs, rhs) ->
       let rec to_string' c = match c with
         | Variable_equality _
@@ -70,7 +71,7 @@ let rec to_string =
     | Definition (id, tp, c) ->
       Printf.sprintf "def %s = %s in %s"
         (Id.to_string id)
-        (Type.to_string tp)
+        (type_to_string tp)
         (to_string c)
     | Localized (_, c) ->
       to_string c
