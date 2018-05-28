@@ -1,3 +1,9 @@
+type type_inference_algorithm =
+  | Hindley_milner
+  | Pottier_remy
+
+let type_inference_algorithm = ref Hindley_milner
+
 module Repl = Language.Repl (struct
 
   module Kind = Mono.Kind
@@ -25,11 +31,27 @@ module Repl = Language.Repl (struct
 
     include Mono.Term
 
-    let to_type = to_type_hm
+    let to_type ?env tm = match !type_inference_algorithm with
+      | Hindley_milner -> to_type_hm ?env tm
+      | Pottier_remy -> to_type_pr ?env tm
 
   end
 
   let parse = Mono.Parser.commands Mono.Lexer.prog
+
+  let arg_specs = [
+    ( "--type-inference-algorithm",
+      Arg.String ( fun str -> match str with
+        | "hindley-milner" | "hm" ->
+          type_inference_algorithm := Hindley_milner
+        | "pottier-remy" | "pr" ->
+          type_inference_algorithm := Pottier_remy
+        | _ ->
+          Printf.eprintf "Unknown type inference algorithm \"%s\"" str;
+          exit (-1)
+      ),
+      "Select the algorithm for type inference." ) ;
+  ]
 
 end)
 

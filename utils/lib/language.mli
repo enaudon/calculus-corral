@@ -32,13 +32,16 @@ module type Sig = sig
       t ->
       Type.t
 
-    val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
+    val beta_reduce :
+      ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
 
     val to_string : t -> string
 
   end
 
   val parse : Lexing.lexbuf -> (Type.t, Term.t) Command.t list
+
+  val arg_specs : (Arg.key * Arg.spec * Arg.doc) list
 
 end
 

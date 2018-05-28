@@ -3,6 +3,7 @@ module Repl = Language.Repl (struct
   module Type = Simply_typed.Type
   module Term = Simply_typed.Term
   let parse = Simply_typed.Parser.commands Simply_typed.Lexer.prog
+  let arg_specs = []
 end)
 
 let () = Repl.main ()

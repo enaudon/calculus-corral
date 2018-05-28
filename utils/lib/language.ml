@@ -25,36 +25,38 @@ module type Sig = sig
 
   val parse : Lexing.lexbuf -> (Type.t, Term.t) Command.t list
 
+  val arg_specs : (Arg.key * Arg.spec * Arg.doc) list
+
 end
 
 module Repl (Input : Sig) = struct
 
   open Input
-  
+
   type mode =
     | Repl
     | File of string list
-  
+
   let mode = ref Repl
-  
+
   let deep = ref None
-  
+
   let parse_cmd_args () =
-    let specs = [
-      ("--deep-beta-reduction", Arg.Unit (fun () -> deep := Some ()),
-        "Beta-reduce within the body of abstractions.") ;
+    let default_specs = [
+      ( "--deep-beta-reduction", Arg.Unit (fun () -> deep := Some ()),
+        "Beta-reduce within the body of abstractions." ) ;
     ] in
     let parse_file f = match !mode with
       | Repl -> mode := File [f]
       | File fs -> mode := File (f :: fs)
     in
     let usage_msg = Printf.sprintf "Usage: %s [file]" Sys.argv.(0) in
-    Arg.parse specs parse_file usage_msg
-  
+    Arg.parse (arg_specs @ default_specs) parse_file usage_msg
+
   let evaluate kn_env tp_env vl_env lexbuf =
-  
+
     let deep = !deep in
-  
+
     let evaluate_command (kn_env, tp_env, vl_env) cmd = match cmd with
       | Command.Bind_type (id, tp) ->
         let kn = Type.to_kind ~env:kn_env tp in
@@ -81,7 +83,7 @@ module Repl (Input : Sig) = struct
           (Term.to_string vl);
         kn_env, tp_env, vl_env
     in
-  
+
     try
       List.fold_left
         evaluate_command
@@ -89,16 +91,16 @@ module Repl (Input : Sig) = struct
         (parse lexbuf)
     with
       | Parsing.Parse_error ->
-        Printf.printf "Parser: error\n%!";
+        Printf.eprintf "Parser: error\n%!";
         exit (-1)
       | Failure msg ->
-        Printf.printf "%s\n%!" msg;
+        Printf.eprintf "%s\n%!" msg;
         exit (-1)
-  
+
   let main () =
-  
+
     parse_cmd_args ();
-  
+
     match !mode with
       | Repl ->
         let rec eval_phrase kn_env tp_env vl_env =
