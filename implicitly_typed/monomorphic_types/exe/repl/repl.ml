@@ -2,7 +2,7 @@ type type_inference_algorithm =
   | Hindley_milner
   | Pottier_remy
 
-let type_inference_algorithm = ref Hindley_milner
+let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
