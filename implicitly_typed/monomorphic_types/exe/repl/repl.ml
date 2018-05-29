@@ -6,11 +6,11 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Kind = Mono.Kind
+  module Kind = Monomorphic_types.Kind
 
   module Type = struct
 
-    include Mono.Type
+    include Monomorphic_types.Type
 
     let default_env = Identifier.Map.empty
 
@@ -29,7 +29,7 @@ module Repl = Language.Repl (struct
 
   module Term = struct
 
-    include Mono.Term
+    include Monomorphic_types.Term
 
     let to_type ?env tm = match !type_inference_algorithm with
       | Hindley_milner -> to_type_hm ?env tm
@@ -37,7 +37,8 @@ module Repl = Language.Repl (struct
 
   end
 
-  let parse = Mono.Parser.commands Mono.Lexer.prog
+  let parse =
+    Monomorphic_types.Parser.commands Monomorphic_types.Lexer.prog
 
   let arg_specs = [
     ( "--type-inference-algorithm",
