@@ -1,22 +1,24 @@
-type 'a repr = {
-  repr : 'a ;
-  weight : int ;
-} 
-
 type 'a t = 'a desc ref
 
 and 'a desc =
-  | Repr of 'a repr
+
+  (*
+    A set's representative element.  The first argument is the set's
+    data, and the second is the set's weight.
+   *)
+  | Repr of 'a * int
+
+  (* A link to another element in the same set. *)
   | Link of 'a t
 
-let singleton repr = ref @@ Repr { repr; weight = 1 }
+let singleton data = ref @@ Repr (data, 1)
 
 (*
   [repr x] computes the representative element of the set containing the
-  element [x] and points [x] directly at this element.  In the process
-  of traversing the links from [x] to it's representative element,
-  [repr] performs path compression, pointing each link along the path
-  directly to the representative element.
+  element [x].  In the process of traversing the links from [x] to it's
+  representative element, [repr] performs path compression, pointing
+  each link along the path, including [x], directly to the
+  representative element.
  *)
 let rec repr : 'a t -> 'a t = fun x -> match !x with
   | Link y ->
@@ -27,7 +29,7 @@ let rec repr : 'a t -> 'a t = fun x -> match !x with
     x
 
 let rec find x = match !x with
-  | Repr { repr; _ } -> repr
+  | Repr (data, _) -> data
   | Link _ -> find @@ repr x
 
 (*
@@ -35,17 +37,17 @@ let rec find x = match !x with
   representative element of [x]'s set.  The smaller set--i.e. the one
   with the lower weight--is always merged into the larger one.  This
   ensures that the lengths of the paths in the resulting set remain
-  logarithmic in terms of the size of the set.
+  logarithmic with respect to the size of the set.
  *)
 let rec merge x y = match !x, !y with
-  | Repr { repr; weight = x_weight }, Repr { weight = y_weight; _ } ->
+  | Repr (data, x_weight), Repr (_, y_weight) ->
     let weight = x_weight + y_weight in
     if x_weight >= y_weight then (
       y := Link x;
-      x := Repr { repr; weight }
+      x := Repr (data, weight)
     ) else (
       x := Link y;
-      y := Repr { repr; weight }
+      y := Repr (data, weight)
     )
   | Link _, _ ->
     merge (repr x) y
@@ -53,5 +55,5 @@ let rec merge x y = match !x, !y with
     merge x (repr y)
 
 let rec update x data = match !x with
-  | Repr { weight; _ } -> x := Repr { repr = data; weight }
+  | Repr (_, weight) -> x := Repr (data, weight)
   | Link _ -> update (repr x) data

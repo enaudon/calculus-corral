@@ -1,4 +1,4 @@
-(** Disjoint-Set.
+(** Disjoint-set
 
   The disjoint-set data structure tracks a collection of non-overlapping
   sets of elements.  Each set has data associated with it, which known
@@ -9,7 +9,7 @@
 
 (** {1 Types} *)
 
-(** The type of elements in a disjoint sets. *)
+(** The type of disjoint-sets. *)
 type 'a t
 
 (** {1 Functions} *)
