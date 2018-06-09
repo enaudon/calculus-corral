@@ -22,7 +22,7 @@ module Set : sig
   (** [empty] is the empty set. *)
   val empty : t
 
-  (** [of_list] constructs a set from the elements in [l]. *)
+  (** [of_list l] constructs a set from the elements in [l]. *)
   val of_list : elt list -> t
 
   (** [add id set] extends [set] with [id]. *)
@@ -48,34 +48,44 @@ module Map : sig
   (** [empty] is the empty map. *)
   val empty : 'a t
 
-  (**
-    [singleton id x] constructs a [map] with one binding from [id] to
-    [x].
-   *)
+  (** [singleton id x] constructs a map with [id] bound to [x]. *)
   val singleton : key -> 'a -> 'a t
 
-  (** [add id x map] extends [map] with a binding from [id] to [x]. *)
+  (** [of_list l] constructs a map from the bindings in [l]. *)
+  val of_list : (key * 'a) list -> 'a t
+
+  (** [add id x m] extends [m] with a binding from [id] to [x]. *)
   val add : key -> 'a -> 'a t -> 'a t
 
-  (** [del id map] removes the mapping from [id] from [map]. *)
+  (** [del id m] removes the mapping from [id] from [m]. *)
   val del : key -> 'a t -> 'a t
 
   (**
-    [find id map] computes the value to which [id] is bound in [map].
-    If no such binding exists, [find] raises [Unbound id].
+    [find id m] computes the value to which [id] is bound in [m].  If no
+    such value exists, [find] raises [Unbound id].
    *)
   val find : key -> 'a t -> 'a
 
   (**
-    [find_default x id map] computes the value to which [id] is bound in
-    [map].  If no such binding exists, [find] evaluates to [x].
+    [find_default x id m] computes the value to which [id] is bound in
+    [m].  If no such value exists, [find] evaluates to [x].
    *)
   val find_default : 'a -> key -> 'a t -> 'a
 
-  (**
-    [bindings env] computes a list of the bindings in [env].
-   *)
+  (** [bindings m] computes a list of the bindings in [m]. *)
    val bindings : 'a t -> (key * 'a) list
+
+  (**
+    [map f m] constructs a new map by applying f to each binding in [m].
+   *)
+   val map : ('a -> 'b) -> 'a t -> 'b t
+
+  (**
+    [fold f m init] computes [f kN vN (... (f k0 v0 init)...)], where
+    the [k]'s and [v]'s are the key/value bindings in [m] in increasing
+    order.
+   *)
+   val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 
 end
 

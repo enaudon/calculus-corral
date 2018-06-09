@@ -19,6 +19,9 @@ module Map = struct
 
   include Map.Make (OrdId)
 
+  let of_list l =
+    List.fold_left (fun map (id, v) -> add id v map) empty l
+
   let del = remove
 
   let find_default x id map =
