@@ -41,40 +41,32 @@ let unpack : Loc.t -> Id.t -> Id.t -> t -> t -> t =
 
 (* Typing *)
 
-let to_type ?(env = Type.default_env, Id.Map.empty) =
-  let rec to_type tp_bvs kn_env tp_env tm = match tm.desc with
+let to_type ?(env = Id.Map.empty) =
+  let rec to_type tp_bvs env tm = match tm.desc with
     | Variable id ->
-      begin try Id.Map.find id tp_env with
+      begin try Id.Map.find id env with
         | Id.Unbound id ->
           error tm.loc "to_type" @@
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Abstraction (arg, arg_tp, body) ->
-      let arg_kn = Type.to_kind ~env:kn_env arg_tp in
-      if not (Kind.alpha_equivalent arg_kn Kind.base) then
-        error tm.loc "to_type" @@
-          Printf.sprintf
-            "expected propper type; found '%s'"
-            (Type.to_string arg_tp);
       let body_tp =
-        to_type tp_bvs kn_env (Id.Map.add arg arg_tp tp_env) body
+        to_type tp_bvs (Id.Map.add arg arg_tp env) body
       in
       Type.func arg_tp body_tp
     | Application (fn, arg) ->
-      let fn' = to_type tp_bvs kn_env tp_env fn in
+      let fn' = to_type tp_bvs env fn in
       let fml_arg_tp, res_tp =
         try
-          Type.get_func (Type.beta_reduce ~deep:() ~env:tp_env fn')
+          Type.get_func (Type.beta_reduce ~deep:() ~env fn')
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf
               "expected function type; found '%s'"
               (Type.to_string fn')
       in
-      let act_arg_tp = to_type tp_bvs kn_env tp_env arg in
-      if
-        Type.alpha_equivalent ~beta_env:tp_env act_arg_tp fml_arg_tp
-      then
+      let act_arg_tp = to_type tp_bvs env arg in
+      if Type.alpha_equivalent ~beta_env:env act_arg_tp fml_arg_tp then
         res_tp
       else
         error arg.loc "to_type" @@
@@ -83,26 +75,20 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
               (Type.to_string fml_arg_tp)
               (Type.to_string act_arg_tp)
     | Pack (tp1, tm, tp2) ->
-      let tp2_kn = Type.to_kind ~env:kn_env tp2 in
-      if not (Kind.alpha_equivalent tp2_kn Kind.base) then
-        error tm.loc "to_type" @@
-          Printf.sprintf
-            "expected propper type; found '%s'"
-            (Type.to_string tp2);
       let tp2_tv, tp2_tp =
         try
-          Type.get_exists @@ Type.beta_reduce ~deep:() ~env:tp_env tp2
+          Type.get_exists @@ Type.beta_reduce ~deep:() ~env tp2
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf
               "expected existential type; found '%s'"
               (Type.to_string tp2)
       in
-      let tm_tp = to_type tp_bvs kn_env tp_env tm in
+      let tm_tp = to_type tp_bvs env tm in
       let tp2_tp' =
         Type.subst tp_bvs (Id.Map.singleton tp2_tv tp1) tp2_tp
       in
-      if Type.alpha_equivalent ~beta_env:tp_env tm_tp tp2_tp' then
+      if Type.alpha_equivalent ~beta_env:env tm_tp tp2_tp' then
         tp2
       else
         error tm.loc "to_type" @@
@@ -111,11 +97,10 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
               (Type.to_string tp2_tp')
               (Type.to_string tm_tp)
     | Unpack (tp_id, tm_id, pack, body) ->
-      let pack_tp = to_type tp_bvs kn_env tp_env pack in
+      let pack_tp = to_type tp_bvs env pack in
       let pack_tp_tv, pack_tp_tp =
         try
-          Type.get_exists @@
-            Type.beta_reduce ~deep:() ~env:tp_env pack_tp
+          Type.get_exists @@ Type.beta_reduce ~deep:() ~env pack_tp
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf
@@ -131,8 +116,7 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
       let res_tp =
         to_type
           (Id.Set.add tp_id tp_bvs)
-          (Id.Map.add tp_id Kind.base kn_env)
-          (Id.Map.add tm_id pack_tp_tp' tp_env)
+          (Id.Map.add tm_id pack_tp_tp' env)
           body
       in
       if Id.Set.mem tp_id @@ Type.free_vars res_tp then
@@ -142,7 +126,7 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
             (Id.to_string tp_id);
       res_tp
   in
-  to_type Id.Set.empty (fst env) (snd env)
+  to_type Id.Set.empty env
 
 (* Transformations *)
 

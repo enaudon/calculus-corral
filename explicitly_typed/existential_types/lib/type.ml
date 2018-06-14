@@ -15,15 +15,6 @@ let func arg res = Function (arg, res)
 
 let exis id tp = Existential (id, tp)
 
-(* Kinding *)
-
-let default_env = Id.Map.add (Id.of_string base_id) Kind.base Id.Map.empty
-
-(** There are no type operators, so all types are of kind [*]. *)
-let to_kind ?env _ =
-  ignore env;
-  Kind.base
-
 (* Transformations *)
 
 let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
