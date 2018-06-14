@@ -28,10 +28,7 @@ val app' : ?loc : Location.t -> t -> t list -> t
 (** {1 Typing} *)
 
 (** [to_type ~env tm] computes the type of [tm] under [env]. *)
-val to_type :
-  ?env : (Kind.t Identifier.Map.t * Type.t Identifier.Map.t) ->
-  t ->
-  Type.t
+val to_type : ?env : (Type.t Identifier.Map.t) -> t -> Type.t
 
 (** {1 Transformations} *)
 

@@ -23,14 +23,6 @@ val func' : t list -> t -> t
  *)
 val get_func : t -> t * t
 
-(** {1 Kinding} *)
-
-(** [default_env] is the default typing environment. *)
-val default_env : Kind.t Identifier.Map.t
-
-(** [to_kind tp] computes the kind of [tp] under [env]. *)
-val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
-
 (** {1 Transformations} *)
 
 (**
