@@ -6,6 +6,8 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
+  module Value = Monomorphic_types.Term
+
   module Kind = Monomorphic_types.Kind
 
   module Type = struct
@@ -34,6 +36,8 @@ module Repl = Language.Repl (struct
     let to_type ?env tm = match !type_inference_algorithm with
       | Hindley_milner -> to_type_hm ?env tm
       | Pottier_remy -> to_type_pr ?env tm
+
+    let to_value = beta_reduce
 
   end
 

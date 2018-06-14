@@ -2,6 +2,12 @@ module Id = Identifier
 
 module type Sig = sig
 
+  module Value : sig
+    type t
+    val to_string : t -> string
+  end
+
+
   module Kind : sig
     type t
     val to_string : t -> string
@@ -19,7 +25,8 @@ module type Sig = sig
     type t
     val to_type :
       ?env : (Kind.t Id.Map.t * Type.t Id.Map.t) -> t -> Type.t
-    val beta_reduce : ?deep : unit -> ?env : t Id.Map.t -> t -> t
+    val to_value :
+      ?deep : unit -> ?env : Value.t Id.Map.t -> t -> Value.t
     val to_string : t -> string
   end
 
@@ -68,19 +75,19 @@ module Repl (Input : Sig) = struct
         Id.Map.add id kn kn_env, Id.Map.add id tp' tp_env, vl_env
       | Command.Bind_term (id, tm) ->
         let tp = Term.to_type ~env:(kn_env, tp_env) tm in
-        let vl = Term.beta_reduce ?deep ~env:vl_env tm in
+        let vl = Term.to_value ?deep ~env:vl_env tm in
         Printf.printf "%s\n  : %s\n  = %s ;\n%!"
           (Id.to_string id)
           (Type.to_string tp)
-          (Term.to_string vl);
+          (Value.to_string vl);
         kn_env, Id.Map.add id tp tp_env, Id.Map.add id vl vl_env
       | Command.Eval_term tm ->
         let tp = Term.to_type ~env:(kn_env, tp_env) tm in
-        let vl = Term.beta_reduce ?deep ~env:vl_env tm in
+        let vl = Term.to_value ?deep ~env:vl_env tm in
         Printf.printf "%s\n  : %s\n  = %s ;\n%!"
           (Term.to_string tm)
           (Type.to_string tp)
-          (Term.to_string vl);
+          (Value.to_string vl);
         kn_env, tp_env, vl_env
     in
 

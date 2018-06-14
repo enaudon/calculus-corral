@@ -1,5 +1,13 @@
 module type Sig = sig
 
+  module Value : sig
+
+    type t
+
+    val to_string : t -> string
+
+  end
+
   module Kind : sig
 
     type t
@@ -32,8 +40,8 @@ module type Sig = sig
       t ->
       Type.t
 
-    val beta_reduce :
-      ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
+    val to_value :
+      ?deep : unit -> ?env : Value.t Identifier.Map.t -> t -> Value.t
 
     val to_string : t -> string
 
