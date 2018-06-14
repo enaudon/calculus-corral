@@ -17,7 +17,6 @@ module Repl = Language.Repl (struct
 
     let default_env = Identifier.Map.empty
 
-    (* There are no type operators, so all types are of kind [*]. *)
     let to_kind ?env _ =
       ignore env;
       Kind.Base
