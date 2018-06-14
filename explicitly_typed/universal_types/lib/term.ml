@@ -40,40 +40,32 @@ let tp_app : Loc.t -> t -> Type.t -> t = fun loc fn arg ->
 
 (* Typing *)
 
-let to_type ?(env = Type.default_env, Id.Map.empty) =
-  let rec to_type tp_bvs kn_env tp_env tm = match tm.desc with
+let to_type ?(env = Id.Map.empty) =
+  let rec to_type tp_bvs env tm = match tm.desc with
     | Variable id ->
-      begin try Id.Map.find id tp_env with
+      begin try Id.Map.find id env with
         | Id.Unbound id ->
           error tm.loc "to_type" @@
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Term_abs (arg, arg_tp, body) ->
-      let arg_kn = Type.to_kind ~env:kn_env arg_tp in
-      if not (Kind.alpha_equivalent arg_kn Kind.base) then
-        error tm.loc "to_type" @@
-          Printf.sprintf
-            "expected propper type; found '%s'"
-            (Type.to_string arg_tp);
       let body_tp =
-        to_type tp_bvs kn_env (Id.Map.add arg arg_tp tp_env) body
+        to_type tp_bvs (Id.Map.add arg arg_tp env) body
       in
       Type.func arg_tp body_tp
     | Term_app (fn, arg) ->
-      let fn' = to_type tp_bvs kn_env tp_env fn in
+      let fn' = to_type tp_bvs env fn in
       let fml_arg_tp, res_tp =
         try
-          Type.get_func (Type.beta_reduce ~deep:() ~env:tp_env fn')
+          Type.get_func (Type.beta_reduce ~deep:() ~env fn')
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf
               "expected function type; found '%s'"
               (Type.to_string fn')
       in
-      let act_arg_tp = to_type tp_bvs kn_env tp_env arg in
-      if
-        Type.alpha_equivalent ~beta_env:tp_env act_arg_tp fml_arg_tp
-      then
+      let act_arg_tp = to_type tp_bvs env arg in
+      if Type.alpha_equivalent ~beta_env:env act_arg_tp fml_arg_tp then
         res_tp
       else
         error arg.loc "to_type" @@
@@ -85,12 +77,12 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
       let tp_bvs' = Id.Set.add arg tp_bvs in
       let tv = Type.var @@ Id.to_string arg in
       Type.forall (Id.to_string arg) @@
-        to_type tp_bvs' kn_env (Id.Map.add arg tv tp_env) body
+        to_type tp_bvs' (Id.Map.add arg tv env) body
     | Type_app (fn, arg) ->
-      let fn' = to_type tp_bvs kn_env tp_env fn in
+      let fn' = to_type tp_bvs env fn in
       let tv, tp =
         try
-          Type.get_forall @@ Type.beta_reduce ~deep:() ~env:tp_env fn'
+          Type.get_forall @@ Type.beta_reduce ~deep:() ~env fn'
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf
@@ -99,7 +91,7 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
       in
       Type.subst tp_bvs (Id.Map.singleton tv arg) tp
   in
-  to_type Id.Set.empty (fst env) (snd env)
+  to_type Id.Set.empty env
 
 (* Transformations *)
 
