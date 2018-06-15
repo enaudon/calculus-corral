@@ -8,7 +8,14 @@ module Repl = Language.Repl (struct
 
   module Value = Monomorphic_types.Term
 
-  module Kind = Monomorphic_types.Kind
+  module Kind = struct
+
+    type t =
+      | Base
+
+    let to_string _ = "*"
+
+  end
 
   module Type = struct
 
@@ -18,7 +25,7 @@ module Repl = Language.Repl (struct
 
     let to_kind ?env _ =
       ignore env;
-      Kind.base
+      Kind.Base
 
     let beta_reduce ?deep ?env _ =
       ignore deep;
@@ -33,9 +40,15 @@ module Repl = Language.Repl (struct
 
     include Monomorphic_types.Term
 
-    let to_type ?env tm = match !type_inference_algorithm with
-      | Hindley_milner -> to_type_hm ?env tm
-      | Pottier_remy -> to_type_pr ?env tm
+    let to_type ?env:env_opt tm =
+      let to_type = match !type_inference_algorithm with
+        | Hindley_milner -> to_type_hm
+        | Pottier_remy -> to_type_pr
+      in
+      match env_opt with
+        | None -> to_type tm
+        | Some env -> to_type ~env:(snd env) tm
+
 
     let to_value = beta_reduce
 

@@ -21,7 +21,7 @@ let app loc fn arg = { desc = Application (fn, arg); loc }
 
 (* Typing *)
 
-let to_type_hm ?(env = Id.Map.empty, Id.Map.empty) tm =
+let to_type_hm ?(env = Id.Map.empty) tm =
 
   let rec to_type env exp_tp tm = match tm.desc with
     | Variable id ->
@@ -46,10 +46,10 @@ let to_type_hm ?(env = Id.Map.empty, Id.Map.empty) tm =
   in
 
   let tp = Type.var @@ Id.fresh () in
-  to_type (snd env) tp tm;
+  to_type env tp tm;
   tp
 
-let to_type_pr ?(env = Id.Map.empty, Id.Map.empty) tm =
+let to_type_pr ?(env = Id.Map.empty) tm =
 
   let module TC = Type_constraint in
 
@@ -80,7 +80,7 @@ let to_type_pr ?(env = Id.Map.empty, Id.Map.empty) tm =
   in
 
   let tp = Type.var @@ Id.fresh () in
-  TC.solve @@ constrain (snd env) tp tm;
+  TC.solve @@ constrain env tp tm;
   tp
 
 (* Utilities *)
