@@ -64,21 +64,20 @@ let to_type_pr ?(env = Id.Map.empty) tm =
           TC.var_eq ~loc id exp_tp
         end
       | Abstraction (arg, body) ->
-        TC.exists ~loc @@ fun id1 ->
-          let arg_tp = Type.var id1 in
-          TC.exists (fun id2 ->
-            let body_tp = Type.var id2 in
-            TC.conj
-              (TC.def arg arg_tp @@ constrain body_tp body)
-              (TC.type_eq exp_tp @@ Type.func arg_tp body_tp))
+        let arg_id, body_id = Id.fresh (), Id.fresh () in
+        let arg_tp, body_tp = Type.var arg_id, Type.var body_id in
+        TC.exists' ~loc [ arg_id; body_id ] @@
+          TC.conj
+            (TC.def arg arg_tp @@ constrain body_tp body)
+            (TC.type_eq exp_tp @@ Type.func arg_tp body_tp)
       | Application (fn, arg) ->
-        TC.exists ~loc @@ fun id ->
-          let arg_tp = Type.var id in
+        let arg_id = Id.fresh () in
+        let arg_tp = Type.var arg_id in
+        TC.exists ~loc arg_id @@
           TC.conj
             (constrain (Type.func arg_tp exp_tp) fn)
             (constrain arg_tp arg)
   in
-
   let tp = Type.var @@ Id.fresh () in
   TC.solve @@ constrain env tp tm;
   tp
