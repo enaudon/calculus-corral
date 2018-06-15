@@ -41,7 +41,13 @@ module type Sig = sig
       Type.t
 
     val to_value :
-      ?deep : unit -> ?env : Value.t Identifier.Map.t -> t -> Value.t
+      ?deep : unit ->
+      ?env :
+        ( Value.t Identifier.Map.t *
+          Kind.t Identifier.Map.t *
+          Type.t Identifier.Map.t ) ->
+      t ->
+      Value.t
 
     val to_string : t -> string
 

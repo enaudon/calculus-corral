@@ -26,7 +26,10 @@ module type Sig = sig
     val to_type :
       ?env : (Kind.t Id.Map.t * Type.t Id.Map.t) -> t -> Type.t
     val to_value :
-      ?deep : unit -> ?env : Value.t Id.Map.t -> t -> Value.t
+      ?deep : unit ->
+      ?env : (Value.t Id.Map.t * Kind.t Id.Map.t * Type.t Id.Map.t) ->
+      t ->
+      Value.t
     val to_string : t -> string
   end
 
@@ -75,7 +78,7 @@ module Repl (Input : Sig) = struct
         Id.Map.add id kn kn_env, Id.Map.add id tp' tp_env, vl_env
       | Command.Bind_term (id, tm) ->
         let tp = Term.to_type ~env:(kn_env, tp_env) tm in
-        let vl = Term.to_value ?deep ~env:vl_env tm in
+        let vl = Term.to_value ?deep ~env:(vl_env, kn_env, tp_env) tm in
         Printf.printf "%s\n  : %s\n  = %s ;\n%!"
           (Id.to_string id)
           (Type.to_string tp)
@@ -83,7 +86,7 @@ module Repl (Input : Sig) = struct
         kn_env, Id.Map.add id tp tp_env, Id.Map.add id vl vl_env
       | Command.Eval_term tm ->
         let tp = Term.to_type ~env:(kn_env, tp_env) tm in
-        let vl = Term.to_value ?deep ~env:vl_env tm in
+        let vl = Term.to_value ?deep ~env:(vl_env, kn_env, tp_env) tm in
         Printf.printf "%s\n  : %s\n  = %s ;\n%!"
           (Term.to_string tm)
           (Type.to_string tp)

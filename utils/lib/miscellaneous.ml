@@ -28,3 +28,9 @@ let char_stream_to_string ?(buf_len = 4096) stream =
   let buf = Buffer.create buf_len in
   Stream.iter (Buffer.add_char buf) stream;
   Buffer.contents buf
+
+let fst_of_3 (x, _, _) = x
+
+let snd_of_3 (_, x, _) = x
+
+let thd_of_3 (_, _, x) = x

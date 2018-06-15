@@ -1,3 +1,5 @@
+module Misc = Miscellaneous
+
 module Repl = Language.Repl (struct
 
   module Value = Type_operators.Term
@@ -10,7 +12,9 @@ module Repl = Language.Repl (struct
 
     include Type_operators.Term
 
-    let to_value = beta_reduce
+    let to_value ?deep ?env:env_opt tm = match env_opt with
+      | None -> beta_reduce ?deep tm
+      | Some env -> beta_reduce ?deep ~env:(Misc.fst_of_3 env) tm
 
   end
 

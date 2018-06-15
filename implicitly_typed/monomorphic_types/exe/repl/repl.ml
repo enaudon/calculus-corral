@@ -1,3 +1,5 @@
+module Misc = Miscellaneous
+
 type type_inference_algorithm =
   | Hindley_milner
   | Pottier_remy
@@ -50,7 +52,9 @@ module Repl = Language.Repl (struct
         | Some env -> to_type ~env:(snd env) tm
 
 
-    let to_value = beta_reduce
+    let to_value ?deep ?env:env_opt tm = match env_opt with
+      | None -> beta_reduce ?deep tm
+      | Some env -> beta_reduce ?deep ~env:(Misc.fst_of_3 env) tm
 
   end
 

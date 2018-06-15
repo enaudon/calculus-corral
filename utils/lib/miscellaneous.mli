@@ -13,3 +13,20 @@ val file_to_string : ?buf_len : int -> string -> string
   initial size of the internal buffer used to read [stream].
  *)
 val char_stream_to_string : ?buf_len : int -> char Stream.t -> string
+
+(** {1 Utilities} *)
+
+(**
+  [fst_of_3 x] projects the first element from a three-element tuple.
+ *)
+val fst_of_3 : 'a * 'b * 'c -> 'a
+
+(**
+  [snd_of_3 x] projects the second element from a three-element tuple.
+ *)
+val snd_of_3 : 'a * 'b * 'c -> 'b
+
+(**
+  [thd_of_3 x] projects the third element from a three-element tuple.
+ *)
+val thd_of_3 : 'a * 'b * 'c -> 'c
