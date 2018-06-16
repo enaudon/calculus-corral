@@ -24,102 +24,97 @@ let app loc fn arg = { desc = Application (fn, arg); loc }
 (* Typing *)
 
 (*
-  [infer_hm env tm] computes the types of the variables in [tm] (which
-  is assumed to be closed under [env]), via Algorithm W-style
-  Hindley-Milner type inference.  It constructs an annotated term [tm']
-  which is identical to [tm] except that variables are annotated at
-  introduction, and it [infer] computes the type of [tm].
+  [annotate tm] constructs an term which is identical to [tm] except
+  that abstractions are annotated with types.  [annotate] does not do
+  inference, so the types are simply fresh variables.
  *)
-let infer_hm
-    : Type.t Id.Map.t -> t -> Type.t * (Id.t * Type.t) term
-    = fun env tm ->
-
-  let rec infer env exp_tp tm =
-    let loc = tm.loc in
-    match tm.desc with
-      | Variable id ->
-        let tp = try Id.Map.find id env with
-          | Id.Unbound id ->
-            failwith @@
-              Printf.sprintf
-                "%s: Undefined identifier '%s'\n%!"
-                (Loc.to_string tm.loc)
-                (Id.to_string id)
-        in
-        Type.unify tp exp_tp;
-        var loc id
-      | Abstraction (arg, body) ->
-        let arg_tp = Type.var @@ Id.fresh () in
-        let body_tp = Type.var @@ Id.fresh () in
-        let body' = infer (Id.Map.add arg arg_tp env) body_tp body in
-        Type.unify exp_tp @@ Type.func arg_tp body_tp;
-        abs loc (arg, arg_tp) body'
-      | Application (fn, arg) ->
-        let tp = Type.var @@ Id.fresh () in
-        let fn' = infer env (Type.func tp exp_tp) fn in
-        let arg' = infer env tp arg in
-        app loc fn' arg'
-  in
-
-  let tp = Type.var @@ Id.fresh () in
-  let tm' = infer env tp tm in
-  tp, tm'
-
-let to_type_hm ?(env = Id.Map.empty) tm = fst @@ infer_hm env tm
+let rec annotate : t -> (Id.t * Type.t) term = fun tm ->
+  let loc = tm.loc in
+  match tm.desc with
+    | Variable id ->
+      var loc id
+    | Abstraction (arg, body) ->
+      let tp = Type.var @@ Id.fresh () in
+      abs loc (arg, tp) @@ annotate body
+    | Application (fn, arg) ->
+      app loc (annotate fn) (annotate arg)
 
 (*
-  [infer_pr env tm] computes the types of the variables in [tm] (which
-  is assumed to be closed under [env]), via constraint-based type
-  inference a la Pottier and Remy.  It constructs an annotated term
-  [tm'] which is identical to [tm] except that variables are annotated
-  at introduction, and it [infer] computes the type of [tm].
+  [infer_hm env tp tm] ensures that [tm] has type [tp], via Algorithm
+  W-style Hindley-Milner type inference.  [tm] is assumed to be closed
+  under [env].
+ *)
+let rec infer_hm
+    : Type.t Id.Map.t -> Type.t -> (Id.t * Type.t) term -> unit
+    = fun env exp_tp tm ->
+  match tm.desc with
+    | Variable id ->
+      let tp = try Id.Map.find id env with
+        | Id.Unbound id ->
+          failwith @@
+            Printf.sprintf
+              "%s: Undefined identifier '%s'\n%!"
+              (Loc.to_string tm.loc)
+              (Id.to_string id)
+      in
+      Type.unify tp exp_tp
+    | Abstraction ((arg, arg_tp), body) ->
+      let body_tp = Type.var @@ Id.fresh () in
+      infer_hm (Id.Map.add arg arg_tp env) body_tp body;
+      Type.unify exp_tp @@ Type.func arg_tp body_tp
+    | Application (fn, arg) ->
+      let tp = Type.var @@ Id.fresh () in
+      infer_hm env (Type.func tp exp_tp) fn;
+      infer_hm env tp arg
+
+let to_type_hm ?(env = Id.Map.empty) tm =
+  let tp = Type.var @@ Id.fresh () in
+  infer_hm env tp @@ annotate tm;
+  tp
+
+(*
+  [infer_pr env tp tm] ensures that [tm] has type [tp], via
+  constraint-based type inference a la Pottier and Remy.  [tm] is
+  assumed to be closed under [env].
  *)
 let infer_pr
-    : Type.t Id.Map.t -> t -> Type.t * (Id.t * Type.t) term
-    = fun env tm ->
+    : Type.t Id.Map.t -> Type.t -> (Id.t * Type.t) term -> unit
+    = fun env exp_tp tm ->
 
   let module TC = Type_constraint in
 
-  (*
-    TODO: Find a better way to handle returning constraints and terms.
-   *)
   let rec constrain env exp_tp tm =
     let constrain = constrain env in
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        let tc =
-          try
-            TC.type_eq ~loc (Id.Map.find id env) exp_tp
-          with Id.Unbound _ ->
-            TC.var_eq ~loc id exp_tp
-        in
-        tc, var loc id
-      | Abstraction (arg, body) ->
-        let arg_id, body_id = Id.fresh (), Id.fresh () in
-        let arg_tp, body_tp = Type.var arg_id, Type.var body_id in
-        let body_tc, body' = constrain body_tp body in
-        let tc =
-          TC.exists' ~loc [ arg_id; body_id ] @@
-            TC.conj
-              (TC.def arg arg_tp body_tc)
-              (TC.type_eq exp_tp @@ Type.func arg_tp body_tp)
-        in
-        tc, abs loc (arg, arg_tp) body'
+        begin try
+          TC.type_eq ~loc (Id.Map.find id env) exp_tp
+        with Id.Unbound _ ->
+          TC.var_eq ~loc id exp_tp
+        end
+      | Abstraction ((arg, arg_tp), body) ->
+        let body_id = Id.fresh () in
+        let body_tp = Type.var body_id in
+        TC.exists ~loc body_id @@
+          TC.conj
+            (TC.def arg arg_tp @@ constrain body_tp body)
+            (TC.type_eq exp_tp @@ Type.func arg_tp body_tp)
       | Application (fn, arg) ->
         let arg_id = Id.fresh () in
         let arg_tp = Type.var arg_id in
-        let fn_tc, fn' = constrain (Type.func arg_tp exp_tp) fn in
-        let arg_tc, arg' = constrain arg_tp arg in
-        let tc = TC.exists ~loc arg_id @@ TC.conj fn_tc arg_tc in
-        tc, app loc fn' arg'
+        TC.exists ~loc arg_id @@
+          TC.conj
+            (constrain (Type.func arg_tp exp_tp) fn)
+            (constrain arg_tp arg)
   in
-  let tp = Type.var @@ Id.fresh () in
-  let tc, tm' = constrain env tp tm in
-  TC.solve tc;
-  tp, tm'
 
-let to_type_pr ?(env = Id.Map.empty) tm = fst @@ infer_pr env tm
+  TC.solve @@ constrain env exp_tp tm
+
+let to_type_pr ?(env = Id.Map.empty) tm =
+  let tp = Type.var @@ Id.fresh () in
+  infer_pr env tp @@ annotate tm;
+  tp
 
 (* Utilities *)
 
