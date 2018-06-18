@@ -8,7 +8,13 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Value = Monomorphic_types.Term
+  module Value = struct
+
+    include Monomorphic_types.Term
+
+    let to_string _ = "<value>"
+
+  end
 
   module Kind = struct
 
@@ -52,9 +58,10 @@ module Repl = Language.Repl (struct
         | Some env -> to_type ~env:(snd env) tm
 
 
-    let to_value ?deep ?env:env_opt tm = match env_opt with
-      | None -> beta_reduce ?deep tm
-      | Some env -> beta_reduce ?deep ~env:(Misc.fst_of_3 env) tm
+    let to_value ?deep ?env tm =
+      ignore deep;
+      ignore env;
+      tm
 
   end
 

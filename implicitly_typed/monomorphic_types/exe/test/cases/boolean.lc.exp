@@ -1,27 +1,27 @@
 fls
   : _0 -> _1 -> _1
-  = x . y . y ;
+  = <value> ;
 tru
   : _0 -> _1 -> _0
-  = x . y . x ;
+  = <value> ;
 if
   : (_0 -> _1 -> _2) -> _0 -> _1 -> _2
-  = p . x . y . p x y ;
+  = <value> ;
 pair
   : _0 -> _1 -> (_0 -> _1 -> _2) -> _2
-  = x . y . p . p x y ;
+  = <value> ;
 fst
   : ((_0 -> _1 -> _0) -> _2) -> _2
-  = p . p (x . y . x) ;
+  = <value> ;
 snd
   : ((_0 -> _1 -> _1) -> _2) -> _2
-  = p . p (x . y . y) ;
+  = <value> ;
 pair fls tru
   : ((_0 -> _1 -> _1) -> (_2 -> _3 -> _2) -> _4) -> _4
-  = p . p (x . y . y) (x . y . x) ;
+  = <value> ;
 fst (pair fls tru)
   : _0 -> _1 -> _1
-  = x . y . y ;
+  = <value> ;
 snd (pair fls tru)
   : _0 -> _0 -> _0
-  = x . y . x ;
+  = <value> ;

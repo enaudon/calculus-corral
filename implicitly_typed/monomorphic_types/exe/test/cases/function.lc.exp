@@ -1,15 +1,15 @@
 id
   : _0 -> _0
-  = x . x ;
+  = <value> ;
 app
   : (_0 -> _1) -> _0 -> _1
-  = f . x . f x ;
+  = <value> ;
 rev_app
   : _0 -> (_0 -> _1) -> _1
-  = x . f . f x ;
+  = <value> ;
 compose
   : (_0 -> _1) -> (_2 -> _0) -> _2 -> _1
-  = f . g . x . f (g x) ;
+  = <value> ;
 arg_swap
   : (_0 -> _1 -> _2) -> _1 -> _0 -> _2
-  = f . x . y . f y x ;
+  = <value> ;

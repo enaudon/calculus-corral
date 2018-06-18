@@ -1,78 +1,78 @@
 zero
   : _0 -> _1 -> _1
-  = s . z . z ;
+  = <value> ;
 one
   : (_0 -> _1) -> _0 -> _1
-  = s . z . s z ;
+  = <value> ;
 two
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s z) ;
+  = <value> ;
 three
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s (s z)) ;
+  = <value> ;
 four
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s (s (s z))) ;
+  = <value> ;
 eight
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s (s (s (s (s (s (s z))))))) ;
+  = <value> ;
 succ
   : ((_0 -> _1) -> _2 -> _0) -> (_0 -> _1) -> _2 -> _1
-  = n . s . z . s (n s z) ;
+  = <value> ;
 add
   : (_0 -> _1 -> _2) -> (_0 -> _3 -> _1) -> _0 -> _3 -> _2
-  = m . n . s . z . m s (n s z) ;
+  = <value> ;
 mul
   : (_0 -> _1) -> (_2 -> _0) -> _2 -> _1
-  = m . n . s . m (n s) ;
+  = <value> ;
 if_zero
   : ((_0 -> _1) -> _2 -> _3) -> (_4 -> _5 -> _2) -> (_4 -> _5 -> _1) -> _4 -> _5 -> _3
-  = m . n . o . s . z . m (x . o s z) (n s z) ;
+  = <value> ;
 succ one
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s z) ;
+  = <value> ;
 add one zero
   : (_0 -> _1) -> _0 -> _1
-  = s . z . s z ;
+  = <value> ;
 add one two
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s (s z)) ;
+  = <value> ;
 mul two two
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s (s (s z))) ;
+  = <value> ;
 mul two zero
   : (_0 -> _0) -> _0 -> _0
-  = s . z . z ;
+  = <value> ;
 mul two (mul two two)
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s (s (s (s (s (s (s z))))))) ;
+  = <value> ;
 if_zero zero one two
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s z ;
+  = <value> ;
 if_zero one one two
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s z) ;
+  = <value> ;
 if_zero two one two
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s z) ;
+  = <value> ;
 if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s (s (s (s z))) ;
+  = <value> ;
 pair
   : _0 -> _1 -> (_0 -> _1 -> _2) -> _2
-  = m . n . p . p m n ;
+  = <value> ;
 fst
   : ((_0 -> _1 -> _0) -> _2) -> _2
-  = p . p (m . n . m) ;
+  = <value> ;
 snd
   : ((_0 -> _1 -> _1) -> _2) -> _2
-  = p . p (m . n . n) ;
+  = <value> ;
 pair zero one
   : (((_0 -> _0) -> _0 -> _0) -> ((_0 -> _0) -> _0 -> _0) -> _1) -> _1
-  = p . p (s . z . z) (s . z . s z) ;
+  = <value> ;
 fst (pair zero one)
   : (_0 -> _0) -> _0 -> _0
-  = s . z . z ;
+  = <value> ;
 snd (pair zero one)
   : (_0 -> _0) -> _0 -> _0
-  = s . z . s z ;
+  = <value> ;
