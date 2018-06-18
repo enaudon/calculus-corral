@@ -19,9 +19,7 @@ module Repl = Language.Repl (struct
 
     let default_env = Identifier.Map.empty
 
-    let to_kind ?env _ =
-      ignore env;
-      Kind.Base
+    let to_kind ?env:_ _ = Kind.Base
 
   end
 

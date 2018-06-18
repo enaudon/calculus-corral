@@ -31,14 +31,9 @@ module Repl = Language.Repl (struct
 
     let default_env = Identifier.Map.empty
 
-    let to_kind ?env _ =
-      ignore env;
-      Kind.Base
+    let to_kind ?env:_ _ = Kind.Base
 
-    let beta_reduce ?deep ?env _ =
-      ignore deep;
-      ignore env;
-      assert false
+    let beta_reduce ?deep:_ ?env:_ _ = assert false
 
     let to_string tp = to_string tp
 
@@ -58,10 +53,7 @@ module Repl = Language.Repl (struct
         | Some env -> to_type ~env:(snd env) tm
 
 
-    let to_value ?deep ?env tm =
-      ignore deep;
-      ignore env;
-      tm
+    let to_value ?deep:_ ?env:_ tm = tm
 
   end
 
