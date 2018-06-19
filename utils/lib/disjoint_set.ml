@@ -23,7 +23,7 @@ let singleton data = ref @@ Repr (data, 1)
 let rec repr : 'a t -> 'a t = fun x -> match !x with
   | Link y ->
     let z = repr y in
-    if z != y then x := !z;
+    if z != y then x := !y;
     z
   | Repr _ ->
     x
