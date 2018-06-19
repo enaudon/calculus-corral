@@ -36,10 +36,12 @@ let solve =
             Printf.sprintf
               "Occurs check failed -- '%s' occurs in '%s'"
               (Id.to_string id)
-              (Type.to_string tp)
+              (Type.to_string ~no_simp:() tp)
         | Id.Unbound id ->
           error loc @@
-            Printf.sprintf "Undefined identifier '%s'\n%!" (Id.to_string id)
+            Printf.sprintf
+              "Undefined identifier '%s'\n%!"
+              (Id.to_string id)
   in
   solve Id.Map.empty
 

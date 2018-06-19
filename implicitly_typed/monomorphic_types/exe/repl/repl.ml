@@ -52,7 +52,6 @@ module Repl = Language.Repl (struct
         | None -> to_type tm
         | Some env -> to_type ~env:(snd env) tm
 
-
     let to_value ?deep:_ ?env:_ tm = tm
 
   end

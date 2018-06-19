@@ -14,14 +14,10 @@ val type_eq : ?loc : Location.t -> Type.t -> Type.t -> t
 (** [conj lhs rhs] conjoins of the constraints [lhs] and [rhs].  *)
 val conj : ?loc : Location.t -> t -> t -> t
 
-(**
-  [exists id c] existentially quantifies the identifier [id] in [c].
- *)
+(** [exists id c] existentially quantifies [id] in [c]. *)
 val exists : ?loc : Location.t -> Identifier.t -> t -> t
 
-(**
-  [exists' ids c] existentially quantifies the identifiers [ids] in [c].
- *)
+(** [exists' ids c] existentially quantifies [ids] in [c]. *)
 val exists' : ?loc : Location.t -> Identifier.t list -> t -> t
 
 (** [def id tp c] binds the identifier [id] in the constraint [c]. *)

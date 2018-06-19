@@ -15,6 +15,9 @@ type t = Id.t term
 
 (* Internal utilities *)
 
+let error : Loc.t -> string -> 'a = fun loc msg ->
+  failwith @@ Printf.sprintf "%s: %s" (Loc.to_string loc) msg
+
 let var loc id = { desc = Variable id; loc }
 
 let abs loc arg body = { desc = Abstraction (arg, body); loc }
@@ -47,21 +50,32 @@ let rec annotate : t -> (Id.t * Type.t) term = fun tm ->
 let rec infer_hm
     : Type.t Id.Map.t -> Type.t -> (Id.t * Type.t) term -> unit
     = fun env exp_tp tm ->
+
+  let unify tp1 tp2 =
+    try Type.unify tp1 tp2 with
+      | Type.Occurs (id, tp) ->
+        error tm.loc @@
+          Printf.sprintf
+            "Occurs check failed -- '%s' occurs in '%s'"
+            (Id.to_string id)
+            (Type.to_string ~no_simp:() tp)
+  in
+
   match tm.desc with
     | Variable id ->
       let tp = try Id.Map.find id env with
         | Id.Unbound id ->
-          failwith @@
+          error tm.loc @@
             Printf.sprintf
               "%s: Undefined identifier '%s'\n%!"
               (Loc.to_string tm.loc)
               (Id.to_string id)
       in
-      Type.unify tp exp_tp
+      unify tp exp_tp
     | Abstraction ((arg, arg_tp), body) ->
       let body_tp = Type.var @@ Id.fresh () in
       infer_hm (Id.Map.add arg arg_tp env) body_tp body;
-      Type.unify exp_tp @@ Type.func arg_tp body_tp
+      unify exp_tp @@ Type.func arg_tp body_tp
     | Application (fn, arg) ->
       let tp = Type.var @@ Id.fresh () in
       infer_hm env (Type.func tp exp_tp) fn;
@@ -83,16 +97,11 @@ let infer_pr
 
   let module TC = Type_constraint in
 
-  let rec constrain env exp_tp tm =
-    let constrain = constrain env in
+  let rec constrain exp_tp tm =
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        begin try
-          TC.type_eq ~loc (Id.Map.find id env) exp_tp
-        with Id.Unbound _ ->
-          TC.var_eq ~loc id exp_tp
-        end
+        TC.var_eq ~loc id exp_tp
       | Abstraction ((arg, arg_tp), body) ->
         let body_id = Id.fresh () in
         let body_tp = Type.var body_id in
@@ -109,7 +118,8 @@ let infer_pr
             (constrain arg_tp arg)
   in
 
-  TC.solve @@ constrain env exp_tp tm
+  TC.solve @@
+    Id.Map.fold (fun id -> TC.def id) env (constrain exp_tp tm)
 
 let to_type_pr ?(env = Id.Map.empty) tm =
   let tp = Type.var @@ Id.fresh () in

@@ -22,18 +22,12 @@ val func : t -> t -> t
 (** [func' args res] constructs a function from [args] to [res]. *)
 val func' : t list -> t -> t
 
-(* {1 Inference} *)
+(** {1 Inference} *)
 
 (** [unify tp1 tp2] unifies [tp1] and [tp2]. *)
 val unify : t -> t -> unit
 
 (** {1 Utilities} *)
-
-(**
-  [equals tp1 tp2] evaluates to [true] if [tp1] and [tp2] are equal, or
-  [false] otherwise.
- *)
-val equals : t -> t -> bool
 
 (**
   [simplify tp] replaces each variable in [tp] with the

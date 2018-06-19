@@ -23,48 +23,48 @@ let func : t -> t -> t = fun arg res ->
 
 (* Inference *)
 
-let rec occurs : Id.t -> t -> bool = fun id tp -> match DS.find tp with
-  | Variable id' -> id = id'
-  | Function (arg, res) -> occurs id arg || occurs id res
-
 let rec unify tp1 tp2 =
+
+  let rec occurs id tp = match DS.find tp with
+    | Variable id' -> id = id'
+    | Function (arg, res) -> occurs id arg || occurs id res
+  in
+
   let tp1_desc = DS.find tp1 in
   let tp2_desc = DS.find tp2 in
-  if tp1_desc <> tp2_desc then
-    match tp1_desc, tp2_desc with
-      | Variable id, _ ->
-        if occurs id tp2 then raise_occurs id tp2;
-        DS.merge tp2 tp1
-      | _, Variable id ->
-        if occurs id tp1 then raise_occurs id tp1;
-        DS.merge tp1 tp2
-      | Function (arg1, res1), Function (arg2, res2) ->
-        unify arg1 arg2;
-        unify res1 res2;
-        DS.merge tp1 tp2
+  match tp1_desc, tp2_desc with
+    | Variable id1, Variable id2 when id1 = id2->
+      assert (tp1_desc == tp2_desc)
+    | Variable id, _ ->
+      if occurs id tp2 then raise_occurs id tp2;
+      DS.merge tp2 tp1
+    | _, Variable id ->
+      if occurs id tp1 then raise_occurs id tp1;
+      DS.merge tp1 tp2
+    | Function (arg1, res1), Function (arg2, res2) ->
+      unify arg1 arg2;
+      unify res1 res2;
+      DS.merge tp1 tp2
 
 (* Utilities *) 
 
-let rec equals tp1 tp2 = match DS.find tp1, DS.find tp2 with
-  | Variable id1, Variable id2 ->
-    id1 = id2
-  | Function (arg1, res1), Function (arg2, res2) ->
-    equals arg1 arg2 && equals res1 res2
-  | _ ->
-    false
-
 let simplify tp =
 
-  let cntr = ref (-1) in
-  let fresh () = incr cntr; Printf.sprintf "_%d" !cntr in
-  let env = Hashtbl.create 1024 in
+  let fresh =
+    let cntr = ref (-1) in
+    fun () ->
+      incr cntr;
+      Id.of_string @@ Printf.sprintf "_%d" !cntr
+  in
 
-  let simplify_id id =
-    try Hashtbl.find env id with
-      | Not_found ->
-        let id' = Id.of_string @@ fresh () in
-        Hashtbl.add env id id';
-        id'
+  let simplify_id =
+    let env = Hashtbl.create 1024 in
+    fun id ->
+      try Hashtbl.find env id with
+        | Not_found ->
+          let id' = fresh () in
+          Hashtbl.add env id id';
+          id'
   in
 
   let rec simplify tp = match DS.find tp with
