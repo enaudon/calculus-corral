@@ -1,78 +1,78 @@
 zero
-  : _0 -> _1 -> _1
+  : A -> B -> B
   = <value> ;
 one
-  : (_0 -> _1) -> _0 -> _1
+  : (A -> B) -> A -> B
   = <value> ;
 two
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 three
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 four
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 eight
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 succ
-  : ((_0 -> _1) -> _2 -> _0) -> (_0 -> _1) -> _2 -> _1
+  : ((A -> B) -> C -> A) -> (A -> B) -> C -> B
   = <value> ;
 add
-  : (_0 -> _1 -> _2) -> (_0 -> _3 -> _1) -> _0 -> _3 -> _2
+  : (A -> B -> C) -> (A -> D -> B) -> A -> D -> C
   = <value> ;
 mul
-  : (_0 -> _1) -> (_2 -> _0) -> _2 -> _1
+  : (A -> B) -> (C -> A) -> C -> B
   = <value> ;
 if_zero
-  : ((_0 -> _1) -> _2 -> _3) -> (_4 -> _5 -> _2) -> (_4 -> _5 -> _1) -> _4 -> _5 -> _3
+  : ((A -> B) -> C -> D) -> (E -> F -> C) -> (E -> F -> B) -> E -> F -> D
   = <value> ;
 succ one
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 add one zero
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 add one two
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 mul two two
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 mul two zero
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 mul two (mul two two)
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 if_zero zero one two
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 if_zero one one two
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 if_zero two one two
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 pair
-  : _0 -> _1 -> (_0 -> _1 -> _2) -> _2
+  : A -> B -> (A -> B -> C) -> C
   = <value> ;
 fst
-  : ((_0 -> _1 -> _0) -> _2) -> _2
+  : ((A -> B -> A) -> C) -> C
   = <value> ;
 snd
-  : ((_0 -> _1 -> _1) -> _2) -> _2
+  : ((A -> B -> B) -> C) -> C
   = <value> ;
 pair zero one
-  : (((_0 -> _0) -> _0 -> _0) -> ((_0 -> _0) -> _0 -> _0) -> _1) -> _1
+  : (((A -> A) -> A -> A) -> ((A -> A) -> A -> A) -> B) -> B
   = <value> ;
 fst (pair zero one)
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;
 snd (pair zero one)
-  : (_0 -> _0) -> _0 -> _0
+  : (A -> A) -> A -> A
   = <value> ;

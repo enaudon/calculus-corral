@@ -51,10 +51,23 @@ let rec unify tp1 tp2 =
 let simplify tp =
 
   let fresh =
+
     let cntr = ref (-1) in
+
+    let int_to_string i =
+      let open Char in
+      let a = code 'A' in
+      let n = code 'Z' - a + 1 in
+      if i / n = 0 then
+        Printf.sprintf "%c" (chr @@ a + i mod n)
+      else
+        Printf.sprintf "%c%n"  (chr @@ a + i mod n) (i / n)
+    in
+
     fun () ->
       incr cntr;
-      Id.of_string @@ Printf.sprintf "_%d" !cntr
+      Id.of_string @@ int_to_string !cntr
+
   in
 
   let simplify_id =
