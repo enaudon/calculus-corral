@@ -1,0 +1,55 @@
+fls = \x . \y . y ;
+
+tru = \x . \y . x ;
+
+not = \p . p fls tru ;
+
+and = \p . \q . p q fls ;
+
+or = \p . \q . p  tru q ;
+
+if = \p . \x . \y . p x y ;
+
+not fls ;
+
+not tru ;
+
+and fls fls ;
+
+and fls tru ;
+
+and tru fls ;
+
+and tru tru ;
+
+or fls fls ;
+
+or fls tru ;
+
+or tru fls ;
+
+or tru tru ;
+
+if fls fls tru ;
+
+if tru fls tru ;
+
+if fls (\x . x) (\y . y) ;
+
+pair = \x . \y . \p . p x y ;
+
+fst = \p . p (\x . \y . x) ;
+
+snd = \p . p (\x . \y . y) ;
+
+pair fls tru ;
+
+fst (pair fls tru) ;
+
+snd (pair fls tru) ;
+
+pair fls (\x . x) ;
+
+fst (pair fls (\x . x)) ;
+
+snd (pair fls (\x . x)) ;

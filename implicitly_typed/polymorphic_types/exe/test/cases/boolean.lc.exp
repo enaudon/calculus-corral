@@ -1,0 +1,84 @@
+fls
+  : A -> B -> B
+  = <value> ;
+tru
+  : A -> B -> A
+  = <value> ;
+not
+  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
+  = <value> ;
+and
+  : (A -> (B -> C -> C) -> D) -> A -> D
+  = <value> ;
+or
+  : ((A -> B -> A) -> C -> D) -> C -> D
+  = <value> ;
+if
+  : (A -> B -> C) -> A -> B -> C
+  = <value> ;
+not fls
+  : A -> B -> A
+  = <value> ;
+not tru
+  : A -> B -> B
+  = <value> ;
+and fls fls
+  : A -> B -> B
+  = <value> ;
+and fls tru
+  : A -> B -> B
+  = <value> ;
+and tru fls
+  : A -> B -> B
+  = <value> ;
+and tru tru
+  : A -> B -> A
+  = <value> ;
+or fls fls
+  : A -> B -> B
+  = <value> ;
+or fls tru
+  : A -> B -> A
+  = <value> ;
+or tru fls
+  : A -> B -> A
+  = <value> ;
+or tru tru
+  : A -> B -> A
+  = <value> ;
+if fls fls tru
+  : A -> B -> A
+  = <value> ;
+if tru fls tru
+  : A -> B -> B
+  = <value> ;
+if fls (x . x) (y . y)
+  : A -> A
+  = <value> ;
+pair
+  : A -> B -> (A -> B -> C) -> C
+  = <value> ;
+fst
+  : ((A -> B -> A) -> C) -> C
+  = <value> ;
+snd
+  : ((A -> B -> B) -> C) -> C
+  = <value> ;
+pair fls tru
+  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
+  = <value> ;
+fst (pair fls tru)
+  : A -> B -> B
+  = <value> ;
+snd (pair fls tru)
+  : A -> B -> A
+  = <value> ;
+pair fls (x . x)
+  : ((A -> B -> B) -> (C -> C) -> D) -> D
+  = <value> ;
+fst (pair fls (x . x))
+  : A -> B -> B
+  = <value> ;
+snd (pair fls (x . x))
+  : A -> A
+  = <value> ;
