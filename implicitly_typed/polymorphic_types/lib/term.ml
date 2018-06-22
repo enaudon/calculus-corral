@@ -49,12 +49,12 @@ let rec annotate : int -> t -> (Id.t * Type.t) term = fun rank tm ->
     | Variable id ->
       var loc id
     | Abstraction (arg, body) ->
-      let tp = Type.var rank @@ Id.fresh () in
+      let tp = Type.var rank @@ Id.fresh_upper () in
       abs loc (arg, tp) @@ annotate body
     | Application (fn, arg) ->
       app loc (annotate fn) (annotate arg)
     | Binding (id, value, body) ->
-      let tp = Type.var rank @@ Id.fresh () in
+      let tp = Type.var rank @@ Id.fresh_upper () in
       bind loc (id, tp) (annotate value) (annotate body)
 
 (*
@@ -95,18 +95,18 @@ let rec infer_hm
       in
       unify tp exp_tp
     | Abstraction ((arg, arg_tp), body) ->
-      let body_tp = Type.var rank @@ Id.fresh () in
+      let body_tp = Type.var rank @@ Id.fresh_upper () in
       infer_hm (Id.Map.add arg arg_tp env) body_tp body;
       unify exp_tp @@ Type.func arg_tp body_tp
     | Application (fn, arg) ->
-      let tp = Type.var rank @@ Id.fresh () in
+      let tp = Type.var rank @@ Id.fresh_upper () in
       infer_hm env (Type.func tp exp_tp) fn;
       infer_hm env tp arg
     | Binding (id_tp, value, body) ->
       infer_hm env exp_tp @@ app tm.loc (abs tm.loc id_tp body) value
 
 let to_type_hm ?(env = Id.Map.empty) tm =
-  let tp = Type.var default_rank @@ Id.fresh () in
+  let tp = Type.var default_rank @@ Id.fresh_upper () in
   infer_hm default_rank env tp @@ annotate default_rank tm;
   tp
 
@@ -128,14 +128,14 @@ let infer_pr
       | Variable id ->
         TC.inst ~loc rank id exp_tp
       | Abstraction ((arg, arg_tp), body) ->
-        let body_id = Id.fresh () in
+        let body_id = Id.fresh_upper () in
         let body_tp = Type.var rank body_id in
         TC.exists ~loc body_id @@
           TC.conj
             (TC.def arg arg_tp @@ constrain body_tp body)
             (TC.equals exp_tp @@ Type.func arg_tp body_tp)
       | Application (fn, arg) ->
-        let arg_id = Id.fresh () in
+        let arg_id = Id.fresh_upper () in
         let arg_tp = Type.var rank arg_id in
         TC.exists ~loc arg_id @@
           TC.conj
@@ -149,7 +149,7 @@ let infer_pr
     Id.Map.fold (fun id -> TC.def id) env (constrain rank exp_tp tm)
 
 let to_type_pr ?(env = Id.Map.empty) tm =
-  let tp = Type.var default_rank @@ Id.fresh () in
+  let tp = Type.var default_rank @@ Id.fresh_upper () in
   infer_pr default_rank env tp @@ annotate default_rank tm;
   tp
 

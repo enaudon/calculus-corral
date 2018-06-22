@@ -124,7 +124,7 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
       | Term_app (fn, arg) ->
         app loc (subst fvs sub fn) (subst fvs sub arg)
       | Type_abs (arg, body) when Id.Set.mem arg fvs ->
-        let arg' = Id.fresh () in
+        let arg' = Id.fresh_lower () in
         let sub' = Id.Map.add arg (Type.var @@ Id.to_string arg') sub in
         tp_abs loc arg' @@ subst (Id.Set.add arg' fvs) sub' body
       | Type_abs (arg, body) ->
@@ -148,7 +148,7 @@ let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
       | Variable id ->
         Id.Map.find_default tm id sub
       | Term_abs (arg, tp, body) when Id.Set.mem arg fvs ->
-        let arg' = Id.fresh () in
+        let arg' = Id.fresh_lower () in
         let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
         abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
       | Term_abs (arg, tp, body) ->

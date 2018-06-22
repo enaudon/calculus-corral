@@ -60,7 +60,7 @@ let rec subst fvs sub tp = match tp with
   | Function (arg, res) ->
     func (subst fvs sub arg) (subst fvs sub res)
   | Universal (id, tp) when Id.Set.mem id fvs ->
-    let id' = Id.fresh () in
+    let id' = Id.fresh_upper () in
     let sub' = Id.Map.add id (var id') sub in
     univ id' @@ subst (Id.Set.add id' fvs) sub' tp
   | Universal (id, tp) ->

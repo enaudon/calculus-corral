@@ -14,7 +14,7 @@ val file_to_string : ?buf_len : int -> string -> string
  *)
 val char_stream_to_string : ?buf_len : int -> char Stream.t -> string
 
-(** {1 Utilities} *)
+(** {1 Tuples} *)
 
 (**
   [fst_of_3 x] projects the first element from a three-element tuple.
@@ -30,3 +30,17 @@ val snd_of_3 : 'a * 'b * 'c -> 'b
   [thd_of_3 x] projects the third element from a three-element tuple.
  *)
 val thd_of_3 : 'a * 'b * 'c -> 'c
+
+(** {1 Conversions} *)
+
+(**
+  [int_to_lower i] coverts [i] to an alphanumeric string representation
+  beginning with a lowercase letter.
+ *)
+val int_to_lower : int -> string
+
+(**
+  [int_to_upper i] coverts [i] to an alphanumeric string representation
+  beginning with a uppercase letter.
+ *)
+val int_to_upper : int -> string

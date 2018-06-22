@@ -1,5 +1,6 @@
 module Id = Identifier
 module DS = Disjoint_set
+module Misc = Miscellaneous
 
 type mono = desc DS.t
 
@@ -99,7 +100,7 @@ let inst rank { quants; body } =
 
   let env =
     Id.Map.of_list @@
-      List.map (fun id -> id, var rank @@ Id.fresh ()) quants
+      List.map (fun id -> id, var rank @@ Id.fresh_upper ()) quants
   in
 
   let rec inst tp = match DS.find tp with
@@ -114,23 +115,10 @@ let inst rank { quants; body } =
 let simplify { quants; body } =
 
   let fresh =
-
     let cntr = ref (-1) in
-
-    let int_to_string i =
-      let open Char in
-      let a = code 'A' in
-      let n = code 'Z' - a + 1 in
-      if i / n = 0 then
-        Printf.sprintf "%c" (chr @@ a + i mod n)
-      else
-        Printf.sprintf "%c%n"  (chr @@ a + i mod n) (i / n)
-    in
-
     fun () ->
       incr cntr;
-      Id.of_string @@ int_to_string !cntr
-
+      Id.of_string @@ Misc.int_to_upper !cntr
   in
 
   let simplify_id =

@@ -34,11 +34,24 @@ module Map = struct
 
 end
 
-let fresh, reset =
+type case =
+  | Upper
+  | Lower
+
+let int_to_string case =
+  let open Miscellaneous in
+  match case with
+    | Upper -> int_to_upper
+    | Lower -> int_to_upper
+
+let fresh_lower, fresh_upper, reset =
   let cntr = ref (-1) in
-  let fresh () = incr cntr; Printf.sprintf "_%d" !cntr in
+  let fresh case () =
+    incr cntr;
+    "'" ^ int_to_string case !cntr
+  in
   let reset () = cntr := -1 in
-  fresh, reset
+  fresh Lower, fresh Upper, reset
 
 let of_string str = str
 

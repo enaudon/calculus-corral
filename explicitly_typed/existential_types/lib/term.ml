@@ -169,7 +169,7 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
           (subst fvs sub tm)
           (Type.subst fvs sub tp2)
       | Unpack (tp_id, tm_id, pack, body) when Id.Set.mem tp_id fvs ->
-        let tp_id' = Id.fresh () in
+        let tp_id' = Id.fresh_lower () in
         let fvs' = Id.Set.add tp_id' fvs in
         let sub' =
           Id.Map.add tp_id (Type.var @@ Id.to_string tp_id') sub
@@ -199,7 +199,7 @@ let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
       | Variable id ->
         Id.Map.find_default tm id sub
       | Abstraction (arg, tp, body) when Id.Set.mem arg fvs ->
-        let arg' = Id.fresh () in
+        let arg' = Id.fresh_lower () in
         let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
         abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
       | Abstraction (arg, tp, body) ->
@@ -210,7 +210,7 @@ let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
       | Pack (tp1, tm, tp2) ->
         pack loc tp1 (subst fvs sub tm) tp2
       | Unpack (tp_id, tm_id, pack, body) when Id.Set.mem tm_id fvs ->
-        let tm_id' = Id.fresh () in
+        let tm_id' = Id.fresh_lower () in
         let fvs' = Id.Set.add tm_id' fvs in
         let sub' = Id.Map.add tp_id (var Loc.dummy tm_id') sub in
         unpack loc tp_id tm_id

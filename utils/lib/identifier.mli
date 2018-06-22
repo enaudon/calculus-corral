@@ -89,10 +89,15 @@ module Map : sig
 
 end
 
+(** {1 Types} *)
+
 (** {1 Functions} *)
 
-(** [fresh ()] produces a fresh identifier. *)
-val fresh : unit -> t
+(** [fresh_lower ()] produces a fresh lowercase identifier. *)
+val fresh_lower : unit -> t
+
+(** [fresh_upper ()] produces a fresh uppercase identifier. *)
+val fresh_upper : unit -> t
 
 (**
   [reset ()] resets the internal data structures for generating fresh

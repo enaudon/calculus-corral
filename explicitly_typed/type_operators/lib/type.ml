@@ -85,7 +85,7 @@ let subst : t -> Id.t -> t -> t = fun tp id tp' ->
     | Variable id ->
       Id.Map.find_default tp id sub
     | Abstraction (arg, kn, body) when Id.Set.mem arg fvs ->
-      let arg' = Id.fresh () in
+      let arg' = Id.fresh_upper () in
       let sub' = Id.Map.add arg (var arg') sub in
       abs arg' kn @@ subst (Id.Set.add arg' fvs) sub' body
     | Abstraction (arg, kn, body) ->

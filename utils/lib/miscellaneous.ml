@@ -34,3 +34,14 @@ let fst_of_3 (x, _, _) = x
 let snd_of_3 (_, x, _) = x
 
 let thd_of_3 (_, _, x) = x
+
+let int_to_string a z i =
+  let n = z - a + 1 in
+  if i / n = 0 then
+    Printf.sprintf "%c" (Char.chr @@ a + i mod n)
+  else
+    Printf.sprintf "%c%n"  (Char.chr @@ a + i mod n) (i / n)
+
+let int_to_lower = int_to_string (Char.code 'A') (Char.code 'Z')
+
+let int_to_upper = int_to_string (Char.code 'A') (Char.code 'Z')

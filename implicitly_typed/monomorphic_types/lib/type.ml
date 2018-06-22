@@ -1,5 +1,6 @@
 module Id = Identifier
 module DS = Disjoint_set
+module Misc = Miscellaneous
 
 type t = desc DS.t
 
@@ -51,23 +52,10 @@ let rec unify tp1 tp2 =
 let simplify tp =
 
   let fresh =
-
     let cntr = ref (-1) in
-
-    let int_to_string i =
-      let open Char in
-      let a = code 'A' in
-      let n = code 'Z' - a + 1 in
-      if i / n = 0 then
-        Printf.sprintf "%c" (chr @@ a + i mod n)
-      else
-        Printf.sprintf "%c%n"  (chr @@ a + i mod n) (i / n)
-    in
-
     fun () ->
       incr cntr;
-      Id.of_string @@ int_to_string !cntr
-
+      Id.of_string @@ Misc.int_to_upper !cntr
   in
 
   let simplify_id =

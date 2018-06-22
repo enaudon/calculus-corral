@@ -37,7 +37,7 @@ let rec annotate : t -> (Id.t * Type.t) term = fun tm ->
     | Variable id ->
       var loc id
     | Abstraction (arg, body) ->
-      let tp = Type.var @@ Id.fresh () in
+      let tp = Type.var @@ Id.fresh_upper () in
       abs loc (arg, tp) @@ annotate body
     | Application (fn, arg) ->
       app loc (annotate fn) (annotate arg)
@@ -73,16 +73,16 @@ let rec infer_hm
       in
       unify tp exp_tp
     | Abstraction ((arg, arg_tp), body) ->
-      let body_tp = Type.var @@ Id.fresh () in
+      let body_tp = Type.var @@ Id.fresh_upper () in
       infer_hm (Id.Map.add arg arg_tp env) body_tp body;
       unify exp_tp @@ Type.func arg_tp body_tp
     | Application (fn, arg) ->
-      let tp = Type.var @@ Id.fresh () in
+      let tp = Type.var @@ Id.fresh_upper () in
       infer_hm env (Type.func tp exp_tp) fn;
       infer_hm env tp arg
 
 let to_type_hm ?(env = Id.Map.empty) tm =
-  let tp = Type.var @@ Id.fresh () in
+  let tp = Type.var @@ Id.fresh_upper () in
   infer_hm env tp @@ annotate tm;
   tp
 
@@ -103,14 +103,14 @@ let infer_pr
       | Variable id ->
         TC.var_eq ~loc id exp_tp
       | Abstraction ((arg, arg_tp), body) ->
-        let body_id = Id.fresh () in
+        let body_id = Id.fresh_upper () in
         let body_tp = Type.var body_id in
         TC.exists ~loc body_id @@
           TC.conj
             (TC.def arg arg_tp @@ constrain body_tp body)
             (TC.type_eq exp_tp @@ Type.func arg_tp body_tp)
       | Application (fn, arg) ->
-        let arg_id = Id.fresh () in
+        let arg_id = Id.fresh_upper () in
         let arg_tp = Type.var arg_id in
         TC.exists ~loc arg_id @@
           TC.conj
@@ -122,7 +122,7 @@ let infer_pr
     Id.Map.fold (fun id -> TC.def id) env (constrain exp_tp tm)
 
 let to_type_pr ?(env = Id.Map.empty) tm =
-  let tp = Type.var @@ Id.fresh () in
+  let tp = Type.var @@ Id.fresh_upper () in
   infer_pr env tp @@ annotate tm;
   tp
 
