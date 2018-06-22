@@ -1,0 +1,58 @@
+id = \x . x ;
+
+app = \x . \y . x y ;
+
+id ;
+
+app ;
+
+let x = app in
+x ;
+
+let y = \z . z in
+y ;
+
+\x .
+  let y = \z . z in
+  y ;
+
+\x .
+  let y = \z . z in
+  y x ;
+
+id id ;
+
+let x = app in
+let y =
+  let z = x id in
+  z
+in
+y ;
+
+\x . \y .
+  let x = x y in
+  \x . y x
+;
+
+\x .
+  let y = x in
+  y ;
+
+\x .
+  let y = \z . x in
+  y ;
+
+\x .
+  let y = \z . x z in
+  y ;
+
+\x . \y .
+  let x = x y in
+  x y ;
+
+\x .
+  let y =
+    let z = x (\x . x) in
+    z
+  in
+  y ;

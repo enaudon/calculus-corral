@@ -20,11 +20,16 @@ let abs id arg = Term.abs ~loc:(get_loc ()) id arg
 
 let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 
+let bind id value body = Term.bind ~loc:(get_loc ()) id value body
+
 %}
 
 /* Literals and identifiers */
 %token <string> LOWER_ID
 %token <string> UPPER_ID
+
+/* Keywords */
+%token LET IN
 
 /* Symbols */
 %token B_SLASH
@@ -55,6 +60,7 @@ command :
 term :
   | comp_term                     { $1 }
   | B_SLASH LOWER_ID PERIOD term  { abs $2 $4 }
+  | LET LOWER_ID EQ term IN term  { bind $2 $4 $6 }
 
 comp_term :
   | atom_term                     { $1 }

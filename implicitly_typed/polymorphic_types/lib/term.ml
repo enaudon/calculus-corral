@@ -5,6 +5,7 @@ type 'a desc =
   | Variable of Id.t
   | Abstraction of 'a * 'a term
   | Application of 'a term * 'a term
+  | Binding of 'a * 'a term * 'a term
 
 and 'a term = {
   desc : 'a desc ;
@@ -23,6 +24,8 @@ let var loc id = { desc = Variable id; loc }
 let abs loc arg body = { desc = Abstraction (arg, body); loc }
 
 let app loc fn arg = { desc = Application (fn, arg); loc }
+
+let bind loc id value body = { desc = Binding (id, value, body); loc }
 
 (* Typing *)
 
@@ -50,6 +53,9 @@ let rec annotate : int -> t -> (Id.t * Type.t) term = fun rank tm ->
       abs loc (arg, tp) @@ annotate body
     | Application (fn, arg) ->
       app loc (annotate fn) (annotate arg)
+    | Binding (id, value, body) ->
+      let tp = Type.var rank @@ Id.fresh () in
+      bind loc (id, tp) (annotate value) (annotate body)
 
 (*
   [infer_hm r env tp tm] ensures that [tm] has type [tp], via Algorithm
@@ -96,6 +102,8 @@ let rec infer_hm
       let tp = Type.var rank @@ Id.fresh () in
       infer_hm env (Type.func tp exp_tp) fn;
       infer_hm env tp arg
+    | Binding (id_tp, value, body) ->
+      infer_hm env exp_tp @@ app tm.loc (abs tm.loc id_tp body) value
 
 let to_type_hm ?(env = Id.Map.empty) tm =
   let tp = Type.var default_rank @@ Id.fresh () in
@@ -133,11 +141,12 @@ let infer_pr
           TC.conj
             (constrain (Type.func arg_tp exp_tp) fn)
             (constrain arg_tp arg)
+      | Binding (id_tp, value, body) ->
+        constrain exp_tp @@ app loc (abs loc id_tp body) value
   in
 
   TC.solve @@
     Id.Map.fold (fun id -> TC.def id) env (constrain rank exp_tp tm)
-
 
 let to_type_pr ?(env = Id.Map.empty) tm =
   let tp = Type.var default_rank @@ Id.fresh () in
@@ -160,13 +169,20 @@ let rec to_string tm =
         | Variable _ -> to_string tm
         | Abstraction _ -> to_paren_string tm
         | Application _ -> to_string tm
+        | Binding _ -> to_paren_string tm
       in
       let arg_to_string tm = match tm.desc with
         | Variable _ -> to_string tm
         | Abstraction _ -> to_paren_string tm
         | Application _ -> to_paren_string tm
+        | Binding _ -> to_paren_string tm
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
+    | Binding (id, value, body) ->
+      Printf.sprintf "let %s = %s in %s"
+        (Id.to_string id)
+        (to_string value)
+        (to_string body)
 
 (* Constructors *)
 
@@ -182,3 +198,6 @@ let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 
 let app' ?(loc = Loc.dummy) fn args =
   List.fold_left (fun fn args -> app ~loc fn args) fn args
+
+let bind ?(loc = Loc.dummy) id value body =
+  bind loc (Id.of_string id) value body

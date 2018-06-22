@@ -6,7 +6,7 @@ type t
 (** {1 Constructors} *)
 
 (**
-  [inst lvl id tp] ensures that [tp] is an instance of the scheme to
+  [inst rank id tp] ensures that [tp] is an instance of the scheme to
   which [id] is bound.
  *)
 val inst : ?loc : Location.t -> int -> Identifier.t -> Type.t -> t
@@ -25,9 +25,6 @@ val exists' : ?loc : Location.t -> Identifier.t list -> t -> t
 
 (** [def id tp c] binds [id] to [tp] within [c]. *)
 val def : ?loc : Location.t -> Identifier.t -> Type.t -> t -> t
-
-(** [let_ lvl id tp c] binds [id] to [tp] within [c]. *)
-val let_ : ?loc : Location.t -> int -> Identifier.t -> Type.t -> t -> t
 
 (** {1 Solving} *)
 

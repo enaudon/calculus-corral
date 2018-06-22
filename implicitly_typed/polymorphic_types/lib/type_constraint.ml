@@ -97,10 +97,3 @@ let exists' ?loc ids body =
   loc_wrap loc @@ List.fold_left exists' body (List.rev ids)
 
 let def ?loc id tp c = loc_wrap loc @@ Definition (id, tp, c)
-
-let let_ ?loc rank id tp body =
-  let tv = Id.fresh () in
-  let body' =
-    exists tv @@ conj (inst rank id @@ Type.var rank tv) body
-  in
-  loc_wrap loc @@ Definition (id, tp, body')

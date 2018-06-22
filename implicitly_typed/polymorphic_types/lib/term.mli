@@ -22,6 +22,12 @@ val app : ?loc : Location.t -> t -> t -> t
 (** [app' fn arg] constructs the application of [fn] to [args]. *)
 val app' : ?loc : Location.t -> t -> t list -> t
 
+(**
+  [bind id value body] constructs the binding of [id] to [value] within
+  [body].  Note that [value] is not generalized--it is monomorphic!
+ *)
+val bind : ?loc : Location.t -> string -> t -> t -> t
+
 (** {1 Typing} *)
 
 (**

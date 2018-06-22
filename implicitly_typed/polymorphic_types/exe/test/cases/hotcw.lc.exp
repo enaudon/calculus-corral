@@ -1,0 +1,48 @@
+id
+  : A -> A
+  = <value> ;
+app
+  : (A -> B) -> A -> B
+  = <value> ;
+id
+  : A -> A
+  = <value> ;
+app
+  : (A -> B) -> A -> B
+  = <value> ;
+let x = app in x
+  : (A -> B) -> A -> B
+  = <value> ;
+let y = z . z in y
+  : A -> A
+  = <value> ;
+x . let y = z . z in y
+  : A -> B -> B
+  = <value> ;
+x . let y = z . z in y x
+  : A -> A
+  = <value> ;
+id id
+  : A -> A
+  = <value> ;
+let x = app in let y = let z = x id in z in y
+  : A -> A
+  = <value> ;
+x . y . let x = x y in x . y x
+  : ((A -> B) -> C) -> (A -> B) -> A -> B
+  = <value> ;
+x . let y = x in y
+  : A -> A
+  = <value> ;
+x . let y = z . x in y
+  : A -> B -> A
+  = <value> ;
+x . let y = z . x z in y
+  : (A -> B) -> A -> B
+  = <value> ;
+x . y . let x = x y in x y
+  : (A -> A -> B) -> A -> B
+  = <value> ;
+x . let y = let z = x (x . x) in z in y
+  : ((A -> A) -> B) -> B
+  = <value> ;
