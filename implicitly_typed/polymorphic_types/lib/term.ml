@@ -161,21 +161,19 @@ let rec to_string tm =
     | Variable id ->
       Id.to_string id
     | Abstraction (arg, body) ->
-      Printf.sprintf "%s . %s"
+      Printf.sprintf "\\%s . %s"
         (Id.to_string arg)
         (to_string body)
     | Application (fn, arg) ->
       let fn_to_string tm = match tm.desc with
-        | Variable _ -> to_string tm
-        | Abstraction _ -> to_paren_string tm
-        | Application _ -> to_string tm
-        | Binding _ -> to_paren_string tm
+        | Variable _ | Application _ -> to_string tm
+        | Abstraction _ | Binding _ -> to_paren_string tm
       in
       let arg_to_string tm = match tm.desc with
-        | Variable _ -> to_string tm
-        | Abstraction _ -> to_paren_string tm
-        | Application _ -> to_paren_string tm
-        | Binding _ -> to_paren_string tm
+        | Variable _ ->
+          to_string tm
+        | Abstraction _ | Application _ | Binding _ ->
+          to_paren_string tm
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
     | Binding (id, value, body) ->

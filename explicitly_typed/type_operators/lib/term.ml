@@ -153,7 +153,7 @@ let rec to_string tm =
     | Variable id ->
       Id.to_string id
     | Abstraction (arg, tp, body) ->
-      Printf.sprintf "%s : %s . %s"
+      Printf.sprintf "\\%s : %s . %s"
         (Id.to_string arg)
         (Type.to_string tp)
         (to_string body)

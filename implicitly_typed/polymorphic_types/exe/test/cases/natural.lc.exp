@@ -76,12 +76,12 @@ fst (pair zero one)
 snd (pair zero one)
   : (A -> B) -> A -> B
   = <value> ;
-pair zero (x . x)
+pair zero (\x . x)
   : ((A -> B -> B) -> (C -> C) -> D) -> D
   = <value> ;
-fst (pair zero (x . x))
+fst (pair zero (\x . x))
   : A -> B -> B
   = <value> ;
-snd (pair zero (x . x))
+snd (pair zero (\x . x))
   : A -> A
   = <value> ;

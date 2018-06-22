@@ -52,7 +52,7 @@ if fls fls tru
 if tru fls tru
   : A -> B -> B
   = <value> ;
-if fls (x . x) (y . y)
+if fls (\x . x) (\y . y)
   : A -> A
   = <value> ;
 pair
@@ -73,12 +73,12 @@ fst (pair fls tru)
 snd (pair fls tru)
   : A -> B -> A
   = <value> ;
-pair fls (x . x)
+pair fls (\x . x)
   : ((A -> B -> B) -> (C -> C) -> D) -> D
   = <value> ;
-fst (pair fls (x . x))
+fst (pair fls (\x . x))
   : A -> B -> B
   = <value> ;
-snd (pair fls (x . x))
+snd (pair fls (\x . x))
   : A -> A
   = <value> ;

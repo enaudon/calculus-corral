@@ -3,37 +3,37 @@ Bool
   = * -> * -> * ;
 fls
   : * -> * -> *
-  = x : * . y : * . y ;
+  = \x : * . \y : * . y ;
 tru
   : * -> * -> *
-  = x : * . y : * . x ;
+  = \x : * . \y : * . x ;
 if
   : Bool -> * -> * -> *
-  = p : Bool . x : * . y : * . p x y ;
+  = \p : Bool . \x : * . \y : * . p x y ;
 BoolPair
   : *
   = ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> * ;
 pair
   : Bool -> Bool -> (Bool -> Bool -> Bool) -> * -> * -> *
-  = x : Bool . y : Bool . p : Bool -> Bool -> Bool . p x y ;
+  = \x : Bool . \y : Bool . \p : Bool -> Bool -> Bool . p x y ;
 fst
   : BoolPair -> * -> * -> *
-  = p : BoolPair . p (x : Bool . y : Bool . x) ;
+  = \p : BoolPair . p (\x : Bool . \y : Bool . x) ;
 snd
   : BoolPair -> * -> * -> *
-  = p : BoolPair . p (x : Bool . y : Bool . y) ;
+  = \p : BoolPair . p (\x : Bool . \y : Bool . y) ;
 pair fls tru
   : ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> *
-  = p : Bool -> Bool -> Bool . p (x : * . y : * . y) (x : * . y : * . x) ;
+  = \p : Bool -> Bool -> Bool . p (\x : * . \y : * . y) (\x : * . \y : * . x) ;
 fst (pair fls tru)
   : * -> * -> *
-  = x : * . y : * . y ;
+  = \x : * . \y : * . y ;
 snd (pair fls tru)
   : * -> * -> *
-  = x : * . y : * . x ;
+  = \x : * . \y : * . x ;
 bool_lits
   : exists A . (A -> A -> A) -> A
-  = pack Bool, p : Bool -> Bool -> Bool . p (x : * . y : * . y) (x : * . y : * . x) : exists A . (A -> A -> A) -> A ;
+  = pack Bool, \p : Bool -> Bool -> Bool . p (\x : * . \y : * . y) (\x : * . \y : * . x) : exists A . (A -> A -> A) -> A ;
 bool_lits'
   : exists A . (A -> A -> A) -> A
-  = pack Bool, p : Bool -> Bool -> Bool . p (x : * . y : * . x) (x : * . y : * . y) : exists A . (A -> A -> A) -> A ;
+  = pack Bool, \p : Bool -> Bool -> Bool . p (\x : * . \y : * . x) (\x : * . \y : * . y) : exists A . (A -> A -> A) -> A ;

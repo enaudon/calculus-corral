@@ -3,34 +3,34 @@ Bool
   = * -> * -> * ;
 fls
   : * -> * -> *
-  = t : * . f : * . f ;
+  = \t : * . \f : * . f ;
 tru
   : * -> * -> *
-  = t : * . f : * . t ;
+  = \t : * . \f : * . t ;
 if
   : Bool -> * -> * -> *
-  = p : Bool . t : * . e : * . p t e ;
+  = \p : Bool . \t : * . \e : * . p t e ;
 Pair
   : * => * => * => *
-  = A :: * . B :: * . C :: * . (A -> B -> C) -> C ;
+  = \A :: * . \B :: * . \C :: * . (A -> B -> C) -> C ;
 BoolPair
   : *
   = ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> * ;
 pair
   : Bool -> Bool -> (Bool -> Bool -> Bool) -> * -> * -> *
-  = f : Bool . s : Bool . p : Bool -> Bool -> Bool . p f s ;
+  = \f : Bool . \s : Bool . \p : Bool -> Bool -> Bool . p f s ;
 fst
   : BoolPair -> * -> * -> *
-  = p : BoolPair . p (f : Bool . s : Bool . f) ;
+  = \p : BoolPair . p (\f : Bool . \s : Bool . f) ;
 snd
   : BoolPair -> * -> * -> *
-  = p : BoolPair . p (f : Bool . s : Bool . s) ;
+  = \p : BoolPair . p (\f : Bool . \s : Bool . s) ;
 pair fls tru
   : ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> *
-  = p : Bool -> Bool -> Bool . p (t : * . f : * . f) (t : * . f : * . t) ;
+  = \p : Bool -> Bool -> Bool . p (\t : * . \f : * . f) (\t : * . \f : * . t) ;
 fst (pair fls tru)
   : * -> * -> *
-  = t : * . f : * . f ;
+  = \t : * . \f : * . f ;
 snd (pair fls tru)
   : * -> * -> *
-  = t : * . f : * . t ;
+  = \t : * . \f : * . t ;

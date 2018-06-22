@@ -146,7 +146,7 @@ let rec to_string tp =
     | Variable id ->
       Id.to_string id
     | Abstraction (arg, kn, body) ->
-      Printf.sprintf "%s :: %s . %s"
+      Printf.sprintf "\\%s :: %s . %s"
         (Id.to_string arg)
         (Kind.to_string kn)
         (to_string body)

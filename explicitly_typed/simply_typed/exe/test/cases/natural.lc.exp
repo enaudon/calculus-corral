@@ -3,82 +3,82 @@ Nat
   = (* -> *) -> * -> * ;
 zero
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . z ;
+  = \s : * -> * . \z : * . z ;
 one
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s z ;
+  = \s : * -> * . \z : * . s z ;
 two
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s z) ;
+  = \s : * -> * . \z : * . s (s z) ;
 three
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s (s z)) ;
+  = \s : * -> * . \z : * . s (s (s z)) ;
 four
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s (s (s z))) ;
+  = \s : * -> * . \z : * . s (s (s (s z))) ;
 eight
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s (s (s (s (s (s (s z))))))) ;
+  = \s : * -> * . \z : * . s (s (s (s (s (s (s (s z))))))) ;
 succ
   : Nat -> (* -> *) -> * -> *
-  = n : Nat . s : * -> * . z : * . s (n s z) ;
+  = \n : Nat . \s : * -> * . \z : * . s (n s z) ;
 add
   : Nat -> Nat -> (* -> *) -> * -> *
-  = m : Nat . n : Nat . s : * -> * . z : * . m s (n s z) ;
+  = \m : Nat . \n : Nat . \s : * -> * . \z : * . m s (n s z) ;
 mul
   : Nat -> Nat -> (* -> *) -> * -> *
-  = m : Nat . n : Nat . s : * -> * . m (n s) ;
+  = \m : Nat . \n : Nat . \s : * -> * . m (n s) ;
 if_zero
   : Nat -> Nat -> Nat -> (* -> *) -> * -> *
-  = m : Nat . n : Nat . o : Nat . s : * -> * . z : * . m (x : * . o s z) (n s z) ;
+  = \m : Nat . \n : Nat . \o : Nat . \s : * -> * . \z : * . m (\x : * . o s z) (n s z) ;
 succ one
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s z) ;
+  = \s : * -> * . \z : * . s (s z) ;
 add one zero
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s z ;
+  = \s : * -> * . \z : * . s z ;
 add one two
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s (s z)) ;
+  = \s : * -> * . \z : * . s (s (s z)) ;
 mul two two
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s (s (s z))) ;
+  = \s : * -> * . \z : * . s (s (s (s z))) ;
 mul two zero
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . z ;
+  = \s : * -> * . \z : * . z ;
 mul two (mul two two)
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s (s (s (s (s (s (s z))))))) ;
+  = \s : * -> * . \z : * . s (s (s (s (s (s (s (s z))))))) ;
 if_zero zero one two
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s z ;
+  = \s : * -> * . \z : * . s z ;
 if_zero one one two
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s z) ;
+  = \s : * -> * . \z : * . s (s z) ;
 if_zero two one two
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s z) ;
+  = \s : * -> * . \z : * . s (s z) ;
 if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s (s (s (s z))) ;
+  = \s : * -> * . \z : * . s (s (s (s z))) ;
 NatPair
   : *
   = (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> (* -> *) -> * -> * ;
 pair
   : Nat -> Nat -> (Nat -> Nat -> Nat) -> (* -> *) -> * -> *
-  = m : Nat . n : Nat . p : Nat -> Nat -> Nat . p m n ;
+  = \m : Nat . \n : Nat . \p : Nat -> Nat -> Nat . p m n ;
 fst
   : NatPair -> (* -> *) -> * -> *
-  = p : NatPair . p (m : Nat . n : Nat . m) ;
+  = \p : NatPair . p (\m : Nat . \n : Nat . m) ;
 snd
   : NatPair -> (* -> *) -> * -> *
-  = p : NatPair . p (m : Nat . n : Nat . n) ;
+  = \p : NatPair . p (\m : Nat . \n : Nat . n) ;
 pair zero one
   : (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> (* -> *) -> * -> *
-  = p : Nat -> Nat -> Nat . p (s : * -> * . z : * . z) (s : * -> * . z : * . s z) ;
+  = \p : Nat -> Nat -> Nat . p (\s : * -> * . \z : * . z) (\s : * -> * . \z : * . s z) ;
 fst (pair zero one)
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . z ;
+  = \s : * -> * . \z : * . z ;
 snd (pair zero one)
   : (* -> *) -> * -> *
-  = s : * -> * . z : * . s z ;
+  = \s : * -> * . \z : * . s z ;

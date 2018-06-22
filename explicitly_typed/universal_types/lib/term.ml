@@ -231,13 +231,9 @@ let rec to_string tm =
     | Variable id ->
       Id.to_string id
     | Term_abs (arg, tp, body) ->
-      Printf.sprintf "%s : %s . %s"
+      Printf.sprintf "\\%s : %s . %s"
         (Id.to_string arg)
         (Type.to_string tp)
-        (to_string body)
-    | Type_abs (arg, body) ->
-      Printf.sprintf "%s . %s"
-        (Id.to_string arg)
         (to_string body)
     | Term_app (fn, arg) ->
       let arg_to_string tm = match tm.desc with
@@ -247,6 +243,10 @@ let rec to_string tm =
           to_paren_string tm
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
+    | Type_abs (arg, body) ->
+      Printf.sprintf "\\%s . %s"
+        (Id.to_string arg)
+        (to_string body)
     | Type_app (fn, arg) ->
       Printf.sprintf "%s %s" (fn_to_string fn) (Type.to_string arg)
 
