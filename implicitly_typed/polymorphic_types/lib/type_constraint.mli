@@ -17,11 +17,8 @@ val equals : ?loc : Location.t -> Type.t -> Type.t -> t
 (** [conj lhs rhs] conjoins of the constraints [lhs] and [rhs]. *)
 val conj : ?loc : Location.t -> t -> t -> t
 
-(** [exists id c] existentially quantifies [id] in [c]. *)
-val exists : ?loc : Location.t -> Identifier.t -> t -> t
-
-(** [exists' ids c] existentially quantifies [ids] in [c]. *)
-val exists' : ?loc : Location.t -> Identifier.t list -> t -> t
+(** [exists (fun id -> c)] existentially quantifies [id] in [c]. *)
+val exists : ?loc : Location.t -> (Identifier.t -> t) -> t
 
 (** [def id tp c] binds [id] to [tp] within [c]. *)
 val def : ?loc : Location.t -> Identifier.t -> Type.t -> t -> t

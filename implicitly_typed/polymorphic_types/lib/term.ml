@@ -128,16 +128,14 @@ let infer_pr
       | Variable id ->
         TC.inst ~loc rank id exp_tp
       | Abstraction ((arg, arg_tp), body) ->
-        let body_id = Id.fresh_upper () in
-        let body_tp = Type.var rank body_id in
-        TC.exists ~loc body_id @@
+        TC.exists ~loc @@ fun body_id ->
+          let body_tp = Type.var rank body_id in
           TC.conj
             (TC.def arg arg_tp @@ constrain body_tp body)
             (TC.equals exp_tp @@ Type.func arg_tp body_tp)
       | Application (fn, arg) ->
-        let arg_id = Id.fresh_upper () in
-        let arg_tp = Type.var rank arg_id in
-        TC.exists ~loc arg_id @@
+        TC.exists ~loc @@ fun arg_id ->
+          let arg_tp = Type.var rank arg_id in
           TC.conj
             (constrain (Type.func arg_tp exp_tp) fn)
             (constrain arg_tp arg)

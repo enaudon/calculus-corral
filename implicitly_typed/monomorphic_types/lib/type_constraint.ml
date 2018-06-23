@@ -36,7 +36,7 @@ let solve =
             Printf.sprintf
               "Occurs check failed -- '%s' occurs in '%s'"
               (Id.to_string id)
-              (Type.to_string ~no_simp:() tp)
+              (Type.to_string tp)
         | Id.Unbound id ->
           error loc @@
             Printf.sprintf
@@ -90,10 +90,8 @@ let type_eq ?loc lhs rhs = loc_wrap loc @@ Type_equality (lhs, rhs)
 
 let conj ?loc lhs rhs = loc_wrap loc @@ Conjunction (lhs, rhs)
 
-let exists ?loc id body = loc_wrap loc @@ Existential (id, body)
-
-let exists' ?loc ids body =
-  let exists' body id = exists id body in
-  loc_wrap loc @@ List.fold_left exists' body (List.rev ids)
+let exists ?loc fn =
+  let id = Id.fresh_upper () in
+  loc_wrap loc @@ Existential (id, fn id)
 
 let def ?loc id tp c = loc_wrap loc @@ Definition (id, tp, c)
