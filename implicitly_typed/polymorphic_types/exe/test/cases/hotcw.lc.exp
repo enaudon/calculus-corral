@@ -46,3 +46,6 @@ let x = app in let y = let z = x id in z in y
 \x . let y = let z = x (\x . x) in z in y
   : ((A -> A) -> B) -> B
   = <value> ;
+let id = \x . x in id id
+  : A -> A
+  = <value> ;

@@ -6,7 +6,8 @@ type t =
   | Equality of Type.t * Type.t
   | Conjunction of t * t
   | Existential of Id.t * t
-  | Definition of Id.t * Type.t * t
+  | Def_binding of Id.t * Type.t * t
+  | Let_binding of Id.t * t * Type.t * t
   | Localized of Loc.t * t
 
 (* Internal helpers *)
@@ -16,21 +17,24 @@ let error : Loc.t -> string -> 'a = fun loc msg ->
 
 (* Solving *)
 
-let solve =
-  let rec solve env c = match c with
+let solve rank c =
+  let rec solve rank env c = match c with
     | Instance (id, rank, tp) ->
       Type.unify (Type.inst rank @@ Id.Map.find id env) tp
     | Equality (lhs, rhs) ->
       Type.unify lhs rhs
     | Conjunction (lhs, rhs) ->
-      solve env lhs;
-      solve env rhs
+      solve rank env lhs;
+      solve rank env rhs
     | Existential (_, c) ->
-      solve env c
-    | Definition (id, tp, c) ->
-      solve (Id.Map.add id tp env) c
+      solve rank env c
+    | Def_binding (id, tp, c) ->
+      solve rank (Id.Map.add id tp env) c
+    | Let_binding (id, lhs, tp, rhs) ->
+      solve (rank + 1) env lhs;
+      solve rank (Id.Map.add id (Type.gen rank tp) env) rhs
     | Localized (loc, c) ->
-      try solve env c with
+      try solve rank env c with
         | Type.Cannot_unify (tp1, tp2) ->
           error loc @@
             Printf.sprintf
@@ -49,7 +53,7 @@ let solve =
               "Undefined identifier '%s'\n%!"
               (Id.to_string id)
   in
-  solve Id.Map.empty
+  solve rank Id.Map.empty c
 
 (* Utilities *)
 
@@ -63,18 +67,27 @@ let rec to_string ?no_simp =
       Printf.sprintf "%s = %s" (type_to_string lhs) (type_to_string rhs)
     | Conjunction (lhs, rhs) ->
       let rec to_string' c = match c with
-        | Instance _ | Equality _ | Conjunction _ -> to_string c
-        | Existential _ | Definition _ -> to_paren_string c
-        | Localized (_, c) -> to_string' c
+        | Instance _ | Equality _ | Conjunction _ ->
+          to_string c
+        | Existential _ | Def_binding _ | Let_binding _ ->
+          to_paren_string c
+        | Localized (_, c) ->
+          to_string' c
       in
       Printf.sprintf "%s & %s" (to_string' lhs) (to_string' rhs)
     | Existential (id, c) ->
       Printf.sprintf "exists %s . %s" (Id.to_string id) (to_string c)
-    | Definition (id, tp, c) ->
+    | Def_binding (id, tp, c) ->
       Printf.sprintf "def %s = %s in %s"
         (Id.to_string id)
         (type_to_string tp)
         (to_string c)
+    | Let_binding (id, lhs, tp, rhs) ->
+      Printf.sprintf "let %s = %s[%s] in %s"
+        (Id.to_string id)
+        (to_string lhs)
+        (type_to_string tp)
+        (to_string rhs)
     | Localized (_, c) ->
       to_string c
 
@@ -94,4 +107,7 @@ let exists ?loc fn =
   let id = Id.fresh_upper () in
   loc_wrap loc @@ Existential (id, fn id)
 
-let def ?loc id tp c = loc_wrap loc @@ Definition (id, tp, c)
+let def ?loc id tp c = loc_wrap loc @@ Def_binding (id, tp, c)
+
+let let_ ?loc id lhs tp rhs =
+  loc_wrap loc @@ Let_binding (id, lhs, tp, rhs)

@@ -56,3 +56,6 @@ y ;
     z
   in
   y ;
+
+let id = \x . x in
+id id ;

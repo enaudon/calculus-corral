@@ -23,10 +23,13 @@ val exists : ?loc : Location.t -> (Identifier.t -> t) -> t
 (** [def id tp c] binds [id] to [tp] within [c]. *)
 val def : ?loc : Location.t -> Identifier.t -> Type.t -> t -> t
 
+(** [let_ id c1 tp c2] binds [id] to [tp] within [c2]. *)
+val let_ : ?loc : Location.t -> Identifier.t -> t -> Type.t -> t -> t
+
 (** {1 Solving} *)
 
-(** [solve c] solves [c]. *)
-val solve : t -> unit
+(** [solve rank c] solves [c]. *)
+val solve : int -> t -> unit
 
 (** {1 Utilities} *)
 

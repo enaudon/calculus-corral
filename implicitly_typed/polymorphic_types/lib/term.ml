@@ -44,18 +44,17 @@ let default_rank = 2
  *)
 let rec annotate : int -> t -> (Id.t * Type.t) term = fun rank tm ->
   let loc = tm.loc in
-  let annotate = annotate rank in
   match tm.desc with
     | Variable id ->
       var loc id
     | Abstraction (arg, body) ->
       let tp = Type.var rank @@ Id.fresh_upper () in
-      abs loc (arg, tp) @@ annotate body
+      abs loc (arg, tp) @@ annotate rank body
     | Application (fn, arg) ->
-      app loc (annotate fn) (annotate arg)
+      app loc (annotate rank fn) (annotate rank arg)
     | Binding (id, value, body) ->
-      let tp = Type.var rank @@ Id.fresh_upper () in
-      bind loc (id, tp) (annotate value) (annotate body)
+      let tp = Type.var (rank + 1) (Id.fresh_upper ()) in
+      bind loc (id, tp) (annotate (rank + 1) value) (annotate rank body)
 
 (*
   [infer_hm r env tp tm] ensures that [tm] has type [tp], via Algorithm
@@ -82,7 +81,6 @@ let rec infer_hm
             (Type.to_string ~no_simp:() tp)
   in
 
-  let infer_hm = infer_hm rank in
   match tm.desc with
     | Variable id ->
       let tp = try Type.inst rank @@ Id.Map.find id env with
@@ -96,14 +94,15 @@ let rec infer_hm
       unify tp exp_tp
     | Abstraction ((arg, arg_tp), body) ->
       let body_tp = Type.var rank @@ Id.fresh_upper () in
-      infer_hm (Id.Map.add arg arg_tp env) body_tp body;
+      infer_hm rank (Id.Map.add arg arg_tp env) body_tp body;
       unify exp_tp @@ Type.func arg_tp body_tp
     | Application (fn, arg) ->
       let tp = Type.var rank @@ Id.fresh_upper () in
-      infer_hm env (Type.func tp exp_tp) fn;
-      infer_hm env tp arg
-    | Binding (id_tp, value, body) ->
-      infer_hm env exp_tp @@ app tm.loc (abs tm.loc id_tp body) value
+      infer_hm rank env (Type.func tp exp_tp) fn;
+      infer_hm rank env tp arg
+    | Binding ((id, tp), value, body) ->
+      infer_hm (rank + 1) env tp value;
+      infer_hm rank (Id.Map.add id (Type.gen rank tp) env) exp_tp body
 
 let to_type_hm ?(env = Id.Map.empty) tm =
   let tp = Type.var default_rank @@ Id.fresh_upper () in
@@ -122,7 +121,6 @@ let infer_pr
   let module TC = Type_constraint in
 
   let rec constrain rank exp_tp tm =
-    let constrain = constrain rank in
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
@@ -131,19 +129,21 @@ let infer_pr
         TC.exists ~loc @@ fun body_id ->
           let body_tp = Type.var rank body_id in
           TC.conj
-            (TC.def arg arg_tp @@ constrain body_tp body)
+            (TC.def arg arg_tp @@ constrain rank body_tp body)
             (TC.equals exp_tp @@ Type.func arg_tp body_tp)
       | Application (fn, arg) ->
         TC.exists ~loc @@ fun arg_id ->
           let arg_tp = Type.var rank arg_id in
           TC.conj
-            (constrain (Type.func arg_tp exp_tp) fn)
-            (constrain arg_tp arg)
-      | Binding (id_tp, value, body) ->
-        constrain exp_tp @@ app loc (abs loc id_tp body) value
+            (constrain rank (Type.func arg_tp exp_tp) fn)
+            (constrain rank arg_tp arg)
+      | Binding ((id, tp), value, body) ->
+        let value_constraint = constrain (rank + 1) tp value in
+        let body_constraint = constrain rank exp_tp body in
+        TC.let_ id value_constraint tp body_constraint
   in
 
-  TC.solve @@
+  TC.solve rank @@
     Id.Map.fold (fun id -> TC.def id) env (constrain rank exp_tp tm)
 
 let to_type_pr ?(env = Id.Map.empty) tm =

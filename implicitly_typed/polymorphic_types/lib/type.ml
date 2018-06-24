@@ -93,8 +93,7 @@ let gen rank tp =
       get_scheme_vars (get_scheme_vars acc arg) res
   in
 
-  if tp.quants <> [] then raise_exp_mono ();
-  { tp with quants = List.rev @@ get_scheme_vars [] tp.body }
+  { tp with quants = List.rev @@ get_scheme_vars tp.quants tp.body }
 
 let inst rank { quants; body } =
 
