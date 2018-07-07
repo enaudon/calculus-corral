@@ -45,8 +45,6 @@ if_zero
   (mul eight two)
   (add one (add two one)) ;
 
-Pair = \A :: * . \B :: * . \C :: * . (A -> B -> C) -> C ;
-
 NatPair = Pair Nat Nat Nat ;
 
 pair = \m : Nat . \n : Nat . \p : Nat -> Nat -> Nat . p m n ;

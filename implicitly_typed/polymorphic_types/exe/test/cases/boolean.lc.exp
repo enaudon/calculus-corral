@@ -55,15 +55,6 @@ if tru fls tru
 if fls (\x . x) (\y . y)
   : A -> A
   = <value> ;
-pair
-  : A -> B -> (A -> B -> C) -> C
-  = <value> ;
-fst
-  : ((A -> B -> A) -> C) -> C
-  = <value> ;
-snd
-  : ((A -> B -> B) -> C) -> C
-  = <value> ;
 pair fls tru
   : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
   = <value> ;

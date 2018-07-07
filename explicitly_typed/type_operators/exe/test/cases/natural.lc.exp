@@ -61,9 +61,6 @@ if_zero two one two
 if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
   : (* -> *) -> * -> *
   = \s : * -> * . \z : * . s (s (s (s z))) ;
-Pair
-  : * => * => * => *
-  = \A :: * . \B :: * . \C :: * . (A -> B -> C) -> C ;
 NatPair
   : *
   = (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> (* -> *) -> * -> * ;

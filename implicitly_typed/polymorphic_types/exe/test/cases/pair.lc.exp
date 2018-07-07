@@ -1,0 +1,9 @@
+pair
+  : A -> B -> (A -> B -> C) -> C
+  = <value> ;
+fst
+  : ((A -> B -> A) -> C) -> C
+  = <value> ;
+snd
+  : ((A -> B -> B) -> C) -> C
+  = <value> ;

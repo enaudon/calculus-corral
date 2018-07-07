@@ -41,18 +41,6 @@ if_zero
   (mul eight two)
   (add one (add two one)) ;
 
-pair = \m . \n . \p . p m n ;
-
-fst = \p .  p (\m . \n . m) ;
-
-snd = \p .  p (\m . \n . n) ;
-
-pair zero one ;
-
-fst (pair zero one) ;
-
-snd (pair zero one) ;
-
 pair zero (\x . x) ;
 
 fst (pair zero (\x . x)) ;

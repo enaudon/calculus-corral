@@ -47,18 +47,6 @@ if_zero
   (mul eight two)
   (add one (add two one)) ;
 
-pair = \A . \B . \f : A . \s : B . \C . \p : A -> B -> C . p f s ;
-
-fst =
-  \A . \B . \p : forall C . (A -> B -> C) -> C .
-    p A (\f : A . \s : B . f) ;
-
-snd =
-  \A . \B . \p : forall C . (A -> B -> C) -> C .
-    p B (\f : A . \s : B . s) ;
-
-NatPair = (Nat -> Nat -> Nat) -> Nat ;
-
 pair Nat Nat zero one ;
 
 fst Nat Nat (pair Nat Nat zero one) ;

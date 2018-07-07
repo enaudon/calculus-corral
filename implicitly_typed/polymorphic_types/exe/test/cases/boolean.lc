@@ -36,12 +36,6 @@ if tru fls tru ;
 
 if fls (\x . x) (\y . y) ;
 
-pair = \x . \y . \p . p x y ;
-
-fst = \p . p (\x . \y . x) ;
-
-snd = \p . p (\x . \y . y) ;
-
 pair fls tru ;
 
 fst (pair fls tru) ;

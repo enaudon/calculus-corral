@@ -6,8 +6,6 @@ tru = \t : * . \f : * . t ;
 
 if = \p : Bool . \t : * . \e : * . p t e ;
 
-Pair = \A :: * . \B :: * . \C :: * . (A -> B -> C) -> C ;
-
 BoolPair = Pair Bool Bool Bool ;
 
 pair = \f : Bool . \s : Bool . \p : Bool -> Bool -> Bool . p f s ;
