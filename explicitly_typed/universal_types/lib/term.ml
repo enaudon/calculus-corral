@@ -164,37 +164,41 @@ let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
   subst (free_vars tm') (Id.Map.singleton id tm') tm
 
 let rec beta_reduce ?deep ?(env = Id.Map.empty) tm =
-  let beta_reduce = beta_reduce ?deep ~env in
+  let beta_reduce env = beta_reduce ?deep ~env in
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
       Id.Map.find_default tm id env
     | Term_abs (arg, tp, body) ->
       if deep <> None then
-        abs loc arg tp @@ beta_reduce body
+        let env' = Id.Map.del arg env in
+        abs loc arg tp @@ beta_reduce env' body
       else
         tm
     | Term_app (fn, act_arg) ->
-      let fn' = beta_reduce fn in
-      let act_arg' = beta_reduce act_arg in
+      let fn' = beta_reduce env fn in
+      let act_arg' = beta_reduce env act_arg in
       begin match fn'.desc with
         | Term_abs (fml_arg, _, body) ->
           let body' = subst_tm body fml_arg act_arg' in
-          beta_reduce body'
+          let env' = Id.Map.del fml_arg env in
+          beta_reduce env' body'
         | _ ->
           app loc fn' act_arg'
       end
     | Type_abs (arg, body) ->
       if deep <> None then
-        tp_abs loc arg @@ beta_reduce body
+        let env' = Id.Map.del arg env in
+        tp_abs loc arg @@ beta_reduce env' body
       else
         tm
     | Type_app (fn, act_arg) ->
-      let fn' = beta_reduce fn in
+      let fn' = beta_reduce env fn in
       match fn'.desc with
         | Type_abs (fml_arg, body) ->
           let body' = subst_tp body fml_arg act_arg in
-          beta_reduce body'
+          let env' = Id.Map.del fml_arg env in
+          beta_reduce env' body'
         | _ ->
           tp_app loc fn' act_arg
 

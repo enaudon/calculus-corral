@@ -102,23 +102,25 @@ let subst : t -> Id.t -> t -> t = fun tm id tm' ->
   subst (free_vars tm') (Id.Map.singleton id tm') tm
 
 let rec beta_reduce ?deep ?(env = Id.Map.empty) tm =
-  let beta_reduce = beta_reduce ?deep ~env in
+  let beta_reduce env = beta_reduce ?deep ~env in
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
       Id.Map.find_default tm id env
     | Abstraction (arg, tp, body) ->
       if deep <> None then
-        abs loc arg tp @@ beta_reduce body
+        let env' = Id.Map.del arg env in
+        abs loc arg tp @@ beta_reduce env' body
       else
         tm
     | Application (fn, act_arg) ->
-      let fn' = beta_reduce fn in
-      let act_arg' = beta_reduce act_arg in
+      let fn' = beta_reduce env fn in
+      let act_arg' = beta_reduce env act_arg in
       match fn'.desc with
         | Abstraction (fml_arg, _, body) ->
           let body' = subst body fml_arg act_arg' in
-          beta_reduce body'
+          let env' = Id.Map.del fml_arg env in
+          beta_reduce env' body'
         | _ ->
           app loc fn' act_arg'
 
