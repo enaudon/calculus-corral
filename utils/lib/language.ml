@@ -123,13 +123,15 @@ module Repl (Input : Sig) = struct
         in
         eval_phrase Type.default_env Id.Map.empty Id.Map.empty
       | File fs ->
-        let eval_file f =
+        let eval_file f (kn_env, tp_env, vl_env) =
           let chan = open_in f in
-          ignore @@
-            evaluate Type.default_env Id.Map.empty Id.Map.empty @@
-              Lexing.from_channel chan;
+          let envs =
+            evaluate kn_env tp_env vl_env @@ Lexing.from_channel chan
+          in
           close_in chan;
+          envs
         in
-        List.iter eval_file @@ List.rev fs
+        let envs = Type.default_env, Id.Map.empty, Id.Map.empty in
+        ignore @@ List.fold_right eval_file fs envs
 
- end
+end
