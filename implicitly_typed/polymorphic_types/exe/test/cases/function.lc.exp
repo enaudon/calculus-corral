@@ -1,15 +1,15 @@
 id
   : A -> A
-  = <value> ;
+  = \F . \x : F . x ;
 app
   : (A -> B) -> A -> B
-  = <value> ;
+  = \R . \Q . \f : R -> Q . \x : R . f x ;
 rev_app
   : A -> (A -> B) -> B
-  = <value> ;
+  = \D1 . \C1 . \x : D1 . \f : D1 -> C1 . f x ;
 compose
   : (A -> B) -> (C -> A) -> C -> B
-  = <value> ;
+  = \U1 . \T1 . \V1 . \f : U1 -> T1 . \g : V1 -> U1 . \x : V1 . f (g x) ;
 arg_swap
   : (A -> B -> C) -> B -> A -> C
-  = <value> ;
+  = \N2 . \M2 . \L2 . \f : N2 -> M2 -> L2 . \x : M2 . \y : N2 . f y x ;

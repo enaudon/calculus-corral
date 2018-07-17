@@ -9,5 +9,5 @@
 
 (library
   ((name polymorphic_types)
-   (libraries (utils))
+   (libraries (universal_types utils))
    (flags (-w +A-4 -warn-error +A-4))))

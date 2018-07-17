@@ -97,19 +97,28 @@ let gen rank tp =
 
 let inst rank { quants; body } =
 
-  let env =
-    Id.Map.of_list @@
-      List.map (fun id -> id, var rank @@ Id.fresh_upper ()) quants
-  in
+  let vars = List.map (fun _ -> var rank @@ Id.fresh_upper ()) quants in
+  let env = Id.Map.of_list @@ List.combine quants vars in
 
   let rec inst tp = match DS.find tp with
     | Variable (id, _) -> Id.Map.find_default tp id env
     | Function (arg, res) -> func (inst arg) (inst res)
   in
 
-  { quants = []; body = inst body }
+  List.map (scheme []) vars, { quants = []; body = inst body }
 
 (* Utilities *) 
+
+let to_intl_repr { quants; body } =
+
+  let module IR = Universal_types.Type in
+
+  let rec to_ir tp = match DS.find tp with
+    | Variable (id, _) -> IR.var @@ Id.to_string id
+    | Function (arg, res) -> IR.func (to_ir arg) (to_ir res)
+  in
+
+  IR.forall' (List.map Id.to_string quants) (to_ir body)
 
 let simplify { quants; body } =
 
@@ -166,7 +175,7 @@ let to_string ?no_simp ?show_quants tp =
       (String.concat " " @@ List.map Id.to_string quants)
       (to_string body)
 
-(* External constructors *)
+(* External constructors and destructors *)
 
 let schemify = scheme []
 
@@ -178,3 +187,5 @@ let func arg res = match arg.quants, res.quants with
 
 let func' args res =
   List.fold_left (fun res arg -> func arg res) res (List.rev args)
+
+let get_quants { quants; _ } = quants

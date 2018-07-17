@@ -48,7 +48,7 @@ let fresh_lower, fresh_upper, reset =
   let cntr = ref (-1) in
   let fresh case () =
     incr cntr;
-    "'" ^ int_to_string case !cntr
+    int_to_string case !cntr
   in
   let reset () = cntr := -1 in
   fresh Lower, fresh Upper, reset

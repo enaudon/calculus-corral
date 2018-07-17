@@ -1,3 +1,4 @@
+module Id = Identifier
 module Misc = Miscellaneous
 
 type type_inference_algorithm =
@@ -8,13 +9,7 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Value = struct
-
-    include Polymorphic_types.Term
-
-    let to_string _ = "<value>"
-
-  end
+  module Value = Universal_types.Term
 
   module Kind = struct
 
@@ -48,13 +43,27 @@ module Repl = Language.Repl (struct
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      let tp = match env_opt with
+      match env_opt with
         | None -> to_type tm
         | Some env -> to_type ~env:(snd env) tm
-      in
-      Type.gen 1 tp
 
-    let to_value ?deep:_ ?env:_ tm = tm
+    let to_value ?deep ?env:env_opt tm =
+      let to_intl_repr = match !type_inference_algorithm with
+        | Hindley_milner -> to_intl_repr_hm
+        (* TODO: Implement [to_intl_repr_pr]. *)
+        | Pottier_remy -> to_intl_repr_hm
+      in
+      match env_opt with
+        | None ->
+          let vl = to_intl_repr tm in
+          ignore @@ Value.to_type vl;
+          Value.beta_reduce ?deep vl
+        | Some env ->
+          let tp_env = Misc.thd_of_3 env in
+          let vl = to_intl_repr ~env:tp_env tm in
+          ignore @@
+            Value.to_type ~env:(Id.Map.map Type.to_intl_repr tp_env) vl;
+          Value.beta_reduce ?deep ~env:(Misc.fst_of_3 env) vl
 
   end
 

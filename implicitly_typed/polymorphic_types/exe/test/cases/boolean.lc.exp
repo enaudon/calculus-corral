@@ -1,75 +1,75 @@
 fls
   : A -> B -> B
-  = <value> ;
+  = \E2 . \H2 . \x : E2 . \y : H2 . y ;
 tru
   : A -> B -> A
-  = <value> ;
+  = \R2 . \P2 . \x : R2 . \y : P2 . x ;
 not
   : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
-  = <value> ;
+  = \G3 . \H3 . \I3 . \J3 . \D3 . \p : (G3 -> H3 -> H3) -> (I3 -> J3 -> I3) -> D3 . p (\x : G3 . \y : H3 . y) (\x : I3 . \y : J3 . x) ;
 and
   : (A -> (B -> C -> C) -> D) -> A -> D
-  = <value> ;
+  = \Z3 . \A4 . \B4 . \X3 . \p : Z3 -> (A4 -> B4 -> B4) -> X3 . \q : Z3 . p q (\x : A4 . \y : B4 . y) ;
 or
   : ((A -> B -> A) -> C -> D) -> C -> D
-  = <value> ;
+  = \S4 . \T4 . \Q4 . \P4 . \p : (S4 -> T4 -> S4) -> Q4 -> P4 . \q : Q4 . p (\x : S4 . \y : T4 . x) q ;
 if
   : (A -> B -> C) -> A -> B -> C
-  = <value> ;
+  = \L5 . \K5 . \J5 . \p : L5 -> K5 -> J5 . \x : L5 . \y : K5 . p x y ;
 not fls
   : A -> B -> A
-  = <value> ;
+  = \Z5 . \A6 . \x : Z5 . \y : A6 . x ;
 not tru
   : A -> B -> B
-  = <value> ;
+  = \P6 . \Q6 . \x : P6 . \y : Q6 . y ;
 and fls fls
   : A -> B -> B
-  = <value> ;
+  = \L7 . \M7 . \x : L7 . \y : M7 . y ;
 and fls tru
   : A -> B -> B
-  = <value> ;
+  = \H8 . \I8 . \x : H8 . \y : I8 . y ;
 and tru fls
   : A -> B -> B
-  = <value> ;
+  = \I9 . \J9 . \x : I9 . \y : J9 . y ;
 and tru tru
   : A -> B -> A
-  = <value> ;
+  = \E10 . \F10 . \x : E10 . \y : F10 . x ;
 or fls fls
   : A -> B -> B
-  = <value> ;
+  = \A11 . \B11 . \x : A11 . \y : B11 . y ;
 or fls tru
   : A -> B -> A
-  = <value> ;
+  = \W11 . \X11 . \x : W11 . \y : X11 . x ;
 or tru fls
   : A -> B -> A
-  = <value> ;
+  = \M12 . \N12 . \x : M12 . \y : N12 . x ;
 or tru tru
   : A -> B -> A
-  = <value> ;
+  = \I13 . \J13 . \x : I13 . \y : J13 . x ;
 if fls fls tru
   : A -> B -> A
-  = <value> ;
+  = \O14 . \P14 . \x : O14 . \y : P14 . x ;
 if tru fls tru
   : A -> B -> B
-  = <value> ;
+  = \M15 . \N15 . \x : M15 . \y : N15 . y ;
 if fls (\x . x) (\y . y)
   : A -> A
-  = <value> ;
+  = \P16 . \y : P16 . y ;
 pair fls tru
   : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
-  = <value> ;
+  = \G17 . \H17 . \I17 . \J17 . \F17 . \p : (G17 -> H17 -> H17) -> (I17 -> J17 -> I17) -> F17 . p (\x : G17 . \y : H17 . y) (\x : I17 . \y : J17 . x) ;
 fst (pair fls tru)
   : A -> B -> B
-  = <value> ;
+  = \I18 . \J18 . \x : I18 . \y : J18 . y ;
 snd (pair fls tru)
   : A -> B -> A
-  = <value> ;
+  = \M19 . \N19 . \x : M19 . \y : N19 . x ;
 pair fls (\x . x)
   : ((A -> B -> B) -> (C -> C) -> D) -> D
-  = <value> ;
+  = \F20 . \G20 . \H20 . \E20 . \p : (F20 -> G20 -> G20) -> (H20 -> H20) -> E20 . p (\x : F20 . \y : G20 . y) (\x : H20 . x) ;
 fst (pair fls (\x . x))
   : A -> B -> B
-  = <value> ;
+  = \H21 . \I21 . \x : H21 . \y : I21 . y ;
 snd (pair fls (\x . x))
   : A -> A
-  = <value> ;
+  = \L22 . \x : L22 . x ;

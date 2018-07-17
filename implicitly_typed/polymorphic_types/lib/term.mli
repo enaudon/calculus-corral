@@ -28,13 +28,22 @@ val app' : ?loc : Location.t -> t -> t list -> t
  *)
 val bind : ?loc : Location.t -> string -> t -> t -> t
 
-(** {1 Typing} *)
+(** {1 Typing and Elaboration} *)
 
 (**
   [to_type_hm ~env tm] computes the type of [tm] under [env], via
   Algorithm W-style Hindley-Milner type inference.
  *)
 val to_type_hm : ?env : Type.t Identifier.Map.t -> t -> Type.t
+
+(**
+  [to_intl_repr ~env tm] computes an internal representation term which
+  is equivalent to [tm].
+ *)
+val to_intl_repr_hm :
+  ?env : Type.t Identifier.Map.t ->
+  t ->
+  Universal_types.Term.t
 
 (**
   [to_type_pr ~env tm] computes the type of [tm] under [env], via

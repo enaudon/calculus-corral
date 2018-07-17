@@ -1,51 +1,51 @@
 id
   : A -> A
-  = <value> ;
+  = \F . \x : F . x ;
 app
   : (A -> B) -> A -> B
-  = <value> ;
+  = \R . \Q . \x : R -> Q . \y : R . x y ;
 id
   : A -> A
-  = <value> ;
+  = \V . \x : V . x ;
 app
   : (A -> B) -> A -> B
-  = <value> ;
+  = \A1 . \B1 . \x : A1 -> B1 . \y : A1 . x y ;
 let x = app in x
   : (A -> B) -> A -> B
-  = <value> ;
+  = \M1 . \N1 . \x : M1 -> N1 . \y : M1 . x y ;
 let y = \z . z in y
   : A -> A
-  = <value> ;
+  = \X1 . \z : X1 . z ;
 \x . let y = \z . z in y
   : A -> B -> B
-  = <value> ;
+  = \G2 . \L2 . \x : G2 . \z : L2 . z ;
 \x . let y = \z . z in y x
   : A -> A
-  = <value> ;
+  = \Y2 . \x : Y2 . x ;
 id id
   : A -> A
-  = <value> ;
+  = \J3 . \x : J3 . x ;
 let x = app in let y = let z = x id in z in y
   : A -> A
-  = <value> ;
+  = \H4 . \y : H4 . y ;
 \x . \y . let x = x y in \x . y x
   : ((A -> B) -> C) -> (A -> B) -> A -> B
-  = <value> ;
+  = \B5 . \A5 . \V4 . \x : (B5 -> A5) -> V4 . \y : B5 -> A5 . \C5 : B5 . y C5 ;
 \x . let y = x in y
   : A -> A
-  = <value> ;
+  = \K5 . \x : K5 . x ;
 \x . let y = \z . x in y
   : A -> B -> A
-  = <value> ;
+  = \X5 . \Y5 . \x : X5 . \z : Y5 . x ;
 \x . let y = \z . x z in y
   : (A -> B) -> A -> B
-  = <value> ;
+  = \M6 . \L6 . \x : M6 -> L6 . \z : M6 . x z ;
 \x . \y . let x = x y in x y
   : (A -> A -> B) -> A -> B
-  = <value> ;
+  = \C7 . \A7 . \x : C7 -> C7 -> A7 . \y : C7 . x y y ;
 \x . let y = let z = x (\x . x) in z in y
   : ((A -> A) -> B) -> B
-  = <value> ;
+  = \S7 . \Q7 . \x : (S7 -> S7) -> Q7 . x (\x : S7 . x) ;
 let id = \x . x in id id
   : A -> A
-  = <value> ;
+  = \G8 . \x : G8 . x ;

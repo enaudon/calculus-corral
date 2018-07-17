@@ -20,7 +20,8 @@ let error : Loc.t -> string -> 'a = fun loc msg ->
 let solve rank c =
   let rec solve rank env c = match c with
     | Instance (id, rank, tp) ->
-      Type.unify (Type.inst rank @@ Id.Map.find id env) tp
+      let _, tp' = Type.inst rank @@ Id.Map.find id env in
+      Type.unify tp' tp
     | Equality (lhs, rhs) ->
       Type.unify lhs rhs
     | Conjunction (lhs, rhs) ->
