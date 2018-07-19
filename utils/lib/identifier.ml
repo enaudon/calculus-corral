@@ -34,24 +34,27 @@ module Map = struct
 
 end
 
-type case =
-  | Upper
-  | Lower
-
-let int_to_string case =
-  let open Miscellaneous in
-  match case with
-    | Upper -> int_to_upper
-    | Lower -> int_to_upper
-
-let fresh_lower, fresh_upper, reset =
+let fresh_lower, reset_lower =
   let cntr = ref (-1) in
-  let fresh case () =
+  let fresh () =
     incr cntr;
-    int_to_string case !cntr
+    Miscellaneous.int_to_lower !cntr
   in
   let reset () = cntr := -1 in
-  fresh Lower, fresh Upper, reset
+  fresh, reset
+
+let fresh_upper, reset_upper =
+  let cntr = ref (-1) in
+  let fresh () =
+    incr cntr;
+    Miscellaneous.int_to_upper !cntr
+  in
+  let reset () = cntr := -1 in
+  fresh, reset
+
+let reset () =
+  reset_lower ();
+  reset_upper ()
 
 let of_string str = str
 

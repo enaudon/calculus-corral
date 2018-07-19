@@ -51,19 +51,19 @@ if_zero zero one two
   = \W14 . \s : W14 -> W14 . \z : W14 . s z ;
 if_zero one one two
   : (A -> A) -> A -> A
-  = \D16 . \s : D16 -> D16 . \z : D16 . s (s z) ;
+  = \C16 . \s : C16 -> C16 . \z : C16 . s (s z) ;
 if_zero two one two
   : (A -> A) -> A -> A
-  = \H17 . \s : H17 -> H17 . \z : H17 . s (s z) ;
+  = \F17 . \s : F17 -> F17 . \z : F17 . s (s z) ;
 if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
   : (A -> A) -> A -> A
-  = \D21 . \s : D21 -> D21 . \z : D21 . s (s (s (s z))) ;
+  = \A21 . \s : A21 -> A21 . \z : A21 . s (s (s (s z))) ;
 pair zero (\x . x)
   : ((A -> B -> B) -> (C -> C) -> D) -> D
-  = \B22 . \C22 . \D22 . \A22 . \p : (B22 -> C22 -> C22) -> (D22 -> D22) -> A22 . p (\s : B22 . \z : C22 . z) (\x : D22 . x) ;
+  = \X21 . \Y21 . \Z21 . \W21 . \p : (X21 -> Y21 -> Y21) -> (Z21 -> Z21) -> W21 . p (\s : X21 . \z : Y21 . z) (\x : Z21 . x) ;
 fst (pair zero (\x . x))
   : A -> B -> B
-  = \D23 . \E23 . \s : D23 . \z : E23 . z ;
+  = \Z22 . \A23 . \s : Z22 . \z : A23 . z ;
 snd (pair zero (\x . x))
   : A -> A
-  = \H24 . \x : H24 . x ;
+  = \D24 . \x : D24 . x ;
