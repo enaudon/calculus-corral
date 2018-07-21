@@ -1,4 +1,5 @@
 module Id = Identifier
+module Misc = Miscellaneous
 
 type t =
   | Variable of Id.t
@@ -65,6 +66,34 @@ let rec subst fvs sub tp = match tp with
     univ id' @@ subst (Id.Set.add id' fvs) sub' tp
   | Universal (id, tp) ->
     univ id @@ subst (Id.Set.add id fvs) (Id.Map.del id sub) tp
+
+let simplify ?ctx:ctx_opt tp =
+
+  let fresh, env = match ctx_opt with
+    | None ->
+      let cntr = ref (-1) in
+      let fresh () =
+        incr cntr;
+        Id.of_string @@ Misc.int_to_upper !cntr
+      in
+      fresh, Id.Map.empty
+    | Some ctx_opt ->
+      ctx_opt
+  in
+
+  let rec simplify env tp = match tp with
+    | Variable id ->
+      Id.Map.find_default tp id env
+    | Function (arg, res) ->
+      let arg' = simplify env arg in
+      let res' = simplify env res in
+      func arg' res'
+    | Universal (id, tp) ->
+      let id' = fresh () in
+      univ id' @@ simplify (Id.Map.add id (var id') env) tp
+  in
+
+  simplify env tp
 
 let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in

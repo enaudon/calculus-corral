@@ -70,5 +70,12 @@ val free_vars : t -> Identifier.Set.t
 *)
 val subst : Identifier.Set.t -> t Identifier.Map.t -> t -> t
 
+(**
+  [simplify ~ctx tp] replaces each variable in [tp] with the
+  lexicographically lowest unused variable.
+ *)
+val simplify :
+  ?ctx : (unit -> Identifier.t) * t Identifier.Map.t -> t -> t
+
 (** [to_string tp] computes a string representation of [tp]. *)
 val to_string : t -> string

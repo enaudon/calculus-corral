@@ -63,5 +63,11 @@ val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
  *)
 val alpha_equivalent : t -> t -> bool
 
+(**
+  [simplify tm] replaces each type variable in [tm] with the
+  lexicographically lowest unused variable.
+ *)
+val simplify : t -> t
+
 (** [to_string tm] computes a string representation of [tm]. *)
 val to_string : t -> string

@@ -1,5 +1,6 @@
 module Id = Identifier
 module Loc = Location
+module Misc = Miscellaneous
 
 type desc =
   | Variable of Id.t
@@ -224,6 +225,41 @@ let alpha_equivalent =
         false
   in
   alpha_equiv [] []
+
+let simplify tm =
+
+  let fresh =
+    let cntr = ref (-1) in
+    fun () ->
+      incr cntr;
+      Id.of_string @@ Misc.int_to_upper !cntr
+  in
+
+  let rec simplify env tm =
+    let loc = tm.loc in
+    match tm.desc with
+      | Variable _ ->
+        tm
+      | Term_abs (arg, tp, body) ->
+        let tp' = Type.simplify ~ctx:(fresh, env) tp in
+        let body' = simplify env body in
+        abs loc arg tp' body'
+      | Term_app (fn, arg) ->
+        let fn' = simplify env fn in
+        let arg' = simplify env arg in
+        app loc fn' arg'
+      | Type_abs (arg, body) ->
+        let arg' = fresh () in
+        let env' = Id.Map.add arg (Type.var @@ Id.to_string arg') env in
+        let body' = simplify env' body in
+        tp_abs loc arg' body'
+      | Type_app (fn, arg) ->
+        let fn' = simplify env fn in
+        let arg' = Type.simplify ~ctx:(fresh, env) arg in
+        tp_app loc fn' arg'
+  in
+
+  simplify Id.Map.empty tm
 
 let rec to_string tm =
   let to_paren_string tm = Printf.sprintf "(%s)" (to_string tm) in

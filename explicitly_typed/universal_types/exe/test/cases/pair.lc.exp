@@ -9,7 +9,7 @@ snd
   = \A . \B . \p : forall C . (A -> B -> C) -> C . p B (\f : A . \s : B . s) ;
 p
   : forall C . ((forall A . A -> A) -> (forall A . A -> A -> A) -> C) -> C
-  = \C . \p : (forall A . A -> A) -> (forall A . A -> A -> A) -> C . p (\A . \x : A . x) (\A . \x : A . \y : A . x) ;
+  = \A . \p : (forall B . B -> B) -> (forall C . C -> C -> C) -> A . p (\D . \x : D . x) (\E . \x : E . \y : E . x) ;
 fst forall A . A -> A forall A . A -> A -> A p
   : forall A . A -> A
   = \A . \x : A . x ;
