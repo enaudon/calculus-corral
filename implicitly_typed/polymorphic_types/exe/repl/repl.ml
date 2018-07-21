@@ -57,13 +57,14 @@ module Repl = Language.Repl (struct
         | None ->
           let vl = to_intl_repr tm in
           ignore @@ Value.to_type vl;
-          Value.beta_reduce ?deep vl
+          Value.simplify @@ Value.beta_reduce ?deep vl
         | Some env ->
           let tp_env = Misc.thd_of_3 env in
           let vl = to_intl_repr ~env:tp_env tm in
           ignore @@
             Value.to_type ~env:(Id.Map.map Type.to_intl_repr tp_env) vl;
-          Value.beta_reduce ?deep ~env:(Misc.fst_of_3 env) vl
+          Value.simplify @@
+            Value.beta_reduce ?deep ~env:(Misc.fst_of_3 env) vl
 
   end
 

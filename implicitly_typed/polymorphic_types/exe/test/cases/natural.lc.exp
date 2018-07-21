@@ -1,69 +1,69 @@
 zero
   : A -> B -> B
-  = \E2 . \H2 . \s : E2 . \z : H2 . z ;
+  = \A . \B . \s : A . \z : B . z ;
 one
   : (A -> B) -> A -> B
-  = \T2 . \S2 . \s : T2 -> S2 . \z : T2 . s z ;
+  = \A . \B . \s : A -> B . \z : A . s z ;
 two
   : (A -> A) -> A -> A
-  = \H3 . \s : H3 -> H3 . \z : H3 . s (s z) ;
+  = \A . \s : A -> A . \z : A . s (s z) ;
 three
   : (A -> A) -> A -> A
-  = \X3 . \s : X3 -> X3 . \z : X3 . s (s (s z)) ;
+  = \A . \s : A -> A . \z : A . s (s (s z)) ;
 four
   : (A -> A) -> A -> A
-  = \P4 . \s : P4 -> P4 . \z : P4 . s (s (s (s z))) ;
+  = \A . \s : A -> A . \z : A . s (s (s (s z))) ;
 eight
   : (A -> A) -> A -> A
-  = \P5 . \s : P5 -> P5 . \z : P5 . s (s (s (s (s (s (s (s z))))))) ;
+  = \A . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
 succ
   : ((A -> B) -> C -> A) -> (A -> B) -> C -> B
-  = \H6 . \G6 . \I6 . \n : (H6 -> G6) -> I6 -> H6 . \s : H6 -> G6 . \z : I6 . s (n s z) ;
+  = \A . \B . \C . \n : (A -> B) -> C -> A . \s : A -> B . \z : C . s (n s z) ;
 add
   : (A -> B -> C) -> (A -> D -> B) -> A -> D -> C
-  = \J7 . \G7 . \F7 . \I7 . \m : J7 -> G7 -> F7 . \n : J7 -> I7 -> G7 . \s : J7 . \z : I7 . m s (n s z) ;
+  = \A . \B . \C . \D . \m : A -> B -> C . \n : A -> D -> B . \s : A . \z : D . m s (n s z) ;
 mul
   : (A -> B) -> (C -> A) -> C -> B
-  = \A8 . \Z7 . \B8 . \m : A8 -> Z7 . \n : B8 -> A8 . \s : B8 . m (n s) ;
+  = \A . \B . \C . \m : A -> B . \n : C -> A . \s : C . m (n s) ;
 if_zero
   : ((A -> B) -> C -> D) -> (E -> F -> C) -> (E -> F -> B) -> E -> F -> D
-  = \B9 . \J9 . \H9 . \G9 . \N9 . \M9 . \m : (B9 -> J9) -> H9 -> G9 . \n : N9 -> M9 -> H9 . \o : N9 -> M9 -> J9 . \s : N9 . \z : M9 . m (\x : B9 . o s z) (n s z) ;
+  = \A . \B . \C . \D . \E . \F . \m : (A -> B) -> C -> D . \n : E -> F -> C . \o : E -> F -> B . \s : E . \z : F . m (\x : A . o s z) (n s z) ;
 succ one
   : (A -> A) -> A -> A
-  = \Z9 . \s : Z9 -> Z9 . \z : Z9 . s (s z) ;
+  = \A . \s : A -> A . \z : A . s (s z) ;
 add one zero
   : (A -> B) -> A -> B
-  = \R10 . \S10 . \s : R10 -> S10 . \z : R10 . s z ;
+  = \A . \B . \s : A -> B . \z : A . s z ;
 add one two
   : (A -> A) -> A -> A
-  = \O11 . \s : O11 -> O11 . \z : O11 . s (s (s z)) ;
+  = \A . \s : A -> A . \z : A . s (s (s z)) ;
 mul two two
   : (A -> A) -> A -> A
-  = \G12 . \s : G12 -> G12 . \z : G12 . s (s (s (s z))) ;
+  = \A . \s : A -> A . \z : A . s (s (s (s z))) ;
 mul two zero
   : A -> B -> B
-  = \W12 . \X12 . \s : W12 . \z : X12 . z ;
+  = \A . \B . \s : A . \z : B . z ;
 mul two (mul two two)
   : (A -> A) -> A -> A
-  = \U13 . \s : U13 -> U13 . \z : U13 . s (s (s (s (s (s (s (s z))))))) ;
+  = \A . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
 if_zero zero one two
   : (A -> A) -> A -> A
-  = \W14 . \s : W14 -> W14 . \z : W14 . s z ;
+  = \A . \s : A -> A . \z : A . s z ;
 if_zero one one two
   : (A -> A) -> A -> A
-  = \C16 . \s : C16 -> C16 . \z : C16 . s (s z) ;
+  = \A . \s : A -> A . \z : A . s (s z) ;
 if_zero two one two
   : (A -> A) -> A -> A
-  = \F17 . \s : F17 -> F17 . \z : F17 . s (s z) ;
+  = \A . \s : A -> A . \z : A . s (s z) ;
 if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
   : (A -> A) -> A -> A
-  = \A21 . \s : A21 -> A21 . \z : A21 . s (s (s (s z))) ;
+  = \A . \s : A -> A . \z : A . s (s (s (s z))) ;
 pair zero (\x . x)
   : ((A -> B -> B) -> (C -> C) -> D) -> D
-  = \X21 . \Y21 . \Z21 . \W21 . \p : (X21 -> Y21 -> Y21) -> (Z21 -> Z21) -> W21 . p (\s : X21 . \z : Y21 . z) (\x : Z21 . x) ;
+  = \A . \B . \C . \D . \p : (A -> B -> B) -> (C -> C) -> D . p (\s : A . \z : B . z) (\x : C . x) ;
 fst (pair zero (\x . x))
   : A -> B -> B
-  = \Z22 . \A23 . \s : Z22 . \z : A23 . z ;
+  = \A . \B . \s : A . \z : B . z ;
 snd (pair zero (\x . x))
   : A -> A
-  = \D24 . \x : D24 . x ;
+  = \A . \x : A . x ;

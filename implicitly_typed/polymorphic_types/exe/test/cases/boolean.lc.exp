@@ -1,75 +1,75 @@
 fls
   : A -> B -> B
-  = \E2 . \H2 . \x : E2 . \y : H2 . y ;
+  = \A . \B . \x : A . \y : B . y ;
 tru
   : A -> B -> A
-  = \R2 . \P2 . \x : R2 . \y : P2 . x ;
+  = \A . \B . \x : A . \y : B . x ;
 not
   : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
-  = \G3 . \H3 . \I3 . \J3 . \D3 . \p : (G3 -> H3 -> H3) -> (I3 -> J3 -> I3) -> D3 . p (\x : G3 . \y : H3 . y) (\x : I3 . \y : J3 . x) ;
+  = \A . \B . \C . \D . \E . \p : (A -> B -> B) -> (C -> D -> C) -> E . p (\x : A . \y : B . y) (\x : C . \y : D . x) ;
 and
   : (A -> (B -> C -> C) -> D) -> A -> D
-  = \Z3 . \A4 . \B4 . \X3 . \p : Z3 -> (A4 -> B4 -> B4) -> X3 . \q : Z3 . p q (\x : A4 . \y : B4 . y) ;
+  = \A . \B . \C . \D . \p : A -> (B -> C -> C) -> D . \q : A . p q (\x : B . \y : C . y) ;
 or
   : ((A -> B -> A) -> C -> D) -> C -> D
-  = \S4 . \T4 . \Q4 . \P4 . \p : (S4 -> T4 -> S4) -> Q4 -> P4 . \q : Q4 . p (\x : S4 . \y : T4 . x) q ;
+  = \A . \B . \C . \D . \p : (A -> B -> A) -> C -> D . \q : C . p (\x : A . \y : B . x) q ;
 if
   : (A -> B -> C) -> A -> B -> C
-  = \L5 . \K5 . \J5 . \p : L5 -> K5 -> J5 . \x : L5 . \y : K5 . p x y ;
+  = \A . \B . \C . \p : A -> B -> C . \x : A . \y : B . p x y ;
 not fls
   : A -> B -> A
-  = \Z5 . \A6 . \x : Z5 . \y : A6 . x ;
+  = \A . \B . \x : A . \y : B . x ;
 not tru
   : A -> B -> B
-  = \P6 . \Q6 . \x : P6 . \y : Q6 . y ;
+  = \A . \B . \x : A . \y : B . y ;
 and fls fls
   : A -> B -> B
-  = \L7 . \M7 . \x : L7 . \y : M7 . y ;
+  = \A . \B . \x : A . \y : B . y ;
 and fls tru
   : A -> B -> B
-  = \H8 . \I8 . \x : H8 . \y : I8 . y ;
+  = \A . \B . \x : A . \y : B . y ;
 and tru fls
   : A -> B -> B
-  = \I9 . \J9 . \x : I9 . \y : J9 . y ;
+  = \A . \B . \x : A . \y : B . y ;
 and tru tru
   : A -> B -> A
-  = \E10 . \F10 . \x : E10 . \y : F10 . x ;
+  = \A . \B . \x : A . \y : B . x ;
 or fls fls
   : A -> B -> B
-  = \A11 . \B11 . \x : A11 . \y : B11 . y ;
+  = \A . \B . \x : A . \y : B . y ;
 or fls tru
   : A -> B -> A
-  = \W11 . \X11 . \x : W11 . \y : X11 . x ;
+  = \A . \B . \x : A . \y : B . x ;
 or tru fls
   : A -> B -> A
-  = \M12 . \N12 . \x : M12 . \y : N12 . x ;
+  = \A . \B . \x : A . \y : B . x ;
 or tru tru
   : A -> B -> A
-  = \I13 . \J13 . \x : I13 . \y : J13 . x ;
+  = \A . \B . \x : A . \y : B . x ;
 if fls fls tru
   : A -> B -> A
-  = \O14 . \P14 . \x : O14 . \y : P14 . x ;
+  = \A . \B . \x : A . \y : B . x ;
 if tru fls tru
   : A -> B -> B
-  = \M15 . \N15 . \x : M15 . \y : N15 . y ;
+  = \A . \B . \x : A . \y : B . y ;
 if fls (\x . x) (\y . y)
   : A -> A
-  = \P16 . \y : P16 . y ;
+  = \A . \y : A . y ;
 pair fls tru
   : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
-  = \G17 . \H17 . \I17 . \J17 . \F17 . \p : (G17 -> H17 -> H17) -> (I17 -> J17 -> I17) -> F17 . p (\x : G17 . \y : H17 . y) (\x : I17 . \y : J17 . x) ;
+  = \A . \B . \C . \D . \E . \p : (A -> B -> B) -> (C -> D -> C) -> E . p (\x : A . \y : B . y) (\x : C . \y : D . x) ;
 fst (pair fls tru)
   : A -> B -> B
-  = \I18 . \J18 . \x : I18 . \y : J18 . y ;
+  = \A . \B . \x : A . \y : B . y ;
 snd (pair fls tru)
   : A -> B -> A
-  = \M19 . \N19 . \x : M19 . \y : N19 . x ;
+  = \A . \B . \x : A . \y : B . x ;
 pair fls (\x . x)
   : ((A -> B -> B) -> (C -> C) -> D) -> D
-  = \F20 . \G20 . \H20 . \E20 . \p : (F20 -> G20 -> G20) -> (H20 -> H20) -> E20 . p (\x : F20 . \y : G20 . y) (\x : H20 . x) ;
+  = \A . \B . \C . \D . \p : (A -> B -> B) -> (C -> C) -> D . p (\x : A . \y : B . y) (\x : C . x) ;
 fst (pair fls (\x . x))
   : A -> B -> B
-  = \H21 . \I21 . \x : H21 . \y : I21 . y ;
+  = \A . \B . \x : A . \y : B . y ;
 snd (pair fls (\x . x))
   : A -> A
-  = \L22 . \x : L22 . x ;
+  = \A . \x : A . x ;

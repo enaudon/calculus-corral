@@ -1,9 +1,9 @@
 pair
   : A -> B -> (A -> B -> C) -> C
-  = \R . \Q . \P . \x : R . \y : Q . \p : R -> Q -> P . p x y ;
+  = \A . \B . \C . \x : A . \y : B . \p : A -> B -> C . p x y ;
 fst
   : ((A -> B -> A) -> C) -> C
-  = \H1 . \D1 . \E1 . \p : (H1 -> D1 -> H1) -> E1 . p (\x : H1 . \y : D1 . x) ;
+  = \A . \B . \C . \p : (A -> B -> A) -> C . p (\x : A . \y : B . x) ;
 snd
   : ((A -> B -> B) -> C) -> C
-  = \S1 . \X1 . \U1 . \p : (S1 -> X1 -> X1) -> U1 . p (\x : S1 . \y : X1 . y) ;
+  = \A . \B . \C . \p : (A -> B -> B) -> C . p (\x : A . \y : B . y) ;
