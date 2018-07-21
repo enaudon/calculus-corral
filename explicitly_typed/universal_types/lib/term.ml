@@ -125,7 +125,7 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
       | Term_app (fn, arg) ->
         app loc (subst fvs sub fn) (subst fvs sub arg)
       | Type_abs (arg, body) when Id.Set.mem arg fvs ->
-        let arg' = Id.fresh_lower () in
+        let arg' = Id.fresh_upper () in
         let sub' = Id.Map.add arg (Type.var @@ Id.to_string arg') sub in
         tp_abs loc arg' @@ subst (Id.Set.add arg' fvs) sub' body
       | Type_abs (arg, body) ->

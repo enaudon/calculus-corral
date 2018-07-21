@@ -170,12 +170,12 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
           (subst fvs sub tm)
           (Type.subst fvs sub tp2)
       | Unpack (tp_id, tm_id, pack, body) when Id.Set.mem tp_id fvs ->
-        let tp_id' = Id.fresh_lower () in
+        let tp_id' = Id.fresh_upper () in
         let fvs' = Id.Set.add tp_id' fvs in
         let sub' =
           Id.Map.add tp_id (Type.var @@ Id.to_string tp_id') sub
         in
-        unpack loc tp_id tm_id
+        unpack loc tp_id' tm_id
           (subst fvs' sub' pack)
           (subst fvs' sub' body)
       | Unpack (tp_id, tm_id, pack, body) ->
