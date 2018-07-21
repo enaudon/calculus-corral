@@ -50,8 +50,7 @@ module Repl = Language.Repl (struct
     let to_value ?deep ?env:env_opt tm =
       let to_intl_repr = match !type_inference_algorithm with
         | Hindley_milner -> to_intl_repr_hm
-        (* TODO: Implement [to_intl_repr_pr]. *)
-        | Pottier_remy -> to_intl_repr_hm
+        | Pottier_remy -> to_intl_repr_pr
       in
       match env_opt with
         | None ->

@@ -55,18 +55,16 @@ let rec annotate : int -> t -> (Id.t * Type.t) term = fun rank tm ->
       bind loc (id, tp) (annotate (rank + 1) value) (annotate rank body)
 
 (*
-  [infer_hm r env tp tm] performs two tasks: a) it ensures that [tm] has
-  type [tp], via Algorithm W-style Hindley-Milner type inference; and b)
-  it constructs a continuation which, when run, produces an internal
-  representation term which is equivalent to [tm].  [tm] is assumed to
-  be closed under [env].
+  [infer_hm r env tp tm] performs two tasks: (a) it ensures that [tm]
+  has type [tp], via Algorithm W-style Hindley-Milner type inference;
+  and (b) it constructs an internal representation term which is
+  equivalent to [tm].  [tm] is assumed to be closed under [env].
  *)
-let rec infer_hm
+let infer_hm
     : int ->
       Type.t Id.Map.t ->
       Type.t ->
       (Id.t * Type.t) term ->
-      unit ->
       Universal_types.Term.t
     = fun rank env exp_tp tm ->
 
@@ -86,47 +84,52 @@ let rec infer_hm
             (Type.to_string ~no_simp:() tp)
   in
 
-  let module IR = Universal_types.Term in
-  let loc = tm.loc in
-  match tm.desc with
-    | Variable id ->
-      let tvs, tp = try Type.inst rank @@ Id.Map.find id env with
-        | Id.Unbound id ->
-          error tm.loc @@
-            Printf.sprintf
-              "%s: Undefined identifier '%s'\n%!"
-              (Loc.to_string tm.loc)
-              (Id.to_string id)
-      in
-      unify tp exp_tp;
-      fun () -> IR.tp_app' ~loc
-        (IR.var ~loc @@ Id.to_string id)
-        (List.map Type.to_intl_repr tvs)
-    | Abstraction ((arg, arg_tp), body) ->
-      let body_tp = Type.var rank @@ Id.fresh_upper () in
-      let body_k =
-        infer_hm rank (Id.Map.add arg arg_tp env) body_tp body
-      in
-      unify exp_tp @@ Type.func arg_tp body_tp;
-      fun () ->
-        let body' = body_k () in
-        IR.abs ~loc (Id.to_string arg) (Type.to_intl_repr arg_tp) body'
-    | Application (fn, arg) ->
-      let tp = Type.var rank @@ Id.fresh_upper () in
-      let fn_k = infer_hm rank env (Type.func tp exp_tp) fn in
-      let arg_k = infer_hm rank env tp arg in
-      fun () -> IR.app ~loc (fn_k ()) (arg_k ())
-    | Binding ((id, tp), value, body) ->
-      let value_k = infer_hm (rank + 1) env tp value in
-      let tp' = Type.gen rank tp in
-      let tvs = Type.get_quants tp' in
-      let body_k = infer_hm rank (Id.Map.add id tp' env) exp_tp body in
-      fun () ->
-        let value' = value_k () in
-        let body' = body_k () in
-        IR.app ~loc
-          (IR.abs ~loc (Id.to_string id) (Type.to_intl_repr tp') body')
-          (IR.tp_abs' ~loc (List.map Id.to_string tvs) value')
+  let rec infer rank env exp_tp tm =
+    let module IR = Universal_types.Term in
+    let loc = tm.loc in
+    match tm.desc with
+      | Variable id ->
+        let tvs, tp = try Type.inst rank @@ Id.Map.find id env with
+          | Id.Unbound id ->
+            error tm.loc @@
+              Printf.sprintf
+                "%s: Undefined identifier '%s'\n%!"
+                (Loc.to_string tm.loc)
+                (Id.to_string id)
+        in
+        unify tp exp_tp;
+        fun () -> IR.tp_app' ~loc
+          (IR.var ~loc @@ Id.to_string id)
+          (List.map Type.to_intl_repr tvs)
+      | Abstraction ((arg, arg_tp), body) ->
+        let body_tp = Type.var rank @@ Id.fresh_upper () in
+        let env' = Id.Map.add arg arg_tp env in
+        let body_k = infer rank env' body_tp body in
+        unify exp_tp @@ Type.func arg_tp body_tp;
+        fun () ->
+          let body' = body_k () in
+          let arg_tp' = Type.to_intl_repr arg_tp in
+          IR.abs ~loc (Id.to_string arg) arg_tp' body'
+      | Application (fn, arg) ->
+        let tp = Type.var rank @@ Id.fresh_upper () in
+        let fn_k = infer rank env (Type.func tp exp_tp) fn in
+        let arg_k = infer rank env tp arg in
+        fun () -> IR.app ~loc (fn_k ()) (arg_k ())
+      | Binding ((id, tp), value, body) ->
+        let value_k = infer (rank + 1) env tp value in
+        let tp' = Type.gen rank tp in
+        let tvs = Type.get_quants tp' in
+        let env' = Id.Map.add id tp' env in
+        let body_k = infer rank env' exp_tp body in
+        fun () ->
+          let value' = value_k () in
+          let body' = body_k () in
+          IR.app ~loc
+            (IR.abs ~loc (Id.to_string id) (Type.to_intl_repr tp') body')
+            (IR.tp_abs' ~loc (List.map Id.to_string tvs) value')
+  in
+
+  infer rank env exp_tp tm ()
 
 let to_type_hm ?(env = Id.Map.empty) tm =
   let tp = Type.var default_rank @@ Id.fresh_upper () in
@@ -135,43 +138,65 @@ let to_type_hm ?(env = Id.Map.empty) tm =
 
 let to_intl_repr_hm ?(env = Id.Map.empty) tm =
   let tp = Type.var default_rank @@ Id.fresh_upper () in
-  let k = infer_hm default_rank env tp @@ annotate default_rank tm in
+  let tm' = infer_hm default_rank env tp @@ annotate default_rank tm in
   let tvs = Type.get_quants @@ Type.gen top_rank tp in
   let module IR = Universal_types.Term in
-  IR.tp_abs' ~loc:tm.loc (List.map Id.to_string tvs) (k ())
+  IR.tp_abs' ~loc:tm.loc (List.map Id.to_string tvs) tm'
 
 (*
-  [infer_pr r env tp tm] ensures that [tm] has type [tp], via
-  constraint-based type inference a la Pottier and Remy.  [tm] is
-  assumed to be closed under [env].
+  [infer_pr r env tp tm] performs two tasks: (a) it ensures that [tm]
+  has type [tp], via constraint-based type inference a la Pottier and
+  Remy; and (b) it constructs an internal representation term which is
+  equivalent to [tm].  [tm] is assumed to be closed under [env].
  *)
 let infer_pr
-    : int -> Type.t Id.Map.t -> Type.t -> (Id.t * Type.t) term -> unit
+    : int ->
+      Type.t Id.Map.t ->
+      Type.t ->
+      (Id.t * Type.t) term ->
+      Universal_types.Term.t
     = fun rank env exp_tp tm ->
 
   let module TC = Type_constraint in
 
   let rec constrain rank exp_tp tm =
+
+    let module IR = Universal_types.Term in
+    let open TC.Operators in
+
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        TC.inst ~loc rank id exp_tp
+        TC.inst ~loc rank id exp_tp <$>
+          fun tvs ->
+            IR.tp_app' ~loc
+              (IR.var ~loc @@ Id.to_string id)
+              (List.map Type.to_intl_repr tvs)
       | Abstraction ((arg, arg_tp), body) ->
-        TC.exists ~loc @@ fun body_id ->
+        TC.exists ~loc (fun body_id ->
           let body_tp = Type.var rank body_id in
           TC.conj
             (TC.def arg arg_tp @@ constrain rank body_tp body)
-            (TC.equals exp_tp @@ Type.func arg_tp body_tp)
+            (TC.equals exp_tp @@ Type.func arg_tp body_tp)) <$>
+          fun (_, (body', ())) ->
+            let arg_tp' = Type.to_intl_repr arg_tp in
+            IR.abs ~loc (Id.to_string arg) arg_tp' body'
       | Application (fn, arg) ->
-        TC.exists ~loc @@ fun arg_id ->
+        TC.exists ~loc (fun arg_id ->
           let arg_tp = Type.var rank arg_id in
           TC.conj
             (constrain rank (Type.func arg_tp exp_tp) fn)
-            (constrain rank arg_tp arg)
+            (constrain rank arg_tp arg)) <$>
+          fun (_, (fn', arg')) -> IR.app ~loc fn' arg'
       | Binding ((id, tp), value, body) ->
         let value_constraint = constrain (rank + 1) tp value in
         let body_constraint = constrain rank exp_tp body in
-        TC.let_ id value_constraint tp body_constraint
+        TC.let_ id value_constraint tp body_constraint <$>
+          fun (tp', tvs, value', body') ->
+            IR.app ~loc
+              (IR.abs ~loc (Id.to_string id) (Type.to_intl_repr tp') body')
+              (IR.tp_abs' ~loc (List.map Id.to_string tvs) value')
+
   in
 
   TC.solve rank @@
@@ -179,8 +204,15 @@ let infer_pr
 
 let to_type_pr ?(env = Id.Map.empty) tm =
   let tp = Type.var default_rank @@ Id.fresh_upper () in
-  infer_pr default_rank env tp @@ annotate default_rank tm;
+  ignore (infer_pr default_rank env tp @@ annotate default_rank tm);
   Type.gen top_rank tp
+
+let to_intl_repr_pr ?(env = Id.Map.empty) tm =
+  let tp = Type.var default_rank @@ Id.fresh_upper () in
+  let tm' = infer_pr default_rank env tp @@ annotate default_rank tm in
+  let tvs = Type.get_quants @@ Type.gen top_rank tp in
+  let module IR = Universal_types.Term in
+  IR.tp_abs' ~loc:tm.loc (List.map Id.to_string tvs) tm'
 
 (* Utilities *)
 
