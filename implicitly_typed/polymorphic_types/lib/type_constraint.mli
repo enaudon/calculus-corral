@@ -6,11 +6,14 @@ type 'a t
 (** {1 Constructors} *)
 
 (**
-  [inst rank id tp] ensures that [tp] is an instance of the scheme to
+  [inst id tp] ensures that [tp] is an instance of the scheme to
   which [id] is bound.
  *)
 val inst :
-  ?loc : Location.t -> int -> Identifier.t -> Type.t -> Type.t list t
+  ?loc : Location.t ->
+  Identifier.t ->
+  Type.t ->
+  Universal_types.Type.t list t
 
 (** [equals lhs rhs] equates the two types [lhs] and [rhs]. *)
 val equals : ?loc : Location.t -> Type.t -> Type.t -> unit t
@@ -18,9 +21,12 @@ val equals : ?loc : Location.t -> Type.t -> Type.t -> unit t
 (** [conj lhs rhs] conjoins of the constraints [lhs] and [rhs]. *)
 val conj : ?loc : Location.t -> 'a t -> 'b t -> ('a * 'b) t
 
-(** [exists (fun id -> c)] existentially quantifies [id] in [c]. *)
+(** [exists rank (fun tp -> c)] existentially quantifies [id] in [c]. *)
 val exists :
-  ?loc : Location.t -> (Identifier.t -> 'a t) -> (Identifier.t * 'a) t
+  ?loc : Location.t ->
+  int ->
+  (Type.t -> 'a t) ->
+  (Universal_types.Type.t * 'a) t
 
 (** [def id tp c] binds [id] to [tp] within [c]. *)
 val def : ?loc : Location.t -> Identifier.t -> Type.t -> 'a t -> 'a t
@@ -32,7 +38,7 @@ val let_ :
   'a t ->
   Type.t ->
   'b t ->
-  (Type.t * Identifier.t list * 'a * 'b) t
+  (Universal_types.Type.t * Identifier.t list * 'a * 'b) t
 
 (**
   [map f c] produces a constraint that is identical to [c] except that

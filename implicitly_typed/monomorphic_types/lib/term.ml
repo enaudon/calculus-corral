@@ -1,17 +1,15 @@
 module Id = Identifier
 module Loc = Location
 
-type 'a desc =
+type desc =
   | Variable of Id.t
-  | Abstraction of 'a * 'a term
-  | Application of 'a term * 'a term
+  | Abstraction of Id.t * t
+  | Application of t * t
 
-and 'a term = {
-  desc : 'a desc ;
+and t = {
+  desc : desc ;
   loc : Loc.t ;
 }
-
-type t = Id.t term
 
 (* Internal utilities *)
 
@@ -27,29 +25,12 @@ let app loc fn arg = { desc = Application (fn, arg); loc }
 (* Typing *)
 
 (*
-  [annotate tm] constructs an term which is identical to [tm] except
-  that abstractions are annotated with types.  [annotate] does not do
-  inference, so the types are simply fresh variables.
- *)
-let rec annotate : t -> (Id.t * Type.t) term = fun tm ->
-  let loc = tm.loc in
-  match tm.desc with
-    | Variable id ->
-      var loc id
-    | Abstraction (arg, body) ->
-      let tp = Type.var @@ Id.fresh_upper () in
-      abs loc (arg, tp) @@ annotate body
-    | Application (fn, arg) ->
-      app loc (annotate fn) (annotate arg)
-
-(*
   [infer_hm env tp tm] ensures that [tm] has type [tp], via Algorithm
   W-style Hindley-Milner type inference.  [tm] is assumed to be closed
   under [env].
  *)
-let rec infer_hm
-    : Type.t Id.Map.t -> Type.t -> (Id.t * Type.t) term -> unit
-    = fun env exp_tp tm ->
+let rec infer_hm : Type.t Id.Map.t -> Type.t -> t -> unit =
+    fun env exp_tp tm ->
 
   let unify tp1 tp2 =
     try Type.unify tp1 tp2 with
@@ -72,7 +53,8 @@ let rec infer_hm
               (Id.to_string id)
       in
       unify tp exp_tp
-    | Abstraction ((arg, arg_tp), body) ->
+    | Abstraction (arg, body) ->
+      let arg_tp = Type.var @@ Id.fresh_upper () in
       let body_tp = Type.var @@ Id.fresh_upper () in
       infer_hm (Id.Map.add arg arg_tp env) body_tp body;
       unify exp_tp @@ Type.func arg_tp body_tp
@@ -83,7 +65,7 @@ let rec infer_hm
 
 let to_type_hm ?(env = Id.Map.empty) tm =
   let tp = Type.var @@ Id.fresh_upper () in
-  infer_hm env tp @@ annotate tm;
+  infer_hm env tp tm;
   tp
 
 (*
@@ -91,9 +73,8 @@ let to_type_hm ?(env = Id.Map.empty) tm =
   constraint-based type inference a la Pottier and Remy.  [tm] is
   assumed to be closed under [env].
  *)
-let infer_pr
-    : Type.t Id.Map.t -> Type.t -> (Id.t * Type.t) term -> unit
-    = fun env exp_tp tm ->
+let infer_pr : Type.t Id.Map.t -> Type.t -> t -> unit =
+    fun env exp_tp tm ->
 
   let module TC = Type_constraint in
 
@@ -102,12 +83,14 @@ let infer_pr
     match tm.desc with
       | Variable id ->
         TC.var_eq ~loc id exp_tp
-      | Abstraction ((arg, arg_tp), body) ->
-        TC.exists ~loc @@ fun body_id ->
-          let body_tp = Type.var body_id in
-          TC.conj
-            (TC.def arg arg_tp @@ constrain body_tp body)
-            (TC.type_eq exp_tp @@ Type.func arg_tp body_tp)
+      | Abstraction (arg, body) ->
+        TC.exists ~loc @@ fun arg_id ->
+          let arg_tp = Type.var arg_id in
+          TC.exists ~loc @@ fun body_id ->
+            let body_tp = Type.var body_id in
+            TC.conj
+              (TC.def arg arg_tp @@ constrain body_tp body)
+              (TC.type_eq exp_tp @@ Type.func arg_tp body_tp)
       | Application (fn, arg) ->
         TC.exists ~loc @@ fun arg_id ->
           let arg_tp = Type.var arg_id in
@@ -121,7 +104,7 @@ let infer_pr
 
 let to_type_pr ?(env = Id.Map.empty) tm =
   let tp = Type.var @@ Id.fresh_upper () in
-  infer_pr env tp @@ annotate tm;
+  infer_pr env tp tm;
   tp
 
 (* Utilities *)

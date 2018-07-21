@@ -2,7 +2,7 @@ module Id = Identifier
 module Loc = Location
 
 type co =
-  | Instance of Id.t * int * Type.t * Type.t list ref
+  | Instance of Id.t * Type.t * Type.t list ref
   | Equality of Type.t * Type.t
   | Conjunction of co * co
   | Existential of Id.t * co
@@ -23,7 +23,7 @@ let error : Loc.t -> string -> 'a = fun loc msg ->
 let solve rank (c, k) =
 
   let rec solve rank env c = match c with
-    | Instance (id, rank, tp, tvs_ref) ->
+    | Instance (id, tp, tvs_ref) ->
       let tvs, tp' = Type.inst rank @@ Id.Map.find id env in
       tvs_ref := tvs;
       Type.unify tp' tp
@@ -73,7 +73,7 @@ let to_string ?no_simp (c, _) =
   let rec to_string c =
     let to_paren_string c = Printf.sprintf "(%s)" (to_string c) in
     match c with
-      | Instance (id, _, tp, _) ->
+      | Instance (id, tp, _) ->
         Printf.sprintf "%s = %s" (Id.to_string id) (type_to_string tp)
       | Equality (lhs, rhs) ->
         Printf.sprintf "%s = %s"
@@ -113,9 +113,10 @@ let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
   | Some p -> fun c -> Localized (p, c)
   | None -> fun c -> c
 
-let inst ?loc rank id tp =
+let inst ?loc id tp =
   let tvs = ref [] in
-  loc_wrap loc @@ Instance (id, rank, tp, tvs), fun () -> !tvs
+  loc_wrap loc @@ Instance (id, tp, tvs),
+  fun () -> List.map Type.to_intl_repr !tvs
 
 let equals ?loc lhs rhs =
   loc_wrap loc @@ Equality (lhs, rhs), fun () -> ()
@@ -124,11 +125,12 @@ let conj ?loc (lhs_c, lhs_k) (rhs_c, rhs_k) =
   loc_wrap loc @@ Conjunction (lhs_c, rhs_c),
   fun () -> lhs_k (), rhs_k ()
 
-let exists ?loc fn =
+let exists ?loc rank fn =
   let id = Id.fresh_upper () in
-  let c, k = fn id in
+  let tp = Type.var rank id in
+  let c, k = fn tp in
   loc_wrap loc @@ Existential (id, c),
-  fun () -> id, k ()
+  fun () -> Type.to_intl_repr tp, k ()
 
 let def ?loc id tp (c, k) =
   loc_wrap loc @@ Def_binding (id, tp, c), k
@@ -137,7 +139,7 @@ let let_ ?loc id (lhs_c, lhs_k) tp (rhs_c, rhs_k) =
   let tvs = ref [] in
   let tp' = ref tp in
   loc_wrap loc @@ Let_binding (id, lhs_c, tp, tp', rhs_c, tvs),
-  fun () -> !tp', !tvs, lhs_k (), rhs_k ()
+  fun () -> Type.to_intl_repr !tp', !tvs, lhs_k (), rhs_k ()
 
 let map f (c, k) = c, fun () -> f @@ k ()
 
