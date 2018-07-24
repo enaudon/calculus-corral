@@ -146,18 +146,18 @@ let infer_pr
             IRTm.tp_app' ~loc (IRTm.var ~loc @@ Id.to_string id) tps
       | Abstraction (arg, body) ->
         TC.exists ~loc (fun arg_tp ->
-          TC.exists ~loc @@ fun body_tp ->
-            TC.conj
+          TC.exists' ~loc @@ fun body_tp ->
+            TC.conj_left
               (TC.def arg arg_tp @@ constrain body_tp body)
               (TC.equals exp_tp @@ Type.func arg_tp body_tp)) <$>
-          fun (arg_tp, (_, (body', ()))) ->
+          fun (arg_tp, body') ->
             IRTm.abs ~loc (Id.to_string arg) arg_tp body'
       | Application (fn, arg) ->
-        TC.exists ~loc (fun arg_tp ->
+        TC.exists' ~loc (fun arg_tp ->
           TC.conj
             (constrain (Type.func arg_tp exp_tp) fn)
             (constrain arg_tp arg)) <$>
-          fun (_, (fn', arg')) -> IRTm.app ~loc fn' arg'
+          fun (fn', arg') -> IRTm.app ~loc fn' arg'
       | Binding (id, value, body) ->
         TC.let_ ~loc id
           (fun tp -> constrain tp value)

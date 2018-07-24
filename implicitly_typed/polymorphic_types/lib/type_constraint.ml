@@ -113,6 +113,8 @@ let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
   | Some p -> fun c -> Localized (p, c)
   | None -> fun c -> c
 
+let map f (c, k) = c, fun () -> f @@ k ()
+
 let inst ?loc id tp =
   let tvs = ref [] in
   loc_wrap loc @@ Instance (id, tp, tvs),
@@ -125,11 +127,17 @@ let conj ?loc (lhs_c, lhs_k) (rhs_c, rhs_k) =
   loc_wrap loc @@ Conjunction (lhs_c, rhs_c),
   fun () -> lhs_k (), rhs_k ()
 
+let conj_left ?loc lhs rhs = map fst @@ conj ?loc lhs rhs
+
+let conj_right ?loc lhs rhs = map snd @@ conj ?loc lhs rhs
+
 let exists ?loc fn =
   let tv = Type.var 0 @@ Id.fresh_upper () in
   let c, k = fn tv in
   loc_wrap loc @@ Existential (tv, c),
   fun () -> Type.to_intl_repr tv, k ()
+
+let exists' ?loc fn = map snd @@ exists ?loc fn
 
 let def ?loc id tp (c, k) =
   loc_wrap loc @@ Def_binding (id, tp, c), k
@@ -140,8 +148,6 @@ let let_ ?loc id fn (rhs_c, rhs_k) =
   let tv_ref = ref tv in
   loc_wrap loc @@ Let_binding (id, tv_ref, lhs_c, rhs_c),
   fun () -> Type.to_intl_repr !tv_ref, lhs_k (), rhs_k ()
-
-let map f (c, k) = c, fun () -> f @@ k ()
 
 module Operators = struct
 

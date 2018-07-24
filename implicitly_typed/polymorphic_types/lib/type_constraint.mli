@@ -21,11 +21,29 @@ val equals : ?loc : Location.t -> Type.t -> Type.t -> unit t
 (** [conj lhs rhs] conjoins of the constraints [lhs] and [rhs]. *)
 val conj : ?loc : Location.t -> 'a t -> 'b t -> ('a * 'b) t
 
+(**
+  [conj_left lhs rhs] behaves as [conj], but only returns the value
+  produced by [lhs].
+*)
+val conj_left : ?loc : Location.t -> 'a t -> 'b t -> 'a t
+
+(**
+  [conj_right lhs rhs] behaves as [conj], but only returns the value
+  produced by [rhs].
+*)
+val conj_right : ?loc : Location.t -> 'a t -> 'b t -> 'b t
+
 (** [exists (fun tp -> c)] existentially quantifies [tp] in [c]. *)
 val exists :
   ?loc : Location.t ->
   (Type.t -> 'a t) ->
   (Universal_types.Type.t * 'a) t
+
+(**
+  [exists' (fun tp -> c)] behaves as [exists], but does not return the
+  type produced by solving [c].
+ *)
+val exists' : ?loc : Location.t -> (Type.t -> 'a t) -> 'a t
 
 (** [def id tp c] binds [id] to [tp] within [c]. *)
 val def : ?loc : Location.t -> Identifier.t -> Type.t -> 'a t -> 'a t
