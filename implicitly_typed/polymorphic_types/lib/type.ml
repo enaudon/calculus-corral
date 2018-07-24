@@ -5,12 +5,14 @@ module Misc = Miscellaneous
 type mono = desc DS.t
 
 and desc =
-  | Variable of Id.t * int
+  | Variable of Id.t * int ref
   | Function of mono * mono
 
 type t = { quants : Id.t list; body : mono }
 
-(* Exceptions *)
+(* Exceptions and errors *)
+
+let error : string -> 'a = fun msg -> failwith msg
 
 exception Occurs of Id.t * t
 
@@ -29,7 +31,7 @@ let raise_exp_mono : unit -> 'a = fun () -> raise @@ Expected_mono
 (* Internal constructors *)
 
 let var : int -> Id.t -> mono = fun rank id ->
-  DS.singleton @@ Variable (id, rank)
+  DS.singleton @@ Variable (id, ref rank)
 
 let func : mono -> mono -> mono = fun arg res ->
   DS.singleton @@ Function (arg, res)
@@ -85,7 +87,7 @@ let gen rank tp =
 
   let rec get_scheme_vars acc tp = match DS.find tp with
     | Variable (id, rank') ->
-      if rank' > rank && not @@ contains id acc then
+      if !rank' > rank && not @@ contains id acc then
         id :: acc
       else
         acc
@@ -141,7 +143,7 @@ let simplify { quants; body } =
 
   let rec simplify tp = match DS.find tp with
     | Variable (id, rank) ->
-      var rank @@ simplify_id id
+      var !rank @@ simplify_id id
     | Function (arg, res) ->
       let arg' = simplify arg in
       let res' = simplify res in
@@ -189,3 +191,10 @@ let func' args res =
   List.fold_left (fun res arg -> func arg res) res (List.rev args)
 
 let get_quants { quants; _ } = quants
+
+(* Setters *)
+
+let set_rank rank { quants; body } = match quants, DS.find body with
+  | [], Variable (_, rank') -> rank' := rank
+  | [], _ -> error "Type.set_rank: expected variable"
+  | _ -> raise_exp_mono ()

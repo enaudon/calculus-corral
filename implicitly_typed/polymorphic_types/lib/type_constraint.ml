@@ -5,7 +5,7 @@ type co =
   | Instance of Id.t * Type.t * Type.t list ref
   | Equality of Type.t * Type.t
   | Conjunction of co * co
-  | Existential of Id.t * co
+  | Existential of Type.t * co
   | Def_binding of Id.t * Type.t * co
   | Let_binding of Id.t * Type.t ref * co * co
   | Localized of Loc.t * co
@@ -31,14 +31,16 @@ let solve rank (c, k) =
     | Conjunction (lhs, rhs) ->
       solve rank env lhs;
       solve rank env rhs
-    | Existential (_, c) ->
+    | Existential (tv, c) ->
+      Type.set_rank rank tv;
       solve rank env c
     | Def_binding (id, tp, c) ->
       solve rank (Id.Map.add id tp env) c
-    | Let_binding (id, tp_ref, lhs, rhs) ->
+    | Let_binding (id, tv_ref, lhs, rhs) ->
+      Type.set_rank (rank + 1) !tv_ref;
       solve (rank + 1) env lhs;
-      let tp = Type.gen rank !tp_ref in
-      tp_ref := tp;
+      let tp = Type.gen rank !tv_ref in
+      tv_ref := tp;
       solve rank (Id.Map.add id tp env) rhs
     | Localized (loc, c) ->
       try solve rank env c with
@@ -87,17 +89,17 @@ let to_string ?no_simp (c, _) =
             to_string' c
         in
         Printf.sprintf "%s & %s" (to_string' lhs) (to_string' rhs)
-      | Existential (id, c) ->
-        Printf.sprintf "exists %s . %s" (Id.to_string id) (to_string c)
+      | Existential (tv, c) ->
+        Printf.sprintf "exists %s . %s" (Type.to_string tv) (to_string c)
       | Def_binding (id, tp, c) ->
         Printf.sprintf "def %s = %s in %s"
           (Id.to_string id)
           (type_to_string tp)
           (to_string c)
-      | Let_binding (id, tp_ref, lhs, rhs) ->
+      | Let_binding (id, tv_ref, lhs, rhs) ->
         Printf.sprintf "let %s = %s[%s] in %s"
           (Id.to_string id)
-          (type_to_string !tp_ref)
+          (type_to_string !tv_ref)
           (to_string lhs)
           (to_string rhs)
       | Localized (_, c) ->
@@ -123,22 +125,21 @@ let conj ?loc (lhs_c, lhs_k) (rhs_c, rhs_k) =
   loc_wrap loc @@ Conjunction (lhs_c, rhs_c),
   fun () -> lhs_k (), rhs_k ()
 
-let exists ?loc rank fn =
-  let id = Id.fresh_upper () in
-  let tp = Type.var rank id in
-  let c, k = fn tp in
-  loc_wrap loc @@ Existential (id, c),
-  fun () -> Type.to_intl_repr tp, k ()
+let exists ?loc fn =
+  let tv = Type.var 0 @@ Id.fresh_upper () in
+  let c, k = fn tv in
+  loc_wrap loc @@ Existential (tv, c),
+  fun () -> Type.to_intl_repr tv, k ()
 
 let def ?loc id tp (c, k) =
   loc_wrap loc @@ Def_binding (id, tp, c), k
 
-let let_ ?loc rank id fn (rhs_c, rhs_k) =
-  let tp = Type.var rank id in
-  let lhs_c, lhs_k = fn tp in
-  let tp = ref tp in
-  loc_wrap loc @@ Let_binding (id, tp, lhs_c, rhs_c),
-  fun () -> Type.to_intl_repr !tp, lhs_k (), rhs_k ()
+let let_ ?loc id fn (rhs_c, rhs_k) =
+  let tv = Type.var 0 id in
+  let lhs_c, lhs_k = fn tv in
+  let tv_ref = ref tv in
+  loc_wrap loc @@ Let_binding (id, tv_ref, lhs_c, rhs_c),
+  fun () -> Type.to_intl_repr !tv_ref, lhs_k (), rhs_k ()
 
 let map f (c, k) = c, fun () -> f @@ k ()
 

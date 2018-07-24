@@ -44,6 +44,10 @@ val func' : t list -> t -> t
 (** [get_quants tp] computes the quantified type variables in [tp]. *)
 val get_quants : t -> Identifier.t list
 
+(** {1 Setters} *)
+
+val set_rank : int -> t -> unit
+
 (** {1 Inference} *)
 
 (** [unify tp1 tp2] unifies [tp1] and [tp2]. *)

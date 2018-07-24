@@ -92,7 +92,7 @@ let infer_hm
         let arg_k = infer rank env tp arg in
         fun () -> IR.app ~loc (fn_k ()) (arg_k ())
       | Binding (id, value, body) ->
-        let tp = Type.var rank @@ Id.fresh_upper () in
+        let tp = Type.var (rank + 1) @@ Id.fresh_upper () in
         let value_k = infer (rank + 1) env tp value in
         let tp' = Type.gen rank tp in
         let tvs = Type.get_quants tp' in
@@ -132,7 +132,7 @@ let infer_pr
 
   let module TC = Type_constraint in
 
-  let rec constrain rank exp_tp tm =
+  let rec constrain exp_tp tm =
 
     let module IRTm = Universal_types.Term in
     let module IRTp = Universal_types.Type in
@@ -145,23 +145,23 @@ let infer_pr
           fun tps ->
             IRTm.tp_app' ~loc (IRTm.var ~loc @@ Id.to_string id) tps
       | Abstraction (arg, body) ->
-        TC.exists ~loc rank (fun arg_tp ->
-          TC.exists ~loc rank @@ fun body_tp ->
+        TC.exists ~loc (fun arg_tp ->
+          TC.exists ~loc @@ fun body_tp ->
             TC.conj
-              (TC.def arg arg_tp @@ constrain rank body_tp body)
+              (TC.def arg arg_tp @@ constrain body_tp body)
               (TC.equals exp_tp @@ Type.func arg_tp body_tp)) <$>
           fun (arg_tp, (_, (body', ()))) ->
             IRTm.abs ~loc (Id.to_string arg) arg_tp body'
       | Application (fn, arg) ->
-        TC.exists ~loc rank (fun arg_tp ->
+        TC.exists ~loc (fun arg_tp ->
           TC.conj
-            (constrain rank (Type.func arg_tp exp_tp) fn)
-            (constrain rank arg_tp arg)) <$>
+            (constrain (Type.func arg_tp exp_tp) fn)
+            (constrain arg_tp arg)) <$>
           fun (_, (fn', arg')) -> IRTm.app ~loc fn' arg'
       | Binding (id, value, body) ->
-        TC.let_ ~loc rank id
-          (fun tp -> constrain (rank + 1) tp value)
-          (constrain rank exp_tp body) <$>
+        TC.let_ ~loc id
+          (fun tp -> constrain tp value)
+          (constrain exp_tp body) <$>
           fun (tp, value', body') ->
             let tvs = fst @@ IRTp.get_forall' tp in
             IRTm.app ~loc
@@ -171,7 +171,7 @@ let infer_pr
   in
 
   TC.solve rank @@
-    Id.Map.fold (fun id -> TC.def id) env (constrain rank exp_tp tm)
+    Id.Map.fold (fun id -> TC.def id) env (constrain exp_tp tm)
 
 let to_type_pr ?(env = Id.Map.empty) tm =
   let tp = Type.var default_rank @@ Id.fresh_upper () in
