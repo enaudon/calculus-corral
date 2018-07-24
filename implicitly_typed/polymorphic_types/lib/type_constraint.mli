@@ -21,7 +21,7 @@ val equals : ?loc : Location.t -> Type.t -> Type.t -> unit t
 (** [conj lhs rhs] conjoins of the constraints [lhs] and [rhs]. *)
 val conj : ?loc : Location.t -> 'a t -> 'b t -> ('a * 'b) t
 
-(** [exists rank (fun tp -> c)] existentially quantifies [id] in [c]. *)
+(** [exists rank (fun tp -> c)] existentially quantifies [tp] in [c]. *)
 val exists :
   ?loc : Location.t ->
   int ->
@@ -31,14 +31,17 @@ val exists :
 (** [def id tp c] binds [id] to [tp] within [c]. *)
 val def : ?loc : Location.t -> Identifier.t -> Type.t -> 'a t -> 'a t
 
-(** [let_ id c1 tp c2] binds [id] to [tp] within [c2]. *)
+(**
+  [let_ rank id (fun tp -> c1) c2] binds [id] to [tp] within [c2], given
+  that [c1] is satisfiable.
+ *)
 val let_ :
   ?loc : Location.t ->
+  int ->
   Identifier.t ->
-  'a t ->
-  Type.t ->
+  (Type.t -> 'a t) ->
   'b t ->
-  (Universal_types.Type.t * Identifier.t list * 'a * 'b) t
+  (Universal_types.Type.t * 'a * 'b) t
 
 (**
   [map f c] produces a constraint that is identical to [c] except that

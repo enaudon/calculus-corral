@@ -37,6 +37,11 @@ val get_func : t -> t * t
  *)
 val get_forall : t -> Identifier.t * t
 
+(**
+  [get_forall' tp] computes the variable identifiers and body of [tp].
+ *)
+val get_forall' : t -> Identifier.t list * t
+
 (** {1 Transformations} *)
 
 (**

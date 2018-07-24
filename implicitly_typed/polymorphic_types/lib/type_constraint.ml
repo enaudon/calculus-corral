@@ -7,8 +7,7 @@ type co =
   | Conjunction of co * co
   | Existential of Id.t * co
   | Def_binding of Id.t * Type.t * co
-  | Let_binding of
-    Id.t * co * Type.t * Type.t ref * co * Identifier.t list ref
+  | Let_binding of Id.t * Type.t ref * co * co
   | Localized of Loc.t * co
 
 type 'a t = co * (unit -> 'a)
@@ -36,12 +35,11 @@ let solve rank (c, k) =
       solve rank env c
     | Def_binding (id, tp, c) ->
       solve rank (Id.Map.add id tp env) c
-    | Let_binding (id, lhs, tp, tp_ref, rhs, tvs_ref) ->
-      let tp' = Type.gen rank tp in
-      tp_ref := tp';
-      tvs_ref := Type.get_quants tp';
+    | Let_binding (id, tp_ref, lhs, rhs) ->
       solve (rank + 1) env lhs;
-      solve rank (Id.Map.add id tp' env) rhs
+      let tp = Type.gen rank !tp_ref in
+      tp_ref := tp;
+      solve rank (Id.Map.add id tp env) rhs
     | Localized (loc, c) ->
       try solve rank env c with
         | Type.Cannot_unify (tp1, tp2) ->
@@ -96,11 +94,11 @@ let to_string ?no_simp (c, _) =
           (Id.to_string id)
           (type_to_string tp)
           (to_string c)
-      | Let_binding (id, lhs, tp, _, rhs, _) ->
+      | Let_binding (id, tp_ref, lhs, rhs) ->
         Printf.sprintf "let %s = %s[%s] in %s"
           (Id.to_string id)
+          (type_to_string !tp_ref)
           (to_string lhs)
-          (type_to_string tp)
           (to_string rhs)
       | Localized (_, c) ->
         to_string c
@@ -135,11 +133,12 @@ let exists ?loc rank fn =
 let def ?loc id tp (c, k) =
   loc_wrap loc @@ Def_binding (id, tp, c), k
 
-let let_ ?loc id (lhs_c, lhs_k) tp (rhs_c, rhs_k) =
-  let tvs = ref [] in
-  let tp' = ref tp in
-  loc_wrap loc @@ Let_binding (id, lhs_c, tp, tp', rhs_c, tvs),
-  fun () -> Type.to_intl_repr !tp', !tvs, lhs_k (), rhs_k ()
+let let_ ?loc rank id fn (rhs_c, rhs_k) =
+  let tp = Type.var rank id in
+  let lhs_c, lhs_k = fn tp in
+  let tp = ref tp in
+  loc_wrap loc @@ Let_binding (id, tp, lhs_c, rhs_c),
+  fun () -> Type.to_intl_repr !tp, lhs_k (), rhs_k ()
 
 let map f (c, k) = c, fun () -> f @@ k ()
 

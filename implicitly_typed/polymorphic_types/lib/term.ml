@@ -134,7 +134,8 @@ let infer_pr
 
   let rec constrain rank exp_tp tm =
 
-    let module IR = Universal_types.Term in
+    let module IRTm = Universal_types.Term in
+    let module IRTp = Universal_types.Type in
     let open TC.Operators in
 
     let loc = tm.loc in
@@ -142,7 +143,7 @@ let infer_pr
       | Variable id ->
         TC.inst ~loc id exp_tp <$>
           fun tps ->
-            IR.tp_app' ~loc (IR.var ~loc @@ Id.to_string id) tps
+            IRTm.tp_app' ~loc (IRTm.var ~loc @@ Id.to_string id) tps
       | Abstraction (arg, body) ->
         TC.exists ~loc rank (fun arg_tp ->
           TC.exists ~loc rank @@ fun body_tp ->
@@ -150,22 +151,22 @@ let infer_pr
               (TC.def arg arg_tp @@ constrain rank body_tp body)
               (TC.equals exp_tp @@ Type.func arg_tp body_tp)) <$>
           fun (arg_tp, (_, (body', ()))) ->
-            IR.abs ~loc (Id.to_string arg) arg_tp body'
+            IRTm.abs ~loc (Id.to_string arg) arg_tp body'
       | Application (fn, arg) ->
         TC.exists ~loc rank (fun arg_tp ->
           TC.conj
             (constrain rank (Type.func arg_tp exp_tp) fn)
             (constrain rank arg_tp arg)) <$>
-          fun (_, (fn', arg')) -> IR.app ~loc fn' arg'
+          fun (_, (fn', arg')) -> IRTm.app ~loc fn' arg'
       | Binding (id, value, body) ->
-        let tp = Type.var rank @@ Id.fresh_upper () in
-        let value_constraint = constrain (rank + 1) tp value in
-        let body_constraint = constrain rank exp_tp body in
-        TC.let_ id value_constraint tp body_constraint <$>
-          fun (tp', tvs, value', body') ->
-            IR.app ~loc
-              (IR.abs ~loc (Id.to_string id) tp' body')
-              (IR.tp_abs' ~loc (List.map Id.to_string tvs) value')
+        TC.let_ ~loc rank id
+          (fun tp -> constrain (rank + 1) tp value)
+          (constrain rank exp_tp body) <$>
+          fun (tp, value', body') ->
+            let tvs = fst @@ IRTp.get_forall' tp in
+            IRTm.app ~loc
+              (IRTm.abs ~loc (Id.to_string id) tp body')
+              (IRTm.tp_abs' ~loc (List.map Id.to_string tvs) value')
 
   in
 

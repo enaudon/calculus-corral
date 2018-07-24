@@ -132,3 +132,10 @@ let get_func tp = match tp with
 let get_forall tp = match tp with
   | Universal (id, tp) -> id, tp
   | _ -> invalid_arg "Type.get_forall: expected universal"
+
+let get_forall' tp =
+  let rec get_forall acc tp = match tp with
+    | Universal (id, tp) -> get_forall (id :: acc) tp
+    | _ -> acc, tp
+  in
+  get_forall [] tp
