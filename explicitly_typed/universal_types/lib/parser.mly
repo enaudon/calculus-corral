@@ -1,5 +1,6 @@
 %{
 
+module Id = Identifier
 module Loc = Location
 
 let get_loc () =
@@ -14,15 +15,31 @@ let error msg =
       __MODULE__
       msg
 
-let var id = Term.var ~loc:(get_loc ()) id
+module Type = struct
 
-let abs id tp arg = Term.abs ~loc:(get_loc ()) id tp arg
+  include Type
 
-let app fn arg = Term.app ~loc:(get_loc ()) fn arg
+  let var id = var @@ Id.of_string id
 
-let tp_abs id arg = Term.tp_abs ~loc:(get_loc ()) id arg
+  let forall quants body = forall (Id.of_string quants) body
 
-let tp_app fn arg = Term.tp_app ~loc:(get_loc ()) fn arg
+end
+
+module Term = struct
+
+  include Term
+
+  let var id = var ~loc:(get_loc ()) @@ Id.of_string id
+
+  let abs arg tp body = abs ~loc:(get_loc ()) (Id.of_string arg) tp body
+
+  let app fn arg = app ~loc:(get_loc ()) fn arg
+
+  let tp_abs arg body = tp_abs ~loc:(get_loc ()) (Id.of_string arg) body
+
+  let tp_app fn arg = tp_app ~loc:(get_loc ()) fn arg
+
+end
 
 %}
 
@@ -78,15 +95,15 @@ atom_typo :
 
 term :
   | comp_term                     { $1 }
-  | B_SLASH UPPER_ID PERIOD term  { tp_abs $2 $4 }
-  | B_SLASH LOWER_ID COLON typo PERIOD term   { abs $2 $4 $6 }
+  | B_SLASH UPPER_ID PERIOD term  { Term.tp_abs $2 $4 }
+  | B_SLASH LOWER_ID COLON typo PERIOD term   { Term.abs $2 $4 $6 }
 
 comp_term :
   | atom_term                     { $1 }
-  | comp_term atom_term           { app $1 $2 }
-  | comp_term atom_typo           { tp_app $1 $2 }
+  | comp_term atom_term           { Term.app $1 $2 }
+  | comp_term atom_typo           { Term.tp_app $1 $2 }
 
 atom_term :
   | O_PAREN term C_PAREN          { $2 }
   | O_PAREN term error            { error "unclosed parenthesis" }
-  | LOWER_ID                      { var $1 }
+  | LOWER_ID                      { Term.var $1 }

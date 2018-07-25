@@ -9,7 +9,7 @@ type t
 val base : t
 
 (** [var id] constructs a type variable identified by [id]. *)
-val var : string -> t
+val var : Identifier.t -> t
 
 (** [func arg res] constructs a function from [arg] to [res]. *)
 val func : t -> t -> t

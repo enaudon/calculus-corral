@@ -8,13 +8,31 @@ type t =
 
 (* Internal utilities *)
 
+let var id = Variable id
+
 let base_id = "*"
 
-let var id = Variable id
+let base = var (Id.of_string base_id)
 
 let func arg res = Function (arg, res)
 
-let exis id tp = Existential (id, tp)
+let func' args res =
+  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+
+let exists quant body = Existential (quant, body)
+
+let exists' quants body =
+  List.fold_left (fun body q -> exists q body) body (List.rev quants)
+
+(* Destructors *)
+
+let get_func tp = match tp with
+  | Function (arg, res) -> arg, res
+  | _ -> invalid_arg "Type.get_func: expected function"
+
+let get_exists tp = match tp with
+  | Existential (quant, body) -> quant, body
+  | _ -> invalid_arg "Type.get_exists: expected existential"
 
 (* Transformations *)
 
@@ -25,13 +43,13 @@ let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
       Id.Map.find_default tp id env
     | Function (arg, res) ->
       func (beta_reduce arg) (beta_reduce res)
-    | Existential (arg, body) ->
+    | Existential (quant, body) ->
       if deep <> None then
-        exis arg @@ beta_reduce body
+        exists quant @@ beta_reduce body
       else
         tp
 
-(* Utilities *) 
+(* Utilities *)
 
 let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env=[]) tp1 tp2 =
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
@@ -39,8 +57,8 @@ let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env=[]) tp1 tp2 =
       Id.alpha_equivalent env id1 id2
     | Function (arg1, res1), Function (arg2, res2) ->
       alpha_equiv env arg1 arg2 && alpha_equiv env res1 res2
-    | Existential (id1, tp1), Existential (id2, tp2) ->
-      alpha_equiv ((id1, id2) :: env) tp1 tp2
+    | Existential (quant1, body1), Existential (quant2, body2) ->
+      alpha_equiv ((quant1, quant2) :: env) body1 body2
     | _ ->
       false
   in
@@ -53,7 +71,7 @@ let free_vars =
   let rec free_vars fvs tp = match tp with
     | Variable id -> Id.Set.add id fvs
     | Function (arg, res) -> free_vars (free_vars fvs arg) res
-    | Existential (arg, body) -> Id.Set.del arg @@ free_vars fvs body
+    | Existential (quant, body) -> Id.Set.del quant @@ free_vars fvs body
   in
   free_vars Id.Set.empty
 
@@ -62,12 +80,13 @@ let rec subst fvs sub tp = match tp with
     Id.Map.find_default tp id sub
   | Function (arg, res) ->
     func (subst fvs sub arg) (subst fvs sub res)
-  | Existential (id, tp) when Id.Set.mem id fvs ->
-    let id' = Id.fresh_upper () in
-    let sub' = Id.Map.add id (var id') sub in
-    exis id' @@ subst (Id.Set.add id' fvs) sub' tp
-  | Existential (id, tp) ->
-    exis id @@ subst (Id.Set.add id fvs) (Id.Map.del id sub) tp
+  | Existential (quant, body) when Id.Set.mem quant fvs ->
+    let quant' = Id.fresh_upper () in
+    let sub' = Id.Map.add quant (var quant') sub in
+    exists quant' @@ subst (Id.Set.add quant' fvs) sub' body
+  | Existential (quant, body) ->
+    exists quant @@
+      subst (Id.Set.add quant fvs) (Id.Map.del quant sub) body
 
 let simplify ?ctx:ctx_opt tp =
 
@@ -90,9 +109,9 @@ let simplify ?ctx:ctx_opt tp =
       let arg' = simplify env arg in
       let res' = simplify env res in
       func arg' res'
-    | Existential (id, tp) ->
-      let id' = fresh () in
-      exis id' @@ simplify (Id.Map.add id (var id') env) tp
+    | Existential (quant, body) ->
+      let quant' = fresh () in
+      exists quant' @@ simplify (Id.Map.add quant (var quant') env) body
   in
 
   simplify env tp
@@ -108,31 +127,7 @@ let rec to_string tp =
         | Function _ | Existential _ -> to_paren_string tp
       in
       Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
-    | Existential (id, tp) ->
-      Printf.sprintf "exists %s . %s" (Id.to_string id) (to_string tp)
-
-(* Constructors *)
-
-let base = var (Id.of_string base_id)
-
-let var id = var @@ Id.of_string id
-
-let func arg res = func arg res
-
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
-
-let exists id tp = exis (Id.of_string id) tp
-
-let exists' ids tp =
-  List.fold_left (fun tp id -> exists id tp) tp (List.rev ids)
-
-(* Destructors *)
-
-let get_func tp = match tp with
-  | Function (arg, res) -> arg, res
-  | _ -> invalid_arg "Type.get_func: expected function"
-
-let get_exists tp = match tp with
-  | Existential (id, tp) -> id, tp
-  | _ -> invalid_arg "Type.get_exists: expected existential"
+    | Existential (quant, body) ->
+      Printf.sprintf "exists %s . %s"
+        (Id.to_string quant)
+        (to_string body)

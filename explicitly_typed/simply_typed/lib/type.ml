@@ -4,13 +4,24 @@ type t =
   | Variable of Id.t
   | Function of t * t
 
-(* Internal utilities *)
-
-let base_id = "*"
+(* Constructors *)
 
 let var id = Variable id
 
+let base_id = "*"
+
+let base = var (Id.of_string base_id)
+
 let func arg res = Function (arg, res)
+
+let func' args res =
+  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+
+(* Destructors *)
+
+let get_func tp = match tp with
+  | Function (arg, res) -> arg, res
+  | _ -> invalid_arg "Type.get_func: expected function"
 
 (* Transformations *)
 
@@ -22,7 +33,7 @@ let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
     | Function (arg, res) ->
       func (beta_reduce arg) (beta_reduce res)
 
-(* Utilities *) 
+(* Utilities *)
 
 let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env=[]) tp1 tp2 =
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
@@ -49,20 +60,3 @@ let rec to_string tp =
         | Function _ -> to_paren_string tp
       in
       Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
-
-(* Constructors *)
-
-let base = var (Id.of_string base_id)
-
-let var id = var @@ Id.of_string id
-
-let func arg res = func arg res
-
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
-
-(* Destructors *)
-
-let get_func tp = match tp with
-  | Function (arg, res) -> arg, res
-  | _ -> invalid_arg "Type.get_func: expected function"

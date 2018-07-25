@@ -6,13 +6,36 @@ type t =
   | Function of t * t
   | Universal of Id.t * t
 
-(* Internal utilities *)
+(* Constructors *)
 
 let var id = Variable id
 
 let func arg res = Function (arg, res)
 
-let univ id tp = Universal (id, tp)
+let func' args res =
+  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+
+let forall quant body = Universal (quant, body)
+
+let forall' quants body =
+  List.fold_left (fun body q -> forall q body) body (List.rev quants)
+
+(* Destructors *)
+
+let get_func tp = match tp with
+  | Function (arg, res) -> arg, res
+  | _ -> invalid_arg "Type.get_func: expected function"
+
+let get_forall tp = match tp with
+  | Universal (quant, body) -> quant, body
+  | _ -> invalid_arg "Type.get_forall: expected universal"
+
+let get_forall' tp =
+  let rec get_forall acc tp = match tp with
+    | Universal (quant, body) -> get_forall (quant :: acc) body
+    | _ -> acc, tp
+  in
+  get_forall [] tp
 
 (* Transformations *)
 
@@ -23,9 +46,9 @@ let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
       Id.Map.find_default tp id env
     | Function (arg, res) ->
       func (beta_reduce arg) (beta_reduce res)
-    | Universal (arg, body) ->
+    | Universal (quant, body) ->
       if deep <> None then
-        univ arg @@ beta_reduce body
+        forall quant @@ beta_reduce body
       else
         tp
 
@@ -37,8 +60,8 @@ let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env=[]) tp1 tp2 =
       Id.alpha_equivalent env id1 id2
     | Function (arg1, res1), Function (arg2, res2) ->
       alpha_equiv env arg1 arg2 && alpha_equiv env res1 res2
-    | Universal (id1, tp1), Universal (id2, tp2) ->
-      alpha_equiv ((id1, id2) :: env) tp1 tp2
+    | Universal (quant1, body1), Universal (quant2, body2) ->
+      alpha_equiv ((quant1, quant2) :: env) body1 body2
     | _ ->
       false
   in
@@ -51,7 +74,7 @@ let free_vars =
   let rec free_vars fvs tp = match tp with
     | Variable id -> Id.Set.add id fvs
     | Function (arg, res) -> free_vars (free_vars fvs arg) res
-    | Universal (arg, body) -> Id.Set.del arg @@ free_vars fvs body
+    | Universal (quant, body) -> Id.Set.del quant @@ free_vars fvs body
   in
   free_vars Id.Set.empty
 
@@ -60,12 +83,13 @@ let rec subst fvs sub tp = match tp with
     Id.Map.find_default tp id sub
   | Function (arg, res) ->
     func (subst fvs sub arg) (subst fvs sub res)
-  | Universal (id, tp) when Id.Set.mem id fvs ->
-    let id' = Id.fresh_upper () in
-    let sub' = Id.Map.add id (var id') sub in
-    univ id' @@ subst (Id.Set.add id' fvs) sub' tp
-  | Universal (id, tp) ->
-    univ id @@ subst (Id.Set.add id fvs) (Id.Map.del id sub) tp
+  | Universal (quant, body) when Id.Set.mem quant fvs ->
+    let quant' = Id.fresh_upper () in
+    let sub' = Id.Map.add quant (var quant') sub in
+    forall quant' @@ subst (Id.Set.add quant' fvs) sub' body
+  | Universal (quant, body) ->
+    forall quant @@
+      subst (Id.Set.add quant fvs) (Id.Map.del quant sub) body
 
 let simplify ?ctx:ctx_opt tp =
 
@@ -88,9 +112,9 @@ let simplify ?ctx:ctx_opt tp =
       let arg' = simplify env arg in
       let res' = simplify env res in
       func arg' res'
-    | Universal (id, tp) ->
-      let id' = fresh () in
-      univ id' @@ simplify (Id.Map.add id (var id') env) tp
+    | Universal (quant, body) ->
+      let quant' = fresh () in
+      forall quant' @@ simplify (Id.Map.add quant (var quant') env) body
   in
 
   simplify env tp
@@ -106,36 +130,7 @@ let rec to_string tp =
         | Function _ | Universal _ -> to_paren_string tp
       in
       Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
-    | Universal (id, tp) ->
-      Printf.sprintf "forall %s . %s" (Id.to_string id) (to_string tp)
-
-(* Constructors *)
-
-let var id = var @@ Id.of_string id
-
-let func arg res = func arg res
-
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
-
-let forall id tp = univ (Id.of_string id) tp
-
-let forall' ids tp =
-  List.fold_left (fun tp id -> forall id tp) tp (List.rev ids)
-
-(* Destructors *)
-
-let get_func tp = match tp with
-  | Function (arg, res) -> arg, res
-  | _ -> invalid_arg "Type.get_func: expected function"
-
-let get_forall tp = match tp with
-  | Universal (id, tp) -> id, tp
-  | _ -> invalid_arg "Type.get_forall: expected universal"
-
-let get_forall' tp =
-  let rec get_forall acc tp = match tp with
-    | Universal (id, tp) -> get_forall (id :: acc) tp
-    | _ -> acc, tp
-  in
-  get_forall [] tp
+    | Universal (quant, body) ->
+      Printf.sprintf "forall %s . %s"
+        (Id.to_string quant)
+        (to_string body)

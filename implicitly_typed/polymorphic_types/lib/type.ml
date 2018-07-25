@@ -116,11 +116,11 @@ let to_intl_repr { quants; body } =
   let module IR = Universal_types.Type in
 
   let rec to_ir tp = match DS.find tp with
-    | Variable (id, _) -> IR.var @@ Id.to_string id
+    | Variable (id, _) -> IR.var id
     | Function (arg, res) -> IR.func (to_ir arg) (to_ir res)
   in
 
-  IR.forall' (List.map Id.to_string quants) (to_ir body)
+  IR.forall' quants (to_ir body)
 
 let simplify { quants; body } =
 

@@ -76,9 +76,8 @@ let to_type ?(env = Id.Map.empty) =
               (Type.to_string act_arg_tp)
     | Type_abs (arg, body) ->
       let tp_bvs' = Id.Set.add arg tp_bvs in
-      let tv = Type.var @@ Id.to_string arg in
-      Type.forall (Id.to_string arg) @@
-        to_type tp_bvs' (Id.Map.add arg tv env) body
+      let tv = Type.var arg in
+      Type.forall arg @@ to_type tp_bvs' (Id.Map.add arg tv env) body
     | Type_app (fn, arg) ->
       let fn' = to_type tp_bvs env fn in
       let tv, tp =
@@ -126,7 +125,7 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
         app loc (subst fvs sub fn) (subst fvs sub arg)
       | Type_abs (arg, body) when Id.Set.mem arg fvs ->
         let arg' = Id.fresh_upper () in
-        let sub' = Id.Map.add arg (Type.var @@ Id.to_string arg') sub in
+        let sub' = Id.Map.add arg (Type.var arg') sub in
         tp_abs loc arg' @@ subst (Id.Set.add arg' fvs) sub' body
       | Type_abs (arg, body) ->
         tp_abs loc arg @@
@@ -250,7 +249,7 @@ let simplify tm =
         app loc fn' arg'
       | Type_abs (arg, body) ->
         let arg' = fresh () in
-        let env' = Id.Map.add arg (Type.var @@ Id.to_string arg') env in
+        let env' = Id.Map.add arg (Type.var arg') env in
         let body' = simplify env' body in
         tp_abs loc arg' body'
       | Type_app (fn, arg) ->
@@ -292,10 +291,9 @@ let rec to_string tm =
 
 (* Constructors *)
 
-let var ?(loc = Loc.dummy) id = var loc (Id.of_string id)
+let var ?(loc = Loc.dummy) id = var loc id
 
-let abs ?(loc = Loc.dummy) arg tp body =
-  abs loc (Id.of_string arg) tp body
+let abs ?(loc = Loc.dummy) arg tp body = abs loc arg tp body
 
 let abs' ?(loc = Loc.dummy) args body =
   let abs' body (arg, tp) = abs ~loc arg tp body in
@@ -306,8 +304,7 @@ let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 let app' ?(loc = Loc.dummy) fn args =
   List.fold_left (fun fn args -> app ~loc fn args) fn args
 
-let tp_abs ?(loc = Loc.dummy) arg body =
-  tp_abs loc (Id.of_string arg) body
+let tp_abs ?(loc = Loc.dummy) arg body = tp_abs loc arg body
 
 let tp_abs' ?(loc = Loc.dummy) args body =
   let tp_abs' body arg = tp_abs ~loc arg body in

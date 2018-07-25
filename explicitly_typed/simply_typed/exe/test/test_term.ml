@@ -1,5 +1,19 @@
+module Id = Identifier
+
 open Simply_typed
 open OUnit
+
+module Term = struct
+
+  include Term
+
+  let var id = var (Id.of_string id)
+
+  let abs arg tp body = abs (Id.of_string arg) tp body
+
+  let app fn arg = app fn arg
+
+end
 
 let assert_beta_reduce tm exp_shallow exp_deep =
 

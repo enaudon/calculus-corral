@@ -7,24 +7,49 @@ type t =
 
 (* Internal utilities *)
 
-let base_id = "*"
-
-let func_id = "->"
-
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
+(* Constructors *)
+
 let var : Id.t -> t = fun id -> Variable id
+
+let base_id = "*"
+
+let base = var @@ Id.of_string base_id
 
 let abs : Id.t -> Kind.t -> t -> t =
   fun arg kn body -> Abstraction (arg, kn, body)
 
+let abs' args body =
+  let abs' body (arg, kn) = abs arg kn body in
+  List.fold_left abs' body (List.rev args)
+
 let app : t -> t -> t = fun fn arg -> Application (fn, arg)
+
+let app' fn args =
+  List.fold_left (fun fn args -> app fn args) fn args
+
+let func_id = "->"
+
+let func arg res = app' (var @@ Id.of_string func_id) [arg; res]
+
+let func' args res =
+  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+
+(* Destructors *)
+
+let get_func tp = match tp with
+  | Application (Application (Variable id, arg), res)
+      when Id.to_string id = func_id ->
+    arg, res
+  | _ -> invalid_arg "Type.get_func: expected function"
 
 (* Kinding *)
 
 let default_env =
-  let open Kind in
+  let base = Kind.base in
+  let func' = Kind.func' in
   Id.Map.empty |>
     Id.Map.add (Id.of_string base_id) base |>
     Id.Map.add (Id.of_string func_id) (func' [base; base] base)
@@ -117,7 +142,7 @@ let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
           app fn' act_arg'
       end
 
-(* Utilities *) 
+(* Utilities *)
 
 let alpha_equivalent ?(beta_env = Id.Map.empty) tp1 tp2 =
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
@@ -162,33 +187,3 @@ let rec to_string tp =
         | Abstraction _ -> to_paren_string tp
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
-
-(* Constructors *)
-
-let var id = var (Id.of_string id)
-
-let base = var base_id
-
-let abs arg kn body = abs (Id.of_string arg) kn body
-
-let abs' args body =
-  let abs' body (arg, kn) = abs arg kn body in
-  List.fold_left abs' body (List.rev args)
-
-let app = app
-
-let app' fn args =
-  List.fold_left (fun fn args -> app fn args) fn args
-
-let func arg res = app' (var func_id) [arg; res]
-
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
-
-(* Destructors *)
-
-let get_func tp = match tp with
-  | Application (Application (Variable id, arg), res)
-      when Id.to_string id = func_id ->
-    arg, res
-  | _ -> invalid_arg "Type.get_func: expected function"

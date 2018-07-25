@@ -1,5 +1,6 @@
 %{
 
+module Id = Identifier
 module Loc = Location
 
 let get_loc () =
@@ -14,16 +15,34 @@ let error msg =
       __MODULE__
       msg
 
-let var id = Term.var ~loc:(get_loc ()) id
+module Type = struct
 
-let abs id tp arg = Term.abs ~loc:(get_loc ()) id tp arg
+  include Type
 
-let app fn arg = Term.app ~loc:(get_loc ()) fn arg
+  let var id = var @@ Id.of_string id
 
-let pack tp1 tm tp2 = Term.pack ~loc:(get_loc ()) tp1 tm tp2
+  let exists quant body = exists (Id.of_string quant) body
 
-let unpack tp_id tm_id pack body =
-  Term.unpack ~loc:(get_loc ()) tp_id tm_id pack body
+end
+
+module Term = struct
+
+  include Term
+
+  let var id = var ~loc:(get_loc ()) @@ Id.of_string id
+
+  let abs arg tp body = abs ~loc:(get_loc ()) (Id.of_string arg) tp body
+
+  let app fn arg = app ~loc:(get_loc ()) fn arg
+
+  let pack tp1 tm tp2 = pack ~loc:(get_loc ()) tp1 tm tp2
+
+  let unpack tp_id tm_id pack body =
+    let tp_id' = Id.of_string tp_id in
+    let tm_id' = Id.of_string tm_id in
+    unpack ~loc:(get_loc ()) tp_id' tm_id' pack body
+
+end
 
 %} 
 /* Literals and identifiers */
@@ -85,15 +104,15 @@ atom_typo :
 
 term :
   | comp_term                     { $1 }
-  | B_SLASH LOWER_ID COLON typo PERIOD term   { abs $2 $4 $6 }
-  | PACK typo COMMA term AS typo  { pack $2 $4 $6 }
-  | UNPACK UPPER_ID COMMA LOWER_ID EQ term IN term  { unpack $2 $4 $6 $8 }
+  | B_SLASH LOWER_ID COLON typo PERIOD term   { Term.abs $2 $4 $6 }
+  | PACK typo COMMA term AS typo  { Term.pack $2 $4 $6 }
+  | UNPACK UPPER_ID COMMA LOWER_ID EQ term IN term  { Term.unpack $2 $4 $6 $8 }
 
 comp_term :
   | atom_term                     { $1 }
-  | comp_term atom_term           { app $1 $2 }
+  | comp_term atom_term           { Term.app $1 $2 }
 
 atom_term :
   | O_PAREN term C_PAREN          { $2 }
   | O_PAREN term error            { error "unclosed parenthesis" }
-  | LOWER_ID                      { var $1 }
+  | LOWER_ID                      { Term.var $1 }

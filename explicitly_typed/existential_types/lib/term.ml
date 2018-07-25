@@ -111,7 +111,7 @@ let to_type ?(env = Id.Map.empty) =
       let pack_tp_tp' =
         Type.subst
           tp_bvs
-          (Id.Map.singleton pack_tp_tv (Type.var @@ Id.to_string tp_id))
+          (Id.Map.singleton pack_tp_tv @@ Type.var tp_id)
           pack_tp_tp
       in
       let res_tp =
@@ -173,7 +173,7 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
         let tp_id' = Id.fresh_upper () in
         let fvs' = Id.Set.add tp_id' fvs in
         let sub' =
-          Id.Map.add tp_id (Type.var @@ Id.to_string tp_id') sub
+          Id.Map.add tp_id (Type.var tp_id') sub
         in
         unpack loc tp_id' tm_id
           (subst fvs' sub' pack)
@@ -320,8 +320,7 @@ let simplify tm =
         pack loc tp1' tm' tp2'
       | Unpack (tp_id, tm_id, pack, body) ->
         let tp_id' = fresh () in
-        let tp = Type.var @@ Id.to_string tp_id' in
-        let env' = Id.Map.add tp_id tp env in
+        let env' = Id.Map.add tp_id (Type.var tp_id') env in
         let pack' = simplify env' pack in
         let body' = simplify env' body in
         unpack loc tp_id' tm_id pack' body'
@@ -365,10 +364,9 @@ let rec to_string tm =
 
 (* Constructors *)
 
-let var ?(loc = Loc.dummy) id = var loc (Id.of_string id)
+let var ?(loc = Loc.dummy) id = var loc id
 
-let abs ?(loc = Loc.dummy) arg tp body =
-  abs loc (Id.of_string arg) tp body
+let abs ?(loc = Loc.dummy) arg tp body = abs loc arg tp body
 
 let abs' ?(loc = Loc.dummy) args body =
   let abs' body (arg, tp) = abs ~loc arg tp body in
@@ -379,8 +377,7 @@ let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 let app' ?(loc = Loc.dummy) fn args =
   List.fold_left (fun fn args -> app ~loc fn args) fn args
 
-let pack ?(loc = Loc.dummy) tp1 tm tp2 =
-  pack loc tp1 tm tp2
+let pack ?(loc = Loc.dummy) tp1 tm tp2 = pack loc tp1 tm tp2
 
 let unpack ?(loc = Loc.dummy) tp_id tm_id pack body =
-  unpack loc (Id.of_string tp_id) (Id.of_string tm_id) pack body
+  unpack loc tp_id tm_id pack body

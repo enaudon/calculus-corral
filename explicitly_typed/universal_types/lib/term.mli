@@ -6,18 +6,18 @@ type t
 (** {1 Constructors} *)
 
 (** [var id] constructs a variable with the identifier [id]. *)
-val var : ?loc : Location.t -> string -> t
+val var : ?loc : Location.t -> Identifier.t -> t
 
 (**
   [abs arg tp body] constructs the abstraction of [arg] of type [tp]
   from [body].
  *)
-val abs : ?loc : Location.t -> string -> Type.t -> t -> t
+val abs : ?loc : Location.t -> Identifier.t -> Type.t -> t -> t
 
 (**
   [abs' args body] constructs the abstraction of [args] from [body].
  *)
-val abs' : ?loc : Location.t -> (string * Type.t) list -> t -> t
+val abs' : ?loc : Location.t -> (Identifier.t * Type.t) list -> t -> t
 
 (** [app fn arg] constructs the application of [fn] to [arg]. *)
 val app : ?loc : Location.t -> t -> t -> t
@@ -28,12 +28,12 @@ val app' : ?loc : Location.t -> t -> t list -> t
 (**
   [tp_abs arg body] constructs the abstraction of [arg] from [body].
  *)
-val tp_abs : ?loc : Location.t -> string -> t -> t
+val tp_abs : ?loc : Location.t -> Identifier.t -> t -> t
 
 (**
   [abs' args body] constructs the abstraction of [args] from [body].
  *)
-val tp_abs' : ?loc : Location.t -> string list -> t -> t
+val tp_abs' : ?loc : Location.t -> Identifier.t list -> t -> t
 
 (** [tp_app fn arg] constructs the application of [fn] to [arg]. *)
 val tp_app : ?loc : Location.t -> t -> Type.t -> t

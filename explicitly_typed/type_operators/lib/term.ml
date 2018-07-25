@@ -172,10 +172,10 @@ let rec to_string tm =
 
 (* Constructors *)
 
-let var ?(loc = Loc.dummy) id = var loc (Id.of_string id)
+let var ?(loc = Loc.dummy) id = var loc id
 
 let abs ?(loc = Loc.dummy) arg tp body =
-  abs loc (Id.of_string arg) tp body
+  abs loc arg tp body
 
 let abs' ?(loc = Loc.dummy) args body =
   let abs' body (arg, tp) = abs ~loc arg tp body in

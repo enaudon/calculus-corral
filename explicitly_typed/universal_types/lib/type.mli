@@ -6,7 +6,7 @@ type t
 (** {1 Constructors and Destructors} *)
 
 (** [var id] constructs a type variable identified by [id]. *)
-val var : string -> t
+val var : Identifier.t -> t
 
 (** [func arg res] constructs a function from [arg] to [res]. *)
 val func : t -> t -> t
@@ -17,12 +17,12 @@ val func' : t list -> t -> t
 (**
   [forall id tp] constructs a universally quantified type.
  *)
-val forall : string -> t -> t
+val forall : Identifier.t -> t -> t
 
 (**
   [forall' ids tp] constructs a universally quantified type.
  *)
-val forall' : string list -> t -> t
+val forall' : Identifier.t list -> t -> t
 
 (**
   [get_func tp] computes the argument and result type of [tp], if [tp]

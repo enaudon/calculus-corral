@@ -9,18 +9,18 @@ type t
 val base : t
 
 (** [var id] constructs a variable with the identifier [id]. *)
-val var : string -> t
+val var : Identifier.t -> t
 
 (**
   [abs arg kn body] constructs the abstraction of [arg] of kind [kn]
   from [body].
  *)
-val abs : string -> Kind.t -> t -> t
+val abs : Identifier.t -> Kind.t -> t -> t
 
 (**
   [abs' args body] constructs the abstraction of [args] from [body].
  *)
-val abs' : (string * Kind.t) list -> t -> t
+val abs' : (Identifier.t * Kind.t) list -> t -> t
 
 (** [app fn arg] constructs the application of [fn] to [arg]. *)
 val app : t -> t -> t

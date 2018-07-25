@@ -1,5 +1,33 @@
+module Id = Identifier
+
 open Universal_types
 open OUnit
+
+module Type = struct
+
+  include Type
+
+  let var id = var @@ Id.of_string id
+
+  let forall quants body = forall (Id.of_string quants) body
+
+end
+
+module Term = struct
+
+  include Term
+
+  let var id = var (Id.of_string id)
+
+  let abs arg tp body = abs (Id.of_string arg) tp body
+
+  let app fn arg = app fn arg
+
+  let tp_abs arg body = tp_abs (Id.of_string arg) body
+
+  let tp_app fn arg = tp_app fn arg
+
+end
 
 let assert_beta_reduce tm exp_shallow exp_deep =
 
