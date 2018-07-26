@@ -14,14 +14,10 @@ val func : t -> t -> t
 (** [func' args res] constructs a function from [args] to [res]. *)
 val func' : t list -> t -> t
 
-(**
-  [forall id tp] constructs a universally quantified type.
- *)
+(** [forall id tp] constructs a universally quantified type. *)
 val forall : Identifier.t -> t -> t
 
-(**
-  [forall' ids tp] constructs a universally quantified type.
- *)
+(** [forall' ids tp] constructs a universally quantified type. *)
 val forall' : Identifier.t list -> t -> t
 
 (**
@@ -31,14 +27,14 @@ val forall' : Identifier.t list -> t -> t
 val get_func : t -> t * t
 
 (**
-  [get_forall tp] computes the variable identifier and body of [tp], if
+  [get_forall tp] computes the variable quantifier and body of [tp], if
   [tp] is a universally quantified type.  Otherwise, [get_forall] raises
   [Invalid_argument].
  *)
 val get_forall : t -> Identifier.t * t
 
 (**
-  [get_forall' tp] computes the variable identifiers and body of [tp].
+  [get_forall' tp] computes the variable quantifier and body of [tp].
  *)
 val get_forall' : t -> Identifier.t list * t
 

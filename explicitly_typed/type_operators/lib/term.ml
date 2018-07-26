@@ -50,15 +50,15 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
       let body_tp = to_type kn_env (Id.Map.add arg arg_tp tp_env) body in
       Type.func arg_tp body_tp
     | Application (fn, arg) ->
-      let fn' = to_type kn_env tp_env fn in
+      let fn_tp = to_type kn_env tp_env fn in
       let fml_arg_tp, res_tp =
         try
-          Type.get_func @@ Type.beta_reduce ~deep:() ~env:tp_env fn'
+          Type.get_func @@ Type.beta_reduce ~deep:() ~env:tp_env fn_tp
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf
               "expected function type; found '%s'"
-              (Type.to_string fn')
+              (Type.to_string fn_tp)
       in
       let act_arg_tp = to_type kn_env tp_env arg in
       if

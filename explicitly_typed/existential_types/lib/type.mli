@@ -17,14 +17,10 @@ val func : t -> t -> t
 (** [func' args res] constructs a function from [args] to [res]. *)
 val func' : t list -> t -> t
 
-(**
-  [exists id tp] constructs a existentially quantified type.
- *)
+(** [exists id tp] constructs a existentially quantified type. *)
 val exists : Identifier.t -> t -> t
 
-(**
-  [exists' ids tp] constructs a existentially quantified type.
- *)
+(** [exists' ids tp] constructs a existentially quantified type. *)
 val exists' : Identifier.t list -> t -> t
 
 (**
@@ -34,7 +30,7 @@ val exists' : Identifier.t list -> t -> t
 val get_func : t -> t * t
 
 (**
-  [get_exists tp] computes the variable identifier and body of [tp], if
+  [get_exists tp] computes the variable quantifier and body of [tp], if
   [tp] is a existentially quantified type.  Otherwise, [get_exists]
   raises [Invalid_argument].
  *)

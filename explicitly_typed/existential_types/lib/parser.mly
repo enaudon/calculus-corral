@@ -89,8 +89,8 @@ command :
   | term                          { Command.eval_term $1 }
 
 typo :
-  | EXISTS UPPER_ID PERIOD typo   { Type.exists $2 $4 }
   | comp_typo                     { $1 }
+  | EXISTS UPPER_ID PERIOD typo   { Type.exists $2 $4 }
 
 comp_typo :
   | atom_typo                     { $1 }

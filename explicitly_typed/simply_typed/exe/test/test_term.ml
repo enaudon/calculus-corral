@@ -1,11 +1,12 @@
 module Id = Identifier
 
-open Simply_typed
 open OUnit
+
+module Type = Simply_typed.Type
 
 module Term = struct
 
-  include Term
+  include Simply_typed.Term
 
   let var id = var (Id.of_string id)
 
@@ -118,7 +119,7 @@ let beta_reduce_tests = "beta_reduce", [
 ]
 
 let make_test_suite (name, tests) =
-  let mapper (name, test) = Identifier.reset (); name >:: test in
+  let mapper (name, test) = Id.reset (); name >:: test in
   name >::: List.map mapper tests
 
 let make () = "Term" >::: [

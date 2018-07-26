@@ -1,11 +1,10 @@
 module Id = Identifier
 
-open Universal_types
 open OUnit
 
 module Type = struct
 
-  include Type
+  include Universal_types.Type
 
   let var id = var @@ Id.of_string id
 
@@ -15,7 +14,7 @@ end
 
 module Term = struct
 
-  include Term
+  include Universal_types.Term
 
   let var id = var (Id.of_string id)
 
@@ -143,7 +142,7 @@ let beta_reduce_tests = "beta_reduce", [
 ]
 
 let make_test_suite (name, tests) =
-  let mapper (name, test) = Identifier.reset (); name >:: test in
+  let mapper (name, test) = Id.reset (); name >:: test in
   name >::: List.map mapper tests
 
 let make () = "Term" >::: [

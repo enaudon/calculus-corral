@@ -51,20 +51,18 @@ let to_type ?(env = Id.Map.empty) =
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Abstraction (arg, arg_tp, body) ->
-      let body_tp =
-        to_type tp_bvs (Id.Map.add arg arg_tp env) body
-      in
+      let body_tp = to_type tp_bvs (Id.Map.add arg arg_tp env) body in
       Type.func arg_tp body_tp
     | Application (fn, arg) ->
-      let fn' = to_type tp_bvs env fn in
+      let fn_tp = to_type tp_bvs env fn in
       let fml_arg_tp, res_tp =
         try
-          Type.get_func (Type.beta_reduce ~deep:() ~env fn')
+          Type.get_func (Type.beta_reduce ~deep:() ~env fn_tp)
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf
               "expected function type; found '%s'"
-              (Type.to_string fn')
+              (Type.to_string fn_tp)
       in
       let act_arg_tp = to_type tp_bvs env arg in
       if Type.alpha_equivalent ~beta_env:env act_arg_tp fml_arg_tp then

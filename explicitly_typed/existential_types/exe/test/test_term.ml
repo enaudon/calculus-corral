@@ -1,11 +1,12 @@
 module Id = Identifier
 
-open Existential_types
 open OUnit
+
+module Type = Existential_types.Type
 
 module Term = struct
 
-  include Term
+  include Existential_types.Term
 
   let var id = var (Id.of_string id)
 
@@ -118,7 +119,7 @@ let beta_reduce_tests = "beta_reduce", [
 ]
 
 let make_test_suite (name, tests) =
-  let mapper (name, test) = Identifier.reset (); name >:: test in
+  let mapper (name, test) = Id.reset (); name >:: test in
   name >::: List.map mapper tests
 
 let make () = "Term" >::: [
