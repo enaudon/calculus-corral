@@ -17,12 +17,6 @@ exception Occurs of Identifier.t * t
  *)
 exception Cannot_unify of t * t
 
-(**
-  [Expected_mono] indicates that a polymorphic type appeared where a
-  monomorphic type was expected.
- *)
-exception Expected_mono
-
 (** {1 Constructors and Destructors} *)
 
 (** [var rank id] constructs a variable with the identifier [id]. *)

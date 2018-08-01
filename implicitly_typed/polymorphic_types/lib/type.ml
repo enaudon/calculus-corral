@@ -2,13 +2,11 @@ module Id = Identifier
 module DS = Disjoint_set
 module Misc = Miscellaneous
 
-type mono = desc DS.t
-
-and desc =
+type desc =
   | Variable of Id.t * int ref
-  | Function of mono * mono
+  | Function of t * t
 
-type t = { quants : Id.t list; body : mono }
+and t = desc DS.t
 
 (* Exceptions and errors *)
 
@@ -18,30 +16,38 @@ exception Occurs of Id.t * t
 
 exception Cannot_unify of t * t
 
-exception Expected_mono
-
 let raise_occurs : Id.t -> t -> 'a = fun id tp ->
   raise @@ Occurs (id, tp)
 
 let raise_unify : t -> t -> 'a = fun tp1 tp2 ->
   raise @@ Cannot_unify (tp1, tp2)
 
-let raise_exp_mono : unit -> 'a = fun () -> raise @@ Expected_mono
+(* Internal utilities *)
 
-(* Internal constructors *)
+let poly_rank = -1
 
-let var : int -> Id.t -> mono = fun rank id ->
+let var : int -> Id.t -> t = fun rank id ->
   DS.singleton @@ Variable (id, ref rank)
 
-let func : mono -> mono -> mono = fun arg res ->
+let func : t -> t -> t = fun arg res ->
   DS.singleton @@ Function (arg, res)
 
-let scheme : Id.t list -> mono -> t = fun quants body ->
-  { quants; body }
+let get_quants tp =
+  let contains id = List.exists (fun id' -> id = id') in
+  let rec get_quants acc tp = match DS.find tp with
+    | Variable (id, rank) ->
+      if !rank = poly_rank && not @@ contains id acc then
+        id :: acc
+      else
+        acc
+    | Function (arg, res) ->
+      get_quants (get_quants acc arg) res
+  in
+  List.rev @@ get_quants [] tp
 
 (* Inference *)
 
-let unify tp1 tp2 =
+let rec unify tp1 tp2 =
 
   let rec occurs id tp = match DS.find tp with
     | Variable (id', _) -> id = id'
@@ -57,48 +63,42 @@ let unify tp1 tp2 =
       update_ranks rank res
   in
 
-  let rec unify m1 m2 =
-    let m1_desc = DS.find m1 in
-    let m2_desc = DS.find m2 in
-    match m1_desc, m2_desc with
-      | Variable (id1, _), Variable (id2, _) when id1 = id2->
-        assert (m1_desc == m2_desc)
-      | Variable (id, rank), _ ->
-        if occurs id m2 then raise_occurs id @@ scheme tp2.quants m2;
-        update_ranks rank m2;
-        DS.merge m2 m1
-      | _, Variable (id, rank) ->
-        if occurs id m1 then raise_occurs id @@ scheme tp1.quants m1;
-        update_ranks rank m2;
-        DS.merge m1 m2
-      | Function (arg1, res1), Function (arg2, res2) ->
-        unify arg1 arg2;
-        unify res1 res2;
-        DS.merge m1 m2
-  in
-  
-  match tp1.quants, tp2.quants with
-    | [], [] -> unify tp1.body tp2.body
-    | _, _ -> raise_unify tp1 tp2
+  let tp1_desc = DS.find tp1 in
+  let tp2_desc = DS.find tp2 in
+  match tp1_desc, tp2_desc with
+    | Variable (_, rank), _ when !rank = poly_rank ->
+      raise_unify tp1 tp2
+    | _, Variable (_, rank) when !rank = poly_rank ->
+      raise_unify tp1 tp2
+    | Variable (id1, _), Variable (id2, _) when id1 = id2->
+      assert (tp1_desc == tp2_desc)
+    | Variable (id, rank), _ ->
+      if occurs id tp2 then raise_occurs id tp2;
+      update_ranks rank tp2;
+      DS.merge tp2 tp1
+    | _, Variable (id, rank) ->
+      if occurs id tp1 then raise_occurs id tp1;
+      update_ranks rank tp1;
+      DS.merge tp1 tp2
+    | Function (arg1, res1), Function (arg2, res2) ->
+      unify arg1 arg2;
+      unify res1 res2;
+      DS.merge tp1 tp2
 
-let gen rank tp =
-
-  let contains id = List.exists (fun id' -> id = id') in
-
-  let rec get_scheme_vars acc tp = match DS.find tp with
+let rec gen rank tp =
+  let gen = gen rank in
+  match DS.find tp with
     | Variable (id, rank') ->
-      if !rank' > rank && not @@ contains id acc then
-        id :: acc
+      if !rank' > rank then
+        var poly_rank id
       else
-        acc
+        tp
     | Function (arg, res) ->
-      get_scheme_vars (get_scheme_vars acc arg) res
-  in
+      func (gen arg) (gen res)
 
-  { tp with quants = List.rev @@ get_scheme_vars tp.quants tp.body }
+let inst rank tp =
 
-let inst rank { quants; body } =
-
+  let quants = get_quants tp in
   let vars = List.map (fun _ -> var rank @@ Id.fresh_upper ()) quants in
   let env = Id.Map.of_list @@ List.combine quants vars in
 
@@ -107,22 +107,21 @@ let inst rank { quants; body } =
     | Function (arg, res) -> func (inst arg) (inst res)
   in
 
-  List.map (scheme []) vars, { quants = []; body = inst body }
+  vars, inst tp
 
 (* Utilities *) 
 
-let to_intl_repr { quants; body } =
+let to_intl_repr tp =
 
   let module IR = Universal_types.Type in
-
   let rec to_ir tp = match DS.find tp with
     | Variable (id, _) -> IR.var id
     | Function (arg, res) -> IR.func (to_ir arg) (to_ir res)
   in
 
-  IR.forall' quants (to_ir body)
+  IR.forall' (get_quants tp) (to_ir tp)
 
-let simplify { quants; body } =
+let simplify tp =
 
   let fresh =
     let cntr = ref (-1) in
@@ -150,9 +149,7 @@ let simplify { quants; body } =
       func arg' res'
   in
 
-  let quants = List.map simplify_id quants in
-  let body = simplify body in
-  { quants; body }
+  simplify tp
 
 let to_string ?no_simp ?show_quants tp =
 
@@ -160,7 +157,7 @@ let to_string ?no_simp ?show_quants tp =
     let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
     match DS.find tp with
       | Variable (id, _) ->
-        Id.to_string id
+          Id.to_string id
       | Function (arg, res) ->
         let arg_to_string tp = match DS.find tp with
           | Variable _ -> to_string tp
@@ -169,32 +166,28 @@ let to_string ?no_simp ?show_quants tp =
         Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
   in
 
-  let { quants; body } = if no_simp = None then simplify tp else tp in
-  if quants = [] || show_quants = None then
-    to_string body
+  let tp' = if no_simp = None then simplify tp else tp in
+  if show_quants = None then
+    to_string tp'
   else
+    let quants = get_quants tp' in
     Printf.sprintf "forall %s . %s"
       (String.concat " " @@ List.map Id.to_string quants)
-      (to_string body)
+      (to_string tp')
 
-(* External constructors and destructors *)
+(* External constructors *)
 
-let schemify = scheme []
+let var = var
 
-let var rank id = schemify @@ var rank id
-
-let func arg res = match arg.quants, res.quants with
-  | [], [] -> schemify @@ func arg.body res.body
-  | _, _ -> raise_exp_mono ()
+let func = func
 
 let func' args res =
   List.fold_left (fun res arg -> func arg res) res (List.rev args)
 
-let get_quants { quants; _ } = quants
+let get_quants = get_quants
 
 (* Setters *)
 
-let set_rank rank { quants; body } = match quants, DS.find body with
-  | [], Variable (_, rank') -> rank' := rank
-  | [], _ -> error "Type.set_rank: expected variable"
-  | _ -> raise_exp_mono ()
+let set_rank rank tp = match DS.find tp with
+  | Variable (_, rank') -> rank' := rank
+  | _ -> error "Type.set_rank: expected variable"
