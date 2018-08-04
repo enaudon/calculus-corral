@@ -1,5 +1,6 @@
 module Id = Identifier
 module Loc = Location
+module Sub = Type.Substitution
 
 type t =
   | Variable_equality of Id.t * Type.t
@@ -16,21 +17,21 @@ let error : Loc.t -> string -> 'a = fun loc msg ->
 
 (* Solving *)
 
-let solve =
-  let rec solve env c = match c with
+let solve c =
+
+  let rec solve env sub c = match c with
     | Variable_equality (id, tp) ->
-      Type.unify (Id.Map.find id env) tp
+      Type.unify sub (Id.Map.find id env) tp
     | Type_equality (lhs, rhs) ->
-      Type.unify lhs rhs
+      Type.unify sub lhs rhs
     | Conjunction (lhs, rhs) ->
-      solve env lhs;
-      solve env rhs
+      solve env (solve env sub lhs) rhs
     | Existential (_, c) ->
-      solve env c
+      solve env sub c
     | Definition (id, tp, c) ->
-      solve (Id.Map.add id tp env) c
+      solve (Id.Map.add id tp env) sub c
     | Localized (loc, c) ->
-      try solve env c with
+      try solve env sub c with
         | Type.Occurs (id, tp) ->
           error loc @@
             Printf.sprintf
@@ -43,7 +44,8 @@ let solve =
               "Undefined identifier '%s'\n%!"
               (Id.to_string id)
   in
-  solve Id.Map.empty
+
+  solve Id.Map.empty Sub.identity c
 
 (* Utilities *)
 

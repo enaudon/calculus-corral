@@ -14,5 +14,5 @@ fst (pair fls tru)
   : A -> B -> B
   = <value> ;
 snd (pair fls tru)
-  : A -> A -> A
+  : A -> B -> A
   = <value> ;

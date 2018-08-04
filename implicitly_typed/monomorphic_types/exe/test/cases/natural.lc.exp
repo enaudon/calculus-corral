@@ -32,7 +32,7 @@ succ one
   : (A -> A) -> A -> A
   = <value> ;
 add one zero
-  : (A -> A) -> A -> A
+  : (A -> B) -> A -> B
   = <value> ;
 add one two
   : (A -> A) -> A -> A
@@ -41,7 +41,7 @@ mul two two
   : (A -> A) -> A -> A
   = <value> ;
 mul two zero
-  : (A -> A) -> A -> A
+  : A -> B -> B
   = <value> ;
 mul two (mul two two)
   : (A -> A) -> A -> A
@@ -68,11 +68,11 @@ snd
   : ((A -> B -> B) -> C) -> C
   = <value> ;
 pair zero one
-  : (((A -> A) -> A -> A) -> ((A -> A) -> A -> A) -> B) -> B
+  : ((A -> B -> B) -> ((C -> D) -> C -> D) -> E) -> E
   = <value> ;
 fst (pair zero one)
-  : (A -> A) -> A -> A
+  : A -> B -> B
   = <value> ;
 snd (pair zero one)
-  : (A -> A) -> A -> A
+  : (A -> B) -> A -> B
   = <value> ;

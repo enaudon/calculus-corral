@@ -24,8 +24,43 @@ val func' : t list -> t -> t
 
 (** {1 Inference} *)
 
-(** [unify tp1 tp2] unifies [tp1] and [tp2]. *)
-val unify : t -> t -> unit
+(** Substitution
+
+  A substitution maps (type variable) identifiers to types, and provide
+  operations for extending substitutions with new mappings and for
+  applying substitutions to types.  Furthermore, substitutions are
+  idempotent by construction.
+ *)
+module Substitution : sig
+
+  (** The type of substitutions. *)
+  type s
+
+  (**
+    [identity] is the identity substitution.  It maps every variable
+    to itself.
+  *)
+  val identity : s
+
+  (**
+    [extend id tp sub] extends [sub] with a mapping from [id] to [tp].
+   *)
+  val extend : Identifier.t -> t -> s -> s
+
+  (**
+    [apply tp sub] applies [sub] to [tp], replacing any variables in
+    [tp] which occur in the domain of [sub] with their corresponding
+    types in the range of [sub].
+   *)
+  val apply : t -> s -> t
+
+end
+
+(**
+  [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
+  [tp2].
+ *)
+val unify : Substitution.s -> t -> t -> Substitution.s
 
 (** {1 Utilities} *)
 

@@ -22,8 +22,11 @@ val def : ?loc : Location.t -> Identifier.t -> Type.t -> t -> t
 
 (** {1 Solving} *)
 
-(** [solve c] solves [c]. *)
-val solve : t -> unit
+(**
+  [solve rank c] solves [c] and, if [c] is satisfiable, produces a
+  substitution.
+ *)
+val solve : t -> Type.Substitution.s
 
 (** {1 Utilities} *)
 

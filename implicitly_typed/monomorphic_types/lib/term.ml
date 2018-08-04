@@ -1,5 +1,6 @@
 module Id = Identifier
 module Loc = Location
+module Sub = Type.Substitution
 
 type desc =
   | Variable of Id.t
@@ -29,11 +30,11 @@ let app loc fn arg = { desc = Application (fn, arg); loc }
   W-style Hindley-Milner type inference.  [tm] is assumed to be closed
   under [env].
  *)
-let rec infer_hm : Type.t Id.Map.t -> Type.t -> t -> unit =
+let infer_hm : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
     fun env exp_tp tm ->
 
-  let unify tp1 tp2 =
-    try Type.unify tp1 tp2 with
+  let unify sub tp1 tp2 =
+    try Type.unify sub tp1 tp2 with
       | Type.Occurs (id, tp) ->
         error tm.loc @@
           Printf.sprintf
@@ -42,7 +43,7 @@ let rec infer_hm : Type.t Id.Map.t -> Type.t -> t -> unit =
             (Type.to_string ~no_simp:() tp)
   in
 
-  match tm.desc with
+  let rec infer env sub exp_tp tm = match tm.desc with
     | Variable id ->
       let tp = try Id.Map.find id env with
         | Id.Unbound id ->
@@ -52,28 +53,30 @@ let rec infer_hm : Type.t Id.Map.t -> Type.t -> t -> unit =
               (Loc.to_string tm.loc)
               (Id.to_string id)
       in
-      unify tp exp_tp
+      unify sub tp exp_tp
     | Abstraction (arg, body) ->
       let arg_tp = Type.var @@ Id.fresh_upper () in
       let body_tp = Type.var @@ Id.fresh_upper () in
-      infer_hm (Id.Map.add arg arg_tp env) body_tp body;
-      unify exp_tp @@ Type.func arg_tp body_tp
+      let sub' = infer (Id.Map.add arg arg_tp env) sub body_tp body in
+      unify sub' exp_tp @@ Type.func arg_tp body_tp
     | Application (fn, arg) ->
       let tp = Type.var @@ Id.fresh_upper () in
-      infer_hm env (Type.func tp exp_tp) fn;
-      infer_hm env tp arg
+      infer env (infer env sub (Type.func tp exp_tp) fn) tp arg
+  in
+
+  infer env Sub.identity exp_tp tm
 
 let to_type_hm ?(env = Id.Map.empty) tm =
   let tp = Type.var @@ Id.fresh_upper () in
-  infer_hm env tp tm;
-  tp
+  let sub = infer_hm env tp tm in
+  Sub.apply tp sub
 
 (*
   [infer_pr env tp tm] ensures that [tm] has type [tp], via
   constraint-based type inference a la Pottier and Remy.  [tm] is
   assumed to be closed under [env].
  *)
-let infer_pr : Type.t Id.Map.t -> Type.t -> t -> unit =
+let infer_pr : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
     fun env exp_tp tm ->
 
   let module TC = Type_constraint in
@@ -104,8 +107,8 @@ let infer_pr : Type.t Id.Map.t -> Type.t -> t -> unit =
 
 let to_type_pr ?(env = Id.Map.empty) tm =
   let tp = Type.var @@ Id.fresh_upper () in
-  infer_pr env tp tm;
-  tp
+  let sub = infer_pr env tp tm in
+  Sub.apply tp sub
 
 (* Utilities *)
 
