@@ -1,12 +1,9 @@
 module Id = Identifier
-module DS = Disjoint_set
 module Misc = Miscellaneous
 
-type desc =
+type t =
   | Variable of Id.t * int ref
   | Function of t * t
-
-and t = desc DS.t
 
 (* Exceptions and errors *)
 
@@ -24,17 +21,20 @@ let raise_unify : t -> t -> 'a = fun tp1 tp2 ->
 
 (* Internal utilities *)
 
+let void_rank = -2
+
+(* [poly_rank] is the rank for polymorphic variables. *)
 let poly_rank = -1
 
-let var : int -> Id.t -> t = fun rank id ->
-  DS.singleton @@ Variable (id, ref rank)
+let top_rank = 0
 
-let func : t -> t -> t = fun arg res ->
-  DS.singleton @@ Function (arg, res)
+let var : int -> Id.t -> t = fun rank id -> Variable (id, ref rank)
+
+let func : t -> t -> t = fun arg res -> Function (arg, res)
 
 let get_quants tp =
   let contains id = List.exists (fun id' -> id = id') in
-  let rec get_quants acc tp = match DS.find tp with
+  let rec get_quants acc tp = match tp with
     | Variable (id, rank) ->
       if !rank = poly_rank && not @@ contains id acc then
         id :: acc
@@ -47,47 +47,86 @@ let get_quants tp =
 
 (* Inference *)
 
-let rec unify tp1 tp2 =
+module Substitution : sig
 
-  let rec occurs id tp = match DS.find tp with
+  type s
+
+  val identity : s
+
+  val extend : Id.t -> t -> s -> s
+
+  val apply : t -> s -> t
+
+end = struct
+
+  type nonrec s = t Id.Map.t
+
+  let identity = Id.Map.empty
+
+  let singleton : Id.t -> t -> s = Id.Map.singleton
+
+  let rec apply : s -> t -> t = fun sub tp -> match tp with
+    | Variable (id, _) -> Id.Map.find_default tp id sub
+    | Function (arg, res) -> func (apply sub arg) (apply sub res)
+
+  let extend id tp sub =
+    Id.Map.add id tp @@ Id.Map.map (apply @@ singleton id tp) sub
+
+  let apply tp sub =
+    let tp' = apply sub tp in
+    assert (tp' = apply sub tp');
+    tp'
+
+end
+
+let unify sub tp1 tp2 =
+
+  let module Sub = Substitution in
+
+  let rec occurs id tp = match tp with
     | Variable (id', _) -> id = id'
     | Function (arg, res) -> occurs id arg || occurs id res
   in
 
-  (* TODO: Try not to use [Disjoint_set.update] here. *)
-  let rec update_ranks rank tp = match DS.find tp with
-    | Variable (id, rank') ->
-      DS.update tp @@ Variable (id, min rank rank')
+  let rec update_ranks rank tp = match tp with
+    | Variable (_, rank') ->
+      rank' := min rank !rank'
     | Function (arg, res) ->
       update_ranks rank arg;
       update_ranks rank res
   in
 
-  let tp1_desc = DS.find tp1 in
-  let tp2_desc = DS.find tp2 in
-  match tp1_desc, tp2_desc with
-    | Variable (_, rank), _ when !rank = poly_rank ->
-      raise_unify tp1 tp2
-    | _, Variable (_, rank) when !rank = poly_rank ->
-      raise_unify tp1 tp2
-    | Variable (id1, _), Variable (id2, _) when id1 = id2->
-      assert (tp1_desc == tp2_desc)
-    | Variable (id, rank), _ ->
-      if occurs id tp2 then raise_occurs id tp2;
-      update_ranks rank tp2;
-      DS.merge tp2 tp1
-    | _, Variable (id, rank) ->
-      if occurs id tp1 then raise_occurs id tp1;
-      update_ranks rank tp1;
-      DS.merge tp1 tp2
-    | Function (arg1, res1), Function (arg2, res2) ->
-      unify arg1 arg2;
-      unify res1 res2;
-      DS.merge tp1 tp2
+  let rec unify sub tp1 tp2 =
+    let tp1' = Sub.apply tp1 sub in
+    let tp2' = Sub.apply tp2 sub in
+    match tp1', tp2' with
+      | Variable (_, rank), _
+          when !rank = poly_rank || !rank = void_rank->
+        raise_unify tp1 tp2
+      | _, Variable (_, rank)
+          when !rank = poly_rank || !rank = void_rank->
+        raise_unify tp1 tp2
+      | Variable (id1, _), Variable (id2, _) when id1 = id2->
+        sub
+      | Variable (id, rank), _ ->
+        if occurs id tp2' then raise_occurs id tp2';
+        update_ranks !rank tp2';
+        Sub.extend id tp2' sub
+      | _, Variable (id, rank) ->
+        if occurs id tp1' then raise_occurs id tp1';
+        update_ranks !rank tp1';
+        Sub.extend id tp1' sub
+      | Function (arg1, res1), Function (arg2, res2) ->
+        unify (unify sub arg1 arg2) res1 res2
+    in
+
+  let sub' = unify sub tp1 tp2 in
+  assert (Sub.apply tp1 sub' = Sub.apply tp2 sub');
+  sub'
 
 let rec gen rank tp =
   let gen = gen rank in
-  match DS.find tp with
+  match tp with
     | Variable (id, rank') ->
       if !rank' > rank then
         var poly_rank id
@@ -102,7 +141,7 @@ let inst rank tp =
   let vars = List.map (fun _ -> var rank @@ Id.fresh_upper ()) quants in
   let env = Id.Map.of_list @@ List.combine quants vars in
 
-  let rec inst tp = match DS.find tp with
+  let rec inst tp = match tp with
     | Variable (id, _) -> Id.Map.find_default tp id env
     | Function (arg, res) -> func (inst arg) (inst res)
   in
@@ -114,7 +153,7 @@ let inst rank tp =
 let to_intl_repr tp =
 
   let module IR = Universal_types.Type in
-  let rec to_ir tp = match DS.find tp with
+  let rec to_ir tp = match tp with
     | Variable (id, _) -> IR.var id
     | Function (arg, res) -> IR.func (to_ir arg) (to_ir res)
   in
@@ -140,7 +179,7 @@ let simplify tp =
           id'
   in
 
-  let rec simplify tp = match DS.find tp with
+  let rec simplify tp = match tp with
     | Variable (id, rank) ->
       var !rank @@ simplify_id id
     | Function (arg, res) ->
@@ -155,11 +194,11 @@ let to_string ?no_simp ?show_quants tp =
 
   let rec to_string tp =
     let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
-    match DS.find tp with
+    match tp with
       | Variable (id, _) ->
           Id.to_string id
       | Function (arg, res) ->
-        let arg_to_string tp = match DS.find tp with
+        let arg_to_string tp = match tp with
           | Variable _ -> to_string tp
           | Function _ -> to_paren_string tp
         in
@@ -188,6 +227,6 @@ let get_quants = get_quants
 
 (* Setters *)
 
-let set_rank rank tp = match DS.find tp with
+let set_rank rank tp = match tp with
   | Variable (_, rank') -> rank' := rank
   | _ -> error "Type.set_rank: expected variable"

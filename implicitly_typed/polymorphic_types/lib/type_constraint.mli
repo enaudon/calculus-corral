@@ -72,7 +72,7 @@ val map : ('a -> 'b) -> 'a t -> 'b t
   [solve rank c] solves [c] and, if [c] is satisfiable, produces a
   result value.
  *)
-val solve : int -> 'a t -> 'a
+val solve : int -> 'a t -> Type.Substitution.s * 'a
 
 (** {1 Utilities} *)
 
