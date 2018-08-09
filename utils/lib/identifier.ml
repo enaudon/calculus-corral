@@ -32,6 +32,10 @@ module Map = struct
     try find id map with
       | Not_found -> raise @@ Unbound id
 
+  let keys map = List.map fst @@ bindings map
+
+  let values map = List.map snd @@ bindings map
+
 end
 
 let fresh_lower, reset_lower =

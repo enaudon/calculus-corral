@@ -75,6 +75,12 @@ module Map : sig
   (** [bindings m] computes a list of the bindings in [m]. *)
    val bindings : 'a t -> (key * 'a) list
 
+  (** [keys m] computes a list of the keys in [m]. *)
+   val keys : 'a t -> key list
+
+  (** [values m] computes a list of the values in [m]. *)
+   val values : 'a t -> 'a list
+
   (**
     [map f m] constructs a new map by applying f to each binding in [m].
    *)

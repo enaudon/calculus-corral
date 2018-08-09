@@ -42,8 +42,9 @@ let unpack : Loc.t -> Id.t -> Id.t -> t -> t -> t =
 
 (* Typing *)
 
-let to_type ?(env = Id.Map.empty) =
-  let rec to_type tp_bvs env tm = match tm.desc with
+let rec to_type ?(env = Id.Map.empty) tm =
+  let to_type env = to_type ~env in
+  match tm.desc with
     | Variable id ->
       begin try Id.Map.find id env with
         | Id.Unbound id ->
@@ -51,10 +52,10 @@ let to_type ?(env = Id.Map.empty) =
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Abstraction (arg, arg_tp, body) ->
-      let body_tp = to_type tp_bvs (Id.Map.add arg arg_tp env) body in
+      let body_tp = to_type (Id.Map.add arg arg_tp env) body in
       Type.func arg_tp body_tp
     | Application (fn, arg) ->
-      let fn_tp = to_type tp_bvs env fn in
+      let fn_tp = to_type env fn in
       let fml_arg_tp, res_tp =
         try
           Type.get_func (Type.beta_reduce ~deep:() ~env fn_tp)
@@ -64,7 +65,7 @@ let to_type ?(env = Id.Map.empty) =
               "expected function type; found '%s'"
               (Type.to_string fn_tp)
       in
-      let act_arg_tp = to_type tp_bvs env arg in
+      let act_arg_tp = to_type env arg in
       if Type.alpha_equivalent ~beta_env:env act_arg_tp fml_arg_tp then
         res_tp
       else
@@ -83,9 +84,10 @@ let to_type ?(env = Id.Map.empty) =
               "expected existential type; found '%s'"
               (Type.to_string tp2)
       in
-      let tm_tp = to_type tp_bvs env tm in
+      let tm_tp = to_type env tm in
       let tp2_tp' =
-        Type.subst tp_bvs (Id.Map.singleton tp2_tv tp1) tp2_tp
+        let sub = Id.Map.singleton tp2_tv tp1 in
+        Type.subst (Id.Set.of_list @@ Id.Map.keys env) sub tp2_tp
       in
       if Type.alpha_equivalent ~beta_env:env tm_tp tp2_tp' then
         tp2
@@ -96,7 +98,7 @@ let to_type ?(env = Id.Map.empty) =
               (Type.to_string tp2_tp')
               (Type.to_string tm_tp)
     | Unpack (tp_id, tm_id, pack, body) ->
-      let pack_tp = to_type tp_bvs env pack in
+      let pack_tp = to_type env pack in
       let pack_tp_tv, pack_tp_tp =
         try
           Type.get_exists @@ Type.beta_reduce ~deep:() ~env pack_tp
@@ -107,25 +109,16 @@ let to_type ?(env = Id.Map.empty) =
               (Type.to_string pack_tp)
       in
       let pack_tp_tp' =
-        Type.subst
-          tp_bvs
-          (Id.Map.singleton pack_tp_tv @@ Type.var tp_id)
-          pack_tp_tp
+        let sub = (Id.Map.singleton pack_tp_tv @@ Type.var tp_id) in
+        Type.subst (Id.Set.of_list @@ Id.Map.keys env) sub pack_tp_tp
       in
-      let res_tp =
-        to_type
-          (Id.Set.add tp_id tp_bvs)
-          (Id.Map.add tm_id pack_tp_tp' env)
-          body
-      in
+      let res_tp = to_type (Id.Map.add tm_id pack_tp_tp' env) body in
       if Id.Set.mem tp_id @@ Type.free_vars res_tp then
         error body.loc "to_type" @@
           Printf.sprintf
             "type '%s' would escape it's scope"
             (Id.to_string tp_id);
       res_tp
-  in
-  to_type Id.Set.empty env
 
 (* Transformations *)
 
