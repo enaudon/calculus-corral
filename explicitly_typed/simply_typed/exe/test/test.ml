@@ -34,8 +34,8 @@ let _ =
   let repl_exe, case_dir = parse_cmd_args () in
   let repl_cases = [
     ("function.lc", []) ;
-    ("boolean.lc", []) ;
-    ("natural.lc", []) ;
+    ("church_boolean.lc", []) ;
+    ("church_natural.lc", []) ;
   ] in
 
   let test_suite = "simply_typed" >::: [
