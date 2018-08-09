@@ -30,9 +30,17 @@ let parse_cmd_args () =
   !repl_exe, !case_dir
 
 let _ =
+
   let repl_exe, case_dir = parse_cmd_args () in
-  let test_suite = "existential_types" >::: [
-      Test_term.make () ;
-      Test_repl.make repl_exe case_dir ;
+  let repl_cases = [
+    ("function.lc", []) ;
+    ("boolean.lc", []) ;
+    ("natural.lc", []) ;
   ] in
+
+  let test_suite = "existential_types" >::: [
+    Test_term.make () ;
+    Test_repl.make_explicit repl_exe case_dir repl_cases ;
+  ] in
+
   run_test_tt_main test_suite

@@ -30,8 +30,17 @@ let parse_cmd_args () =
   !repl_exe, !case_dir
 
 let _ =
+
   let repl_exe, case_dir = parse_cmd_args () in
-  let test_suite = "polymorphic_types" >::: [
-      Test_repl.make repl_exe case_dir ;
+  let repl_cases = [
+    ("function.lc", []) ;
+    ("pair.lc", []) ;
+    ("boolean.lc", ["pair.lc"]) ;
+    ("natural.lc", ["pair.lc"]) ;
   ] in
+
+  let test_suite = "polymorphic_types" >::: [
+    Test_repl.make_implicit repl_exe case_dir repl_cases ;
+  ] in
+
   run_test_tt_main test_suite
