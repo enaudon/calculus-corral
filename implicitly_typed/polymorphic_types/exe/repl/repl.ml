@@ -26,9 +26,9 @@ module Repl = Language.Repl (struct
 
     let default_env = Identifier.Map.empty
 
-    let to_kind ?env:_ _ = Kind.Base
+    let to_kind _ _ = Kind.Base
 
-    let beta_reduce ?deep:_ ?env:_ _ = assert false
+    let beta_reduce ?deep:_ _ _ = assert false
 
     let to_string tp = to_string tp
 
@@ -38,32 +38,24 @@ module Repl = Language.Repl (struct
 
     include Polymorphic_types.Term
 
-    let to_type ?env:env_opt tm =
+    let to_type env tm =
       let to_type = match !type_inference_algorithm with
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      match env_opt with
-        | None -> to_type tm
-        | Some env -> to_type ~env:(snd env) tm
+      to_type ~env:(snd env) tm
 
-    let to_value ?deep ?env:env_opt tm =
+    let to_value ?deep env tm =
       let to_intl_repr = match !type_inference_algorithm with
         | Hindley_milner -> to_intl_repr_hm
         | Pottier_remy -> to_intl_repr_pr
       in
-      match env_opt with
-        | None ->
-          let vl = to_intl_repr tm in
-          ignore @@ Value.to_type vl;
-          Value.simplify @@ Value.beta_reduce ?deep vl
-        | Some env ->
-          let tp_env = Misc.thd_of_3 env in
-          let vl = to_intl_repr ~env:tp_env tm in
-          ignore @@
-            Value.to_type ~env:(Id.Map.map Type.to_intl_repr tp_env) vl;
-          Value.simplify @@
-            Value.beta_reduce ?deep ~env:(Misc.fst_of_3 env) vl
+      let tp_env = Misc.thd_of_3 env in
+      let vl = to_intl_repr ~env:tp_env tm in
+      ignore @@
+        Value.to_type ~env:(Id.Map.map Type.to_intl_repr tp_env) vl;
+      Value.simplify @@
+        Value.beta_reduce ?deep ~env:(Misc.fst_of_3 env) vl
 
   end
 

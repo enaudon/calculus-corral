@@ -19,7 +19,9 @@ module Repl = Language.Repl (struct
 
     let default_env = Identifier.Map.empty
 
-    let to_kind ?env:_ _ = Kind.Base
+    let to_kind _ _ = Kind.Base
+
+    let beta_reduce ?deep env tm = beta_reduce ?deep ~env tm
 
   end
 
@@ -27,15 +29,10 @@ module Repl = Language.Repl (struct
 
     include Existential_types.Term
 
-    let to_type ?env:env_opt tm = match env_opt with
-      | None -> to_type tm
-      | Some env -> to_type ~env:(snd env) tm
+    let to_type env tm = to_type ~env:(snd env) tm
 
-    let to_value ?deep ?env:env_opt tm = match env_opt with
-      | None ->
-        simplify @@ beta_reduce ?deep tm
-      | Some env ->
-        simplify @@ beta_reduce ?deep ~env:(Misc.fst_of_3 env) tm
+    let to_value ?deep env tm =
+      beta_reduce ?deep ~env:(Misc.fst_of_3 env) tm
 
   end
 

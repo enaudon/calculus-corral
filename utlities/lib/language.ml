@@ -7,7 +7,6 @@ module type Sig = sig
     val to_string : t -> string
   end
 
-
   module Kind : sig
     type t
     val to_string : t -> string
@@ -16,18 +15,17 @@ module type Sig = sig
   module Type : sig
     type t
     val default_env : Kind.t Id.Map.t
-    val to_kind : ?env : Kind.t Id.Map.t -> t -> Kind.t
-    val beta_reduce : ?deep : unit -> ?env : t Id.Map.t -> t -> t
+    val to_kind : Kind.t Id.Map.t -> t -> Kind.t
+    val beta_reduce : ?deep : unit -> t Id.Map.t -> t -> t
     val to_string : t -> string
   end
 
   module Term : sig
     type t
-    val to_type :
-      ?env : (Kind.t Id.Map.t * Type.t Id.Map.t) -> t -> Type.t
+    val to_type : (Kind.t Id.Map.t * Type.t Id.Map.t) -> t -> Type.t
     val to_value :
       ?deep : unit ->
-      ?env : (Value.t Id.Map.t * Kind.t Id.Map.t * Type.t Id.Map.t) ->
+      (Value.t Id.Map.t * Kind.t Id.Map.t * Type.t Id.Map.t) ->
       t ->
       Value.t
     val to_string : t -> string
@@ -69,24 +67,24 @@ module Repl (Input : Sig) = struct
 
     let evaluate_command (kn_env, tp_env, vl_env) cmd = match cmd with
       | Command.Bind_type (id, tp) ->
-        let kn = Type.to_kind ~env:kn_env tp in
-        let tp' = Type.beta_reduce ?deep ~env:tp_env tp in
+        let kn = Type.to_kind kn_env tp in
+        let tp' = Type.beta_reduce ?deep tp_env tp in
         Printf.printf "%s\n  : %s\n  = %s ;\n%!"
           (Id.to_string id)
           (Kind.to_string kn)
           (Type.to_string tp');
         Id.Map.add id kn kn_env, Id.Map.add id tp' tp_env, vl_env
       | Command.Bind_term (id, tm) ->
-        let tp = Term.to_type ~env:(kn_env, tp_env) tm in
-        let vl = Term.to_value ?deep ~env:(vl_env, kn_env, tp_env) tm in
+        let tp = Term.to_type (kn_env, tp_env) tm in
+        let vl = Term.to_value ?deep (vl_env, kn_env, tp_env) tm in
         Printf.printf "%s\n  : %s\n  = %s ;\n%!"
           (Id.to_string id)
           (Type.to_string tp)
           (Value.to_string vl);
         kn_env, Id.Map.add id tp tp_env, Id.Map.add id vl vl_env
       | Command.Eval_term tm ->
-        let tp = Term.to_type ~env:(kn_env, tp_env) tm in
-        let vl = Term.to_value ?deep ~env:(vl_env, kn_env, tp_env) tm in
+        let tp = Term.to_type (kn_env, tp_env) tm in
+        let vl = Term.to_value ?deep (vl_env, kn_env, tp_env) tm in
         Printf.printf "%s\n  : %s\n  = %s ;\n%!"
           (Term.to_string tm)
           (Type.to_string tp)
