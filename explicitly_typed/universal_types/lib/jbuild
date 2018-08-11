@@ -9,5 +9,5 @@
 
 (library
   ((name universal_types)
-   (libraries (utils))
+   (libraries (utilities))
    (flags (-w +A-4 -warn-error +A-4))))

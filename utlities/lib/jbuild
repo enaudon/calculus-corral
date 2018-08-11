@@ -1,7 +1,7 @@
 (jbuild_version 1)
 
 (library
-  ((name utils)
+  ((name utilities)
    (libraries (oUnit))
    (wrapped false)
    (flags (-w +A-4 -warn-error +A-4))))
