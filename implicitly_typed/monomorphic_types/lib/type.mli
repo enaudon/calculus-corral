@@ -71,7 +71,7 @@ val unify : Substitution.s -> t -> t -> Substitution.s
 val simplify : t -> t
 
 (**
-  [to_string tp] computes a string representation of [tp].  Unless
-  [no_simp] is passed, [tp] is simplified first.
+  [to_string ~no_simp tp] computes a string representation of [tp].
+  Unless [no_simp] is passed, [tp] is simplified first.
  *)
 val to_string : ?no_simp : unit -> t -> string

@@ -43,7 +43,7 @@ module Repl = Language.Repl (struct
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      to_type ~env:(snd env) tm
+      to_type (snd env) tm
 
     let to_value ?deep env tm =
       let to_intl_repr = match !type_inference_algorithm with
@@ -51,11 +51,9 @@ module Repl = Language.Repl (struct
         | Pottier_remy -> to_intl_repr_pr
       in
       let tp_env = Misc.thd_of_3 env in
-      let vl = to_intl_repr ~env:tp_env tm in
-      ignore @@
-        Value.to_type ~env:(Id.Map.map Type.to_intl_repr tp_env) vl;
-      Value.simplify @@
-        Value.beta_reduce ?deep ~env:(Misc.fst_of_3 env) vl
+      let vl = to_intl_repr tp_env tm in
+      ignore @@ Value.to_type (Id.Map.map Type.to_intl_repr tp_env) vl;
+      Value.simplify @@ Value.beta_reduce ?deep (Misc.fst_of_3 env) vl
 
   end
 

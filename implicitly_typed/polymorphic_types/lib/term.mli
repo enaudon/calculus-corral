@@ -31,30 +31,30 @@ val bind : ?loc : Location.t -> string -> t -> t -> t
 (** {1 Typing and Elaboration} *)
 
 (**
-  [to_type_hm ~env tm] computes the type of [tm] under [env], via
+  [to_type_hm env tm] computes the type of [tm] under [env], via
   Algorithm W-style Hindley-Milner type inference.
  *)
-val to_type_hm : ?env : Type.t Identifier.Map.t -> t -> Type.t
+val to_type_hm : Type.t Identifier.Map.t -> t -> Type.t
 
 (**
-  [to_intl_repr_hm ~env tm] computes an internal representation term
+  [to_intl_repr_hm env tm] computes an internal representation term
   which is equivalent to [tm].
  *)
 val to_intl_repr_hm :
-  ?env : Type.t Identifier.Map.t -> t -> Universal_types.Term.t
+  Type.t Identifier.Map.t -> t -> Universal_types.Term.t
 
 (**
-  [to_type_pr ~env tm] computes the type of [tm] under [env], via
+  [to_type_pr env tm] computes the type of [tm] under [env], via
   constraint-based type inference a la Pottier and Remy.
  *)
-val to_type_pr : ?env : Type.t Identifier.Map.t -> t -> Type.t
+val to_type_pr : Type.t Identifier.Map.t -> t -> Type.t
 
 (**
-  [to_intl_repr_pr ~env tm] computes an internal representation term
+  [to_intl_repr_pr env tm] computes an internal representation term
   which is equivalent to [tm].
  *)
 val to_intl_repr_pr :
-  ?env : Type.t Identifier.Map.t -> t -> Universal_types.Term.t
+  Type.t Identifier.Map.t -> t -> Universal_types.Term.t
 
 (** {1 Utilities} *)
 

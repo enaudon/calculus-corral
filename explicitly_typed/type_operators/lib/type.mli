@@ -45,17 +45,17 @@ val get_func : t -> t * t
 (** [default_env] is the default typing environment. *)
 val default_env : Kind.t Identifier.Map.t
 
-(** [to_kind tp] computes the kind of [tp] under [env]. *)
-val to_kind : ?env : Kind.t Identifier.Map.t -> t -> Kind.t
+(** [to_kind env tp] computes the kind of [tp] under [env]. *)
+val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
 
 (** {1 Transformations} *)
 
 (**
-  [beta_reduce ~deep tp] reduces any applications in [tp] under [env].
-  If the [deep] argument is passed, then [beta_reduce] will reduce the
-  body of abstractions.
+  [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
+  [env].  If the [deep] argument is passed, then [beta_reduce] will
+  reduce the body of abstractions.
  *)
-val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
+val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
 
 (** {1 Utilities} *)
 

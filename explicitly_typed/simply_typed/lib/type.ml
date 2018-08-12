@@ -25,8 +25,8 @@ let get_func tp = match tp with
 
 (* Transformations *)
 
-let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
-  let beta_reduce = beta_reduce ?deep ~env in
+let rec beta_reduce ?deep env tp =
+  let beta_reduce = beta_reduce ?deep env in
   match tp with
     | Variable id ->
       Id.Map.find_default tp id env
@@ -46,8 +46,8 @@ let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env=[]) tp1 tp2 =
   in
   alpha_equiv
     env
-    (beta_reduce ~deep:() ~env:beta_env tp1)
-    (beta_reduce ~deep:() ~env:beta_env tp2)
+    (beta_reduce ~deep:() beta_env tp1)
+    (beta_reduce ~deep:() beta_env tp2)
 
 let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in

@@ -21,18 +21,16 @@ module Repl = Language.Repl (struct
 
     let to_kind _ _ = Kind.Base
 
-    let beta_reduce ?deep env tm = beta_reduce ?deep ~env tm
-
   end
 
   module Term = struct
 
     include Universal_types.Term
 
-    let to_type env tm = to_type ~env:(snd env) tm
+    let to_type env tm = to_type (snd env) tm
 
     let to_value ?deep env tm =
-      simplify @@ beta_reduce ?deep ~env:(Misc.fst_of_3 env) tm
+      simplify @@ beta_reduce ?deep (Misc.fst_of_3 env) tm
 
   end
 

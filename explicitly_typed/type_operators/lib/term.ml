@@ -32,8 +32,9 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 
 (* Typing *)
 
-let to_type ?(env = Type.default_env, Id.Map.empty) =
-  let rec to_type kn_env tp_env tm = match tm.desc with
+let rec to_type (kn_env, tp_env) tm =
+  let to_type kn_env tp_env = to_type (kn_env, tp_env) in
+  match tm.desc with
     | Variable id ->
       begin try Id.Map.find id tp_env with
         | Id.Unbound id ->
@@ -41,7 +42,7 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Abstraction (arg, arg_tp, body) ->
-      let arg_kn = Type.to_kind ~env:kn_env arg_tp in
+      let arg_kn = Type.to_kind kn_env arg_tp in
       if not (Kind.alpha_equivalent arg_kn Kind.base) then
         error tm.loc "to_type" @@
           Printf.sprintf
@@ -53,7 +54,7 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
       let fn_tp = to_type kn_env tp_env fn in
       let fml_arg_tp, res_tp =
         try
-          Type.get_func @@ Type.beta_reduce ~deep:() ~env:tp_env fn_tp
+          Type.get_func @@ Type.beta_reduce ~deep:() tp_env fn_tp
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf
@@ -71,8 +72,6 @@ let to_type ?(env = Type.default_env, Id.Map.empty) =
               "expected type '%s'; found type '%s'"
               (Type.to_string fml_arg_tp)
               (Type.to_string act_arg_tp)
-  in
-  to_type (fst env) (snd env)
 
 (* Transformations *)
 
@@ -110,8 +109,8 @@ let subst : t -> Id.t -> t -> t = fun tm id tm' ->
   in
   subst (free_vars tm') (Id.Map.singleton id tm') tm
 
-let rec beta_reduce ?deep ?(env = Id.Map.empty) tm =
-  let beta_reduce env = beta_reduce ?deep ~env in
+let rec beta_reduce ?deep env tm =
+  let beta_reduce = beta_reduce ?deep in
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->

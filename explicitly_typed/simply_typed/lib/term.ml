@@ -32,38 +32,36 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 
 (* Typing *)
 
-let rec to_type ?(env = Id.Map.empty) tm =
-  let to_type env tm = to_type ~env tm in
-  match tm.desc with
-    | Variable id ->
-      begin try Id.Map.find id env with
-        | Id.Unbound id ->
-          error tm.loc "to_type" @@
-            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
-      end
-    | Abstraction (arg, arg_tp, body) ->
-      let body_tp = to_type (Id.Map.add arg arg_tp env) body in
-      Type.func arg_tp body_tp
-    | Application (fn, arg) ->
-      let fn_tp = to_type env fn in
-      let fml_arg_tp, res_tp =
-        try
-          Type.get_func (Type.beta_reduce ~deep:() ~env fn_tp)
-        with Invalid_argument _ ->
-          error tm.loc "to_type" @@
-            Printf.sprintf
-              "expected function type; found '%s'"
-              (Type.to_string fn_tp)
-      in
-      let act_arg_tp = to_type env arg in
-      if Type.alpha_equivalent ~beta_env:env act_arg_tp fml_arg_tp then
-        res_tp
-      else
-        error arg.loc "to_type" @@
-            Printf.sprintf
-              "expected type '%s'; found type '%s'"
-              (Type.to_string fml_arg_tp)
-              (Type.to_string act_arg_tp)
+let rec to_type env tm = match tm.desc with
+  | Variable id ->
+    begin try Id.Map.find id env with
+      | Id.Unbound id ->
+        error tm.loc "to_type" @@
+          Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
+    end
+  | Abstraction (arg, arg_tp, body) ->
+    let body_tp = to_type (Id.Map.add arg arg_tp env) body in
+    Type.func arg_tp body_tp
+  | Application (fn, arg) ->
+    let fn_tp = to_type env fn in
+    let fml_arg_tp, res_tp =
+      try
+        Type.get_func (Type.beta_reduce ~deep:() env fn_tp)
+      with Invalid_argument _ ->
+        error tm.loc "to_type" @@
+          Printf.sprintf
+            "expected function type; found '%s'"
+            (Type.to_string fn_tp)
+    in
+    let act_arg_tp = to_type env arg in
+    if Type.alpha_equivalent ~beta_env:env act_arg_tp fml_arg_tp then
+      res_tp
+    else
+      error arg.loc "to_type" @@
+          Printf.sprintf
+            "expected type '%s'; found type '%s'"
+            (Type.to_string fml_arg_tp)
+            (Type.to_string act_arg_tp)
 
 (* Transformations *)
 
@@ -101,8 +99,8 @@ let subst : t -> Id.t -> t -> t = fun tm id tm' ->
   in
   subst (free_vars tm') (Id.Map.singleton id tm') tm
 
-let rec beta_reduce ?deep ?(env = Id.Map.empty) tm =
-  let beta_reduce env = beta_reduce ?deep ~env in
+let rec beta_reduce ?deep env tm =
+  let beta_reduce = beta_reduce ?deep in
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->

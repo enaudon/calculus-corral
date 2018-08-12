@@ -104,12 +104,12 @@ let infer_hm
   let sub, k = infer rank env Sub.identity exp_tp tm in
   sub, k sub
 
-let to_type_hm ?(env = Id.Map.empty) tm =
+let to_type_hm env tm =
   let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
   let sub, _ = infer_hm (Type.top_rank + 1) env tp tm in
   Type.gen Type.top_rank @@ Sub.apply tp sub
 
-let to_intl_repr_hm ?(env = Id.Map.empty) tm =
+let to_intl_repr_hm env tm =
   let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
   let sub, tm' = infer_hm (Type.top_rank + 1) env tp tm in
   let tp' = Type.gen Type.top_rank @@ Sub.apply tp sub in
@@ -164,12 +164,12 @@ let infer_pr
   TC.solve rank @@
     Id.Map.fold (fun id -> TC.def id) env (constrain exp_tp tm)
 
-let to_type_pr ?(env = Id.Map.empty) tm =
+let to_type_pr env tm =
   let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
   let sub, _ = infer_pr (Type.top_rank + 1) env tp tm in
   Type.gen Type.top_rank @@ Sub.apply tp sub
 
-let to_intl_repr_pr ?(env = Id.Map.empty) tm =
+let to_intl_repr_pr env tm =
   let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
   let sub, tm' = infer_pr (Type.top_rank + 1) env tp tm in
   let tp' = Type.gen Type.top_rank @@ Sub.apply tp sub in

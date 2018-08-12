@@ -17,7 +17,7 @@ exception Occurs of Identifier.t * t
  *)
 exception Cannot_unify of t * t
 
-(** {1 Constructors and Destructors} *)
+(** {1 Variable Ranks} *)
 
 (**
   [void_rank] is a dummy rank for variables whose rank is not yet known.
@@ -27,7 +27,12 @@ val void_rank : int
 (** [top_rank] is the rank for variables introduced at the top-level. *)
 val top_rank : int
 
-(** [var rank id] constructs a variable with the identifier [id]. *)
+(** {1 Constructors and Destructors} *)
+
+(**
+  [var rank id] constructs a variable with the identifier [id].  The
+  [rank] parameter is the let-depth of the newly-constructed type.
+ *)
 val var : int -> Identifier.t -> t
 
 (**
@@ -119,8 +124,9 @@ val to_intl_repr : t -> Universal_types.Type.t
 val simplify : t -> t
 
 (**
-  [to_string tp] computes a string representation of [tp].  Unless
-  [no_simp] is passed, [tp] is simplified first.  Unless [show_quants]
-  is passed, the universal quantifiers are not printed.
+  [to_string ~no_simp:() ~show_quants:() tp] computes a string
+  representation of [tp].  Unless [no_simp] is passed, [tp] is
+  simplified first.  Unless [show_quants] is passed, the universal
+  quantifiers are not printed.
  *)
 val to_string : ?no_simp : unit -> ?show_quants : unit -> t -> string

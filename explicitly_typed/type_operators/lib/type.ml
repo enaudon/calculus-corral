@@ -54,39 +54,36 @@ let default_env =
     Id.Map.add (Id.of_string base_id) base |>
     Id.Map.add (Id.of_string func_id) (func' [base; base] base)
 
-let to_kind ?(env = default_env) =
-  let rec to_kind env tp = match tp with
-    | Variable id ->
-      begin try Id.Map.find id env with
-        | Id.Unbound id ->
-          error "to_kind" @@
-            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
-      end
-    | Abstraction (arg, arg_tp, body) ->
-      let body_tp = to_kind (Id.Map.add arg arg_tp env) body in
-      Kind.func arg_tp body_tp
-    | Application (fn, arg) ->
-      let fn' = to_kind env fn in
-      let fml_arg_tp, res_tp =
-        try
-          Kind.get_func fn'
-        with Invalid_argument _ ->
-          error "to_kind" @@
-            Printf.sprintf
-              "expected function kind; found '%s'"
-              (Kind.to_string fn')
-      in
-      let act_arg_tp = to_kind env arg in
-      if Kind.alpha_equivalent act_arg_tp fml_arg_tp then
-        res_tp
-      else
-          error "to_kind" @@
-            Printf.sprintf
-              "expected kind '%s'; found kind '%s'"
-                (Kind.to_string fml_arg_tp)
-                (Kind.to_string act_arg_tp)
-  in
-  to_kind env
+let rec to_kind env tp = match tp with
+  | Variable id ->
+    begin try Id.Map.find id env with
+      | Id.Unbound id ->
+        error "to_kind" @@
+          Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
+    end
+  | Abstraction (arg, arg_tp, body) ->
+    let body_tp = to_kind (Id.Map.add arg arg_tp env) body in
+    Kind.func arg_tp body_tp
+  | Application (fn, arg) ->
+    let fn' = to_kind env fn in
+    let fml_arg_tp, res_tp =
+      try
+        Kind.get_func fn'
+      with Invalid_argument _ ->
+        error "to_kind" @@
+          Printf.sprintf
+            "expected function kind; found '%s'"
+            (Kind.to_string fn')
+    in
+    let act_arg_tp = to_kind env arg in
+    if Kind.alpha_equivalent act_arg_tp fml_arg_tp then
+      res_tp
+    else
+        error "to_kind" @@
+          Printf.sprintf
+            "expected kind '%s'; found kind '%s'"
+              (Kind.to_string fml_arg_tp)
+              (Kind.to_string act_arg_tp)
 
 (* Transformations *)
 
@@ -121,8 +118,8 @@ let subst : t -> Id.t -> t -> t = fun tp id tp' ->
   in
   subst (free_vars tp') (Id.Map.singleton id tp') tp
 
-let rec beta_reduce ?deep ?(env = Id.Map.empty) tp =
-  let beta_reduce = beta_reduce ?deep ~env in
+let rec beta_reduce ?deep env tp =
+  let beta_reduce = beta_reduce ?deep env in
   match tp with
     | Variable id ->
       Id.Map.find_default tp id env
@@ -158,8 +155,8 @@ let alpha_equivalent ?(beta_env = Id.Map.empty) tp1 tp2 =
   in
   alpha_equiv
     []
-    (beta_reduce ~deep:() ~env:beta_env tp1)
-    (beta_reduce ~deep:() ~env:beta_env tp2)
+    (beta_reduce ~deep:() beta_env tp1)
+    (beta_reduce ~deep:() beta_env tp2)
 
 let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in

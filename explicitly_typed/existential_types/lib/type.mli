@@ -39,11 +39,11 @@ val get_exists : t -> Identifier.t * t
 (** {1 Transformations} *)
 
 (**
-  [beta_reduce ~deep tp] reduces any applications in [tp] under [env].
-  If the [deep] argument is passed, then [beta_reduce] will reduce the
-  body of abstractions.
+  [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
+  [env].  If the [deep] argument is passed, then [beta_reduce] will
+  reduce the body of abstractions.
  *)
-val beta_reduce : ?deep : unit -> ?env : t Identifier.Map.t -> t -> t
+val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
 
 (** {1 Utilities} *)
 

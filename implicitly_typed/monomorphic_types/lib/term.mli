@@ -25,16 +25,16 @@ val app' : ?loc : Location.t -> t -> t list -> t
 (** {1 Typing} *)
 
 (**
-  [to_type_hm ~env tm] computes the type of [tm] under [env], via
+  [to_type_hm env tm] computes the type of [tm] under [env], via
   Algorithm W-style Hindley-Milner type inference.
  *)
-val to_type_hm : ?env : Type.t Identifier.Map.t -> t -> Type.t
+val to_type_hm : Type.t Identifier.Map.t -> t -> Type.t
 
 (**
-  [to_type_pr ~env tm] computes the type of [tm] under [env], via
+  [to_type_pr env tm] computes the type of [tm] under [env], via
   constraint-based type inference a la Pottier and Remy.
  *)
-val to_type_pr : ?env : Type.t Identifier.Map.t -> t -> Type.t
+val to_type_pr : Type.t Identifier.Map.t -> t -> Type.t
 
 (** {1 Utilities} *)
 

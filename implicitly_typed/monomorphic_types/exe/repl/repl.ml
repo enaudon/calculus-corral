@@ -48,7 +48,7 @@ module Repl = Language.Repl (struct
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      to_type ~env:(snd env) tm
+      to_type (snd env) tm
 
     let to_value ?deep:_ _ tm = tm
 

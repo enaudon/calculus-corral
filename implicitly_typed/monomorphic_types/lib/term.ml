@@ -66,7 +66,7 @@ let infer_hm : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
 
   infer env Sub.identity exp_tp tm
 
-let to_type_hm ?(env = Id.Map.empty) tm =
+let to_type_hm env tm =
   let tp = Type.var @@ Id.fresh_upper () in
   let sub = infer_hm env tp tm in
   Sub.apply tp sub
@@ -105,7 +105,7 @@ let infer_pr : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
   TC.solve @@
     Id.Map.fold (fun id -> TC.def id) env (constrain exp_tp tm)
 
-let to_type_pr ?(env = Id.Map.empty) tm =
+let to_type_pr env tm =
   let tp = Type.var @@ Id.fresh_upper () in
   let sub = infer_pr env tp tm in
   Sub.apply tp sub

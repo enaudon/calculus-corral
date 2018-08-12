@@ -21,7 +21,7 @@ let assert_beta_reduce tm exp_shallow exp_deep =
   let assert_beta_reduce ?deep tm exp =
     let act =
       try
-        Term.beta_reduce ?deep tm
+        Term.beta_reduce ?deep Id.Map.empty tm
       with Failure msg ->
         assert_failure @@
           Printf.sprintf "Failure beta-reducing '%s'\n%s"
