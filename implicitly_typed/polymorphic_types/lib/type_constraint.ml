@@ -8,7 +8,7 @@ type co =
   | Conjunction of co * co
   | Existential of Type.t * co
   | Def_binding of Id.t * Type.t * co
-  | Let_binding of Id.t * Type.t ref * co * co
+  | Let_binding of Id.t * Type.t ref * co * co * Id.t list ref
   | Localized of Loc.t * co
 
 type 'a t = co * (Sub.s -> 'a)
@@ -36,11 +36,12 @@ let solve rank (c, k) =
       solve rank env sub c
     | Def_binding (id, tp, c) ->
       solve rank (Id.Map.add id tp env) sub c
-    | Let_binding (id, tv_ref, lhs, rhs) ->
-      Type.set_rank (rank + 1) !tv_ref;
+    | Let_binding (id, tp_ref, lhs, rhs, tvs_ref) ->
+      Type.set_rank (rank + 1) !tp_ref;
       let sub' = solve (rank + 1) env sub lhs in
-      let tp = Type.gen rank !tv_ref in
-      tv_ref := tp;
+      let tvs, tp = Type.gen rank !tp_ref in
+      tp_ref := tp;
+      tvs_ref := tvs;
       solve rank (Id.Map.add id tp env) sub' rhs
     | Localized (loc, c) ->
       try solve rank env sub c with
@@ -96,10 +97,10 @@ let to_string ?no_simp (c, _) =
           (Id.to_string id)
           (type_to_string tp)
           (to_string c)
-      | Let_binding (id, tv_ref, lhs, rhs) ->
+      | Let_binding (id, tp_ref, lhs, rhs, _) ->
         Printf.sprintf "let %s = %s[%s] in %s"
           (Id.to_string id)
-          (type_to_string !tv_ref)
+          (type_to_string !tp_ref)
           (to_string lhs)
           (to_string rhs)
       | Localized (_, c) ->
@@ -118,9 +119,9 @@ let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
 let map f (c, k) = c, fun sub -> f @@ k sub
 
 let inst ?loc id tp =
-  let tvs = ref [] in
-  ( loc_wrap loc @@ Instance (id, tp, tvs),
-    fun sub -> List.map (type_to_ir sub) !tvs )
+  let tvs_ref = ref [] in
+  ( loc_wrap loc @@ Instance (id, tp, tvs_ref),
+    fun sub -> List.map (type_to_ir sub) !tvs_ref )
 
 let equals ?loc lhs rhs =
   ( loc_wrap loc @@ Equality (lhs, rhs), fun _ -> () )
@@ -147,9 +148,10 @@ let def ?loc id tp (c, k) =
 let let_ ?loc id fn (rhs_c, rhs_k) =
   let tv = Type.var Type.void_rank id in
   let lhs_c, lhs_k = fn tv in
-  let tv_ref = ref tv in
-  ( loc_wrap loc @@ Let_binding (id, tv_ref, lhs_c, rhs_c),
-    fun sub -> type_to_ir sub !tv_ref, lhs_k sub, rhs_k sub )
+  let tp_ref = ref tv in
+  let tvs_ref = ref [] in
+  ( loc_wrap loc @@ Let_binding (id, tp_ref, lhs_c, rhs_c, tvs_ref),
+    fun sub -> type_to_ir sub !tp_ref, !tvs_ref, lhs_k sub, rhs_k sub )
 
 module Operators = struct
 

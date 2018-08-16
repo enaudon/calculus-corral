@@ -28,9 +28,12 @@ let poly_rank = -1
 
 let top_rank = 0
 
-let var : int -> Id.t -> t = fun rank id -> Variable (id, ref rank)
+let var rank id = Variable (id, ref rank)
 
-let func : t -> t -> t = fun arg res -> Function (arg, res)
+let func arg res = Function (arg, res)
+
+let func' args res =
+  List.fold_left (fun res arg -> func arg res) res (List.rev args)
 
 let get_quants tp =
   let contains id = List.exists (fun id' -> id = id') in
@@ -124,9 +127,9 @@ let unify sub tp1 tp2 =
   assert (Sub.apply tp1 sub' = Sub.apply tp2 sub');
   sub'
 
-let rec gen rank tp =
-  let gen = gen rank in
-  match tp with
+let gen rank tp =
+
+  let rec gen tp = match tp with
     | Variable (id, rank') ->
       if !rank' > rank then
         var poly_rank id
@@ -134,6 +137,10 @@ let rec gen rank tp =
         tp
     | Function (arg, res) ->
       func (gen arg) (gen res)
+  in
+
+  let tp' = gen tp in
+  get_quants tp', tp'
 
 let inst rank tp =
 
@@ -213,17 +220,6 @@ let to_string ?no_simp ?show_quants tp =
     Printf.sprintf "forall %s . %s"
       (String.concat " " @@ List.map Id.to_string quants)
       (to_string tp')
-
-(* External constructors *)
-
-let var = var
-
-let func = func
-
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
-
-let get_quants = get_quants
 
 (* Setters *)
 

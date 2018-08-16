@@ -14,9 +14,12 @@ let raise_occurs : Id.t -> t -> 'a = fun id tp ->
 
 (* Internal constructors *)
 
-let var : Id.t -> t = fun id -> Variable id
+let var id = Variable id
 
-let func : t -> t -> t = fun arg res -> Function (arg, res)
+let func arg res = Function (arg, res)
+
+let func' args res =
+  List.fold_left (fun res arg -> func arg res) res (List.rev args)
 
 (* Inference *)
 
@@ -127,12 +130,3 @@ let to_string ?no_simp tp =
         Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
   in
   to_string @@ if no_simp = None then simplify tp else tp
-
-(* External constructors *)
-
-let var = var
-
-let func = func
-
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)

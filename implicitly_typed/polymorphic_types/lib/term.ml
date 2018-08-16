@@ -90,8 +90,7 @@ let infer_hm
       | Binding (id, value, body) ->
         let tp = Type.var (rank + 1) @@ Id.fresh_upper () in
         let sub', value_k = infer (rank + 1) env sub tp value in
-        let tp' = Type.gen rank tp in
-        let tvs = Type.get_quants tp' in
+        let tvs, tp' = Type.gen rank tp in
         let env' = Id.Map.add id tp' env in
         let sub'', body_k = infer rank env' sub' exp_tp body in
         ( sub'',
@@ -107,13 +106,13 @@ let infer_hm
 let to_type_hm env tm =
   let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
   let sub, _ = infer_hm (Type.top_rank + 1) env tp tm in
-  Type.gen Type.top_rank @@ Sub.apply tp sub
+  snd @@ Type.gen Type.top_rank @@ Sub.apply tp sub
 
 let to_intl_repr_hm env tm =
   let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
   let sub, tm' = infer_hm (Type.top_rank + 1) env tp tm in
-  let tp' = Type.gen Type.top_rank @@ Sub.apply tp sub in
-  IR.Term.tp_abs' ~loc:tm.loc (Type.get_quants tp') tm'
+  let tvs, _ = Type.gen Type.top_rank @@ Sub.apply tp sub in
+  IR.Term.tp_abs' ~loc:tm.loc tvs tm'
 
 (*
   [infer_pr r env tp tm] performs two tasks: (a) it ensures that [tm]
@@ -153,8 +152,7 @@ let infer_pr
         TC.let_ ~loc id
           (fun tp -> constrain tp value)
           (constrain exp_tp body) <$>
-          fun (tp, value', body') ->
-            let tvs = fst @@ IR.Type.get_forall' tp in
+          fun (tp, tvs, value', body') ->
             IR.Term.app ~loc
               (IR.Term.abs ~loc id tp body')
               (IR.Term.tp_abs' ~loc tvs value')
@@ -167,13 +165,13 @@ let infer_pr
 let to_type_pr env tm =
   let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
   let sub, _ = infer_pr (Type.top_rank + 1) env tp tm in
-  Type.gen Type.top_rank @@ Sub.apply tp sub
+  snd @@ Type.gen Type.top_rank @@ Sub.apply tp sub
 
 let to_intl_repr_pr env tm =
   let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
   let sub, tm' = infer_pr (Type.top_rank + 1) env tp tm in
-  let tp' = Type.gen Type.top_rank @@ Sub.apply tp sub in
-  IR.Term.tp_abs' ~loc:tm.loc (Type.get_quants tp') tm'
+  let tvs, _ = Type.gen Type.top_rank @@ Sub.apply tp sub in
+  IR.Term.tp_abs' ~loc:tm.loc tvs tm'
 
 (* Utilities *)
 

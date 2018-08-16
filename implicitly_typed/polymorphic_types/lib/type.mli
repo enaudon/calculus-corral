@@ -48,9 +48,6 @@ val func : t -> t -> t
  *)
 val func' : t list -> t -> t
 
-(** [get_quants tp] computes the quantified type variables in [tp]. *)
-val get_quants : t -> Identifier.t list
-
 (** {1 Setters} *)
 
 val set_rank : int -> t -> unit
@@ -97,9 +94,11 @@ val unify : Substitution.s -> t -> t -> Substitution.s
 
 (**
   [gen r tp] replaces all monomorphic variables [tp] of rank greater
-  than [r] with polymorphic variables.
+  than [r] with polymorphic variables.  The result is a pair containing
+  the polymorphized type, along with a list of identifiers corresponding
+  the newly polymorphic variables.
  *)
-val gen : int -> t -> t
+val gen : int -> t -> Identifier.t list * t
 
 (**
   [inst r tp] replaces all polymorphic variables in [tp] with fresh
