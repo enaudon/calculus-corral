@@ -78,7 +78,7 @@ let unify sub tp1 tp2 =
         Sub.extend id tp1' sub
       | Function (arg1, res1), Function (arg2, res2) ->
         unify (unify sub arg1 arg2) res1 res2
-    in
+  in
 
   let sub' = unify sub tp1 tp2 in
   assert (Sub.apply tp1 sub' = Sub.apply tp2 sub');

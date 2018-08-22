@@ -25,13 +25,13 @@ module Set : sig
   (** [of_list l] constructs a set from the elements in [l]. *)
   val of_list : elt list -> t
 
-  (** [add id set] extends [set] with [id]. *)
+  (** [add id s] extends [s] with [id]. *)
   val add : elt -> t -> t
 
-  (** [del id set] removes the element [id] from [set]. *)
+  (** [del id s] removes the element [id] from [s]. *)
   val del : elt -> t -> t
 
-  (** [mem id set] determines whether [id] is a member of [set]. *)
+  (** [mem id s] determines whether [id] is a member of [s]. *)
   val mem : elt -> t -> bool
 
 end
@@ -73,29 +73,28 @@ module Map : sig
   val find_default : 'a -> key -> 'a t -> 'a
 
   (** [bindings m] computes a list of the bindings in [m]. *)
-   val bindings : 'a t -> (key * 'a) list
+  val bindings : 'a t -> (key * 'a) list
 
   (** [keys m] computes a list of the keys in [m]. *)
-   val keys : 'a t -> key list
+  val keys : 'a t -> key list
 
   (** [values m] computes a list of the values in [m]. *)
-   val values : 'a t -> 'a list
+  val values : 'a t -> 'a list
 
   (**
-    [map f m] constructs a new map by applying f to each binding in [m].
+    [map fn m] constructs a new map by applying [fn] to each binding in
+    [m] in increasing order.
    *)
-   val map : ('a -> 'b) -> 'a t -> 'b t
+  val map : ('a -> 'b) -> 'a t -> 'b t
 
   (**
-    [fold f m init] computes [f kN vN (... (f k0 v0 init)...)], where
+    [fold fn m init] computes [fn kN vN (... (fn k0 v0 init)...)], where
     the [k]'s and [v]'s are the key/value bindings in [m] in increasing
     order.
    *)
-   val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 
 end
-
-(** {1 Types} *)
 
 (** {1 Functions} *)
 
