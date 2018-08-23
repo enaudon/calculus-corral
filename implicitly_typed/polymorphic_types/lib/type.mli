@@ -17,23 +17,10 @@ exception Occurs of Identifier.t * t
  *)
 exception Cannot_unify of t * t
 
-(** {1 Variable Ranks} *)
-
-(**
-  [void_rank] is a dummy rank for variables whose rank is not yet known.
- *)
-val void_rank : int
-
-(** [top_rank] is the rank for variables introduced at the top-level. *)
-val top_rank : int
-
 (** {1 Constructors and Destructors} *)
 
-(**
-  [var rank id] constructs a variable with the identifier [id].  The
-  [rank] parameter is the let-depth of the newly-constructed type.
- *)
-val var : int -> Identifier.t -> t
+(** [var id] constructs a variable with the identifier [id]. *)
+val var : Identifier.t -> t
 
 (**
   [func arg res] constructs a function from [arg] to [res].  If either
@@ -47,10 +34,6 @@ val func : t -> t -> t
   [Expected_mono].
  *)
 val func' : t list -> t -> t
-
-(** {1 Setters} *)
-
-val set_rank : int -> t -> unit
 
 (** {1 Inference} *)
 
@@ -92,21 +75,30 @@ end
  *)
 val unify : Substitution.s -> t -> t -> Substitution.s
 
-(**
-  [gen r tp] replaces all monomorphic variables [tp] of rank greater
-  than [r] with polymorphic variables.  The result is a pair containing
-  the polymorphized type, along with a list of identifiers corresponding
-  the newly polymorphic variables.
- *)
-val gen : int -> t -> Identifier.t list * t
+val register : t -> unit
 
 (**
-  [inst r tp] replaces all polymorphic variables in [tp] with fresh
-  monomorphic variables of rank [r].  The result is a pair containing
-  the monomorphized type, along with a list of the fresh monomorphic
+  [gen_enter ()] updates the internal state before type-checking the
+  left-hand side of a let-expression.
+ *)
+val gen_enter : unit -> unit
+
+(**
+  [gen_exit tp] updates the internal state and performs generalization
+  after type-checking the left-hand side of a let-expression.  Here,
+  generalization involves replacing all monomorphic variables introduced
+  within the let-expression with polymorphic variables.  The result is a
+  list of identifiers corresponding the newly polymorphic variables.
+ *)
+val gen_exit : t -> Identifier.t list
+
+(**
+  [inst tp] replaces all polymorphic variables in [tp] with fresh
+  monomorphic variables.  The result is a pair containing the
+  monomorphized type, along with a list of the fresh monomorphic
   variables.
  *)
-val inst : int -> t -> t list * t
+val inst : t -> t list * t
 
 (** {1 Utilities} *)
 
@@ -119,6 +111,8 @@ val to_intl_repr : t -> Universal_types.Type.t
 (**
   [simplify tp] replaces each variable in [tp] with the
   lexicographically lowest unused variable.
+
+  NOTE: [simplify]'d types cannot be used with inference functions.
  *)
 val simplify : t -> t
 

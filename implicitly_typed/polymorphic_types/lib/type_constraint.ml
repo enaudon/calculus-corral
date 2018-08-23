@@ -8,7 +8,7 @@ type co =
   | Conjunction of co * co
   | Existential of Type.t * co
   | Def_binding of Id.t * Type.t * co
-  | Let_binding of Id.t * Type.t ref * co * co * Id.t list ref
+  | Let_binding of Id.t * Type.t * co * co * Id.t list ref
   | Localized of Loc.t * co
 
 type 'a t = co * (Sub.s -> 'a)
@@ -20,31 +20,31 @@ let error : Loc.t -> string -> 'a = fun loc msg ->
 
 (* Solving *)
 
-let solve rank (c, k) =
+let solve (c, k) =
 
-  let rec solve rank env sub c = match c with
+  let rec solve env sub c = match c with
     | Instance (id, tp, tvs_ref) ->
-      let tvs, tp' = Type.inst rank @@ Id.Map.find id env in
+      let tvs, tp' = Type.inst @@ Id.Map.find id env in
       tvs_ref := tvs;
       Type.unify sub tp' tp
     | Equality (lhs, rhs) ->
       Type.unify sub lhs rhs
     | Conjunction (lhs, rhs) ->
-      solve rank env (solve rank env sub lhs) rhs
+      solve env (solve env sub lhs) rhs
     | Existential (tv, c) ->
-      Type.set_rank rank tv;
-      solve rank env sub c
+      Type.register tv;
+      solve env sub c
     | Def_binding (id, tp, c) ->
-      solve rank (Id.Map.add id tp env) sub c
-    | Let_binding (id, tp_ref, lhs, rhs, tvs_ref) ->
-      Type.set_rank (rank + 1) !tp_ref;
-      let sub' = solve (rank + 1) env sub lhs in
-      let tvs, tp = Type.gen rank !tp_ref in
-      tp_ref := tp;
+      solve (Id.Map.add id tp env) sub c
+    | Let_binding (id, tp, lhs, rhs, tvs_ref) ->
+      Type.gen_enter ();
+      Type.register tp;
+      let sub' = solve env sub lhs in
+      let tvs = Type.gen_exit tp in
       tvs_ref := tvs;
-      solve rank (Id.Map.add id tp env) sub' rhs
+      solve (Id.Map.add id tp env) sub' rhs
     | Localized (loc, c) ->
-      try solve rank env sub c with
+      try solve env sub c with
         | Type.Cannot_unify (tp1, tp2) ->
           error loc @@
             Printf.sprintf
@@ -64,7 +64,7 @@ let solve rank (c, k) =
               (Id.to_string id)
   in
 
-  let sub = solve rank Id.Map.empty Sub.identity c in
+  let sub = solve Id.Map.empty Sub.identity c in
   sub, k sub
 
 (* Utilities *)
@@ -97,10 +97,10 @@ let to_string ?no_simp (c, _) =
           (Id.to_string id)
           (type_to_string tp)
           (to_string c)
-      | Let_binding (id, tp_ref, lhs, rhs, _) ->
+      | Let_binding (id, tp, lhs, rhs, _) ->
         Printf.sprintf "let %s = %s[%s] in %s"
           (Id.to_string id)
-          (type_to_string !tp_ref)
+          (type_to_string tp)
           (to_string lhs)
           (to_string rhs)
       | Localized (_, c) ->
@@ -135,7 +135,7 @@ let conj_left ?loc lhs rhs = map fst @@ conj ?loc lhs rhs
 let conj_right ?loc lhs rhs = map snd @@ conj ?loc lhs rhs
 
 let exists ?loc fn =
-  let tv = Type.var Type.void_rank @@ Id.fresh_upper () in
+  let tv = Type.var @@ Id.fresh_upper () in
   let c, k = fn tv in
   ( loc_wrap loc @@ Existential (tv, c),
     fun sub -> type_to_ir sub tv, k sub )
@@ -146,12 +146,11 @@ let def ?loc id tp (c, k) =
   ( loc_wrap loc @@ Def_binding (id, tp, c), k )
 
 let let_ ?loc id fn (rhs_c, rhs_k) =
-  let tv = Type.var Type.void_rank id in
+  let tv = Type.var id in
   let lhs_c, lhs_k = fn tv in
-  let tp_ref = ref tv in
   let tvs_ref = ref [] in
-  ( loc_wrap loc @@ Let_binding (id, tp_ref, lhs_c, rhs_c, tvs_ref),
-    fun sub -> type_to_ir sub !tp_ref, !tvs_ref, lhs_k sub, rhs_k sub )
+  ( loc_wrap loc @@ Let_binding (id, tv, lhs_c, rhs_c, tvs_ref),
+    fun sub -> type_to_ir sub tv, !tvs_ref, lhs_k sub, rhs_k sub )
 
 module Operators = struct
 

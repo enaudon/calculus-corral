@@ -30,14 +30,22 @@ let bind loc id value body = { desc = Binding (id, value, body); loc }
 (* Typing *)
 
 (*
+  [fresh_type_var] creates and registers a fresh type variable.
+ *)
+let fresh_type_var () =
+  let tv = Type.var @@ Id.fresh_upper () in
+  Type.register tv;
+  tv
+
+(*
   [infer_hm r env tp tm] performs two tasks: (a) it ensures that [tm]
   has type [tp], via Algorithm W-style Hindley-Milner type inference;
   and (b) it constructs an internal representation term which is
   equivalent to [tm].  [tm] is assumed to be closed under [env].
  *)
 let infer_hm
-    : int -> Type.t Id.Map.t -> Type.t -> t -> Sub.s * IR.Term.t
-    = fun rank env exp_tp tm ->
+    : Type.t Id.Map.t -> Type.t -> t -> Sub.s * IR.Term.t
+    = fun env exp_tp tm ->
 
   let unify sub tp1 tp2 =
     try Type.unify sub tp1 tp2 with
@@ -57,11 +65,11 @@ let infer_hm
 
   let type_to_ir sub tp = Type.to_intl_repr @@ Sub.apply tp sub in
 
-  let rec infer rank env sub exp_tp tm =
+  let rec infer env sub exp_tp tm =
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        let tvs, tp = try Type.inst rank @@ Id.Map.find id env with
+        let tvs, tp = try Type.inst @@ Id.Map.find id env with
           | Id.Unbound id ->
             error tm.loc @@
               Printf.sprintf
@@ -75,54 +83,59 @@ let infer_hm
               (IR.Term.var ~loc id)
               (List.map (type_to_ir sub) tvs) )
       | Abstraction (arg, body) ->
-        let arg_tp = Type.var rank @@ Id.fresh_upper () in
-        let body_tp = Type.var rank @@ Id.fresh_upper () in
+        let arg_tp = fresh_type_var () in
+        let body_tp = fresh_type_var () in
         let env' = Id.Map.add arg arg_tp env in
-        let sub', body_k = infer rank env' sub body_tp body in
+        let sub', body_k = infer env' sub body_tp body in
         ( unify sub' exp_tp @@ Type.func arg_tp body_tp,
           fun sub ->
             IR.Term.abs ~loc arg (type_to_ir sub arg_tp) (body_k sub) )
       | Application (fn, arg) ->
-        let tp = Type.var rank @@ Id.fresh_upper () in
-        let sub', fn_k = infer rank env sub (Type.func tp exp_tp) fn in
-        let sub'', arg_k = infer rank env sub' tp arg in
+        let tp = fresh_type_var () in
+        let sub', fn_k = infer env sub (Type.func tp exp_tp) fn in
+        let sub'', arg_k = infer env sub' tp arg in
         ( sub'', fun sub -> IR.Term.app ~loc (fn_k sub) (arg_k sub) )
       | Binding (id, value, body) ->
-        let tp = Type.var (rank + 1) @@ Id.fresh_upper () in
-        let sub', value_k = infer (rank + 1) env sub tp value in
-        let tvs, tp' = Type.gen rank tp in
-        let env' = Id.Map.add id tp' env in
-        let sub'', body_k = infer rank env' sub' exp_tp body in
+        Type.gen_enter ();
+        let tp = fresh_type_var () in
+        let sub', value_k = infer env sub tp value in
+        let tvs = Type.gen_exit tp in
+        let env' = Id.Map.add id tp env in
+        let sub'', body_k = infer env' sub' exp_tp body in
         ( sub'',
           fun sub ->
             IR.Term.app ~loc
-              (IR.Term.abs ~loc id (type_to_ir sub tp') (body_k sub))
+              (IR.Term.abs ~loc id (type_to_ir sub tp) (body_k sub))
               (IR.Term.tp_abs' ~loc tvs @@ value_k sub) )
   in
 
-  let sub, k = infer rank env Sub.identity exp_tp tm in
+  let sub, k = infer env Sub.identity exp_tp tm in
   sub, k sub
 
 let to_type_hm env tm =
-  let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
-  let sub, _ = infer_hm (Type.top_rank + 1) env tp tm in
-  snd @@ Type.gen Type.top_rank @@ Sub.apply tp sub
+  Type.gen_enter ();
+  let tp = fresh_type_var () in
+  let sub, _ = infer_hm env tp tm in
+  let tp' = Sub.apply tp sub in
+  ignore @@ Type.gen_exit tp';
+  tp'
 
 let to_intl_repr_hm env tm =
-  let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
-  let sub, tm' = infer_hm (Type.top_rank + 1) env tp tm in
-  let tvs, _ = Type.gen Type.top_rank @@ Sub.apply tp sub in
+  Type.gen_enter ();
+  let tp = fresh_type_var () in
+  let sub, tm' = infer_hm env tp tm in
+  let tvs = Type.gen_exit @@ Sub.apply tp sub in
   IR.Term.tp_abs' ~loc:tm.loc tvs tm'
 
 (*
-  [infer_pr r env tp tm] performs two tasks: (a) it ensures that [tm]
+  [infer_pr env tp tm] performs two tasks: (a) it ensures that [tm]
   has type [tp], via constraint-based type inference a la Pottier and
   Remy; and (b) it constructs an internal representation term which is
   equivalent to [tm].  [tm] is assumed to be closed under [env].
  *)
 let infer_pr
-    : int -> Type.t Id.Map.t -> Type.t -> t -> Sub.s * IR.Term.t
-    = fun rank env exp_tp tm ->
+    : Type.t Id.Map.t -> Type.t -> t -> Sub.s * IR.Term.t
+    = fun env exp_tp tm ->
 
   let module TC = Type_constraint in
 
@@ -159,18 +172,22 @@ let infer_pr
 
   in
 
-  TC.solve rank @@
+  TC.solve @@
     Id.Map.fold (fun id -> TC.def id) env (constrain exp_tp tm)
 
 let to_type_pr env tm =
-  let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
-  let sub, _ = infer_pr (Type.top_rank + 1) env tp tm in
-  snd @@ Type.gen Type.top_rank @@ Sub.apply tp sub
+  Type.gen_enter ();
+  let tp = fresh_type_var () in
+  let sub, _ = infer_pr env tp tm in
+  let tp' = Sub.apply tp sub in
+  ignore @@ Type.gen_exit tp';
+  tp'
 
 let to_intl_repr_pr env tm =
-  let tp = Type.var (Type.top_rank + 1) @@ Id.fresh_upper () in
-  let sub, tm' = infer_pr (Type.top_rank + 1) env tp tm in
-  let tvs, _ = Type.gen Type.top_rank @@ Sub.apply tp sub in
+  Type.gen_enter ();
+  let tp = fresh_type_var () in
+  let sub, tm' = infer_pr env tp tm in
+  let tvs = Type.gen_exit @@ Sub.apply tp sub in
   IR.Term.tp_abs' ~loc:tm.loc tvs tm'
 
 (* Utilities *)
