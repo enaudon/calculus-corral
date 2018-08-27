@@ -57,7 +57,11 @@ val let_ :
   Identifier.t ->
   (Type.t -> 'a t) ->
   'b t ->
-  (Universal_types.Type.t * Identifier.t list * 'a * 'b) t
+  ( Universal_types.Type.t *
+    Identifier.Set.t *
+    Identifier.t list *
+    'a *
+    'b ) t
 
 (**
   [map f c] produces a constraint that is identical to [c] except that

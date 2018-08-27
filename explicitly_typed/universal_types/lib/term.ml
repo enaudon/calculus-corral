@@ -90,7 +90,6 @@ let rec to_type env tm = match tm.desc with
 
 (* Transformations *)
 
-(** [free_vars tm] computes the free term variables in [tm]. *)
 let free_vars : t -> Id.Set.t =
   let rec free_vars fvs tm = match tm.desc with
     | Variable id -> Id.Set.add id fvs
@@ -101,65 +100,65 @@ let free_vars : t -> Id.Set.t =
   in
   free_vars Id.Set.empty
 
-(**
-  [subst_tp tm id tp'] replaces occurences of [id] in [tm] with [tp'].
-
+(*
   [subst_tp] avoids name capture by renaming binders in [tp] to follow
   the Barendregt convention--i.e. the names of bound variable are chosen
   distinct from those of free variables.
  *)
-let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
-  let rec subst fvs sub tm =
-    let loc = tm.loc in
-    match tm.desc with
-      | Variable _ ->
-        tm
-      | Term_abs (arg, tp, body) ->
-        abs loc arg (Type.subst fvs sub tp) (subst fvs sub body)
-      | Term_app (fn, arg) ->
-        app loc (subst fvs sub fn) (subst fvs sub arg)
-      | Type_abs (arg, body) when Id.Set.mem arg fvs ->
-        let arg' = Id.fresh_upper () in
-        let sub' = Id.Map.add arg (Type.var arg') sub in
-        tp_abs loc arg' @@ subst (Id.Set.add arg' fvs) sub' body
-      | Type_abs (arg, body) ->
-        tp_abs loc arg @@
-          subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
-      | Type_app (fn, arg) ->
-        tp_app loc (subst fvs sub fn) (Type.subst fvs sub arg)
-  in
-  subst (Type.free_vars tp') (Id.Map.singleton id tp') tm
+let rec subst_tp fvs sub tm =
+  let loc = tm.loc in
+  match tm.desc with
+    | Variable _ ->
+      tm
+    | Term_abs (arg, tp, body) ->
+      abs loc arg (Type.subst fvs sub tp) (subst_tp fvs sub body)
+    | Term_app (fn, arg) ->
+      app loc (subst_tp fvs sub fn) (subst_tp fvs sub arg)
+    | Type_abs (arg, body) when Id.Set.mem arg fvs ->
+      let arg' = Id.fresh_upper () in
+      let sub' = Id.Map.add arg (Type.var arg') sub in
+      tp_abs loc arg' @@ subst_tp (Id.Set.add arg' fvs) sub' body
+    | Type_abs (arg, body) ->
+      tp_abs loc arg @@
+        subst_tp (Id.Set.add arg fvs) (Id.Map.del arg sub) body
+    | Type_app (fn, arg) ->
+      tp_app loc (subst_tp fvs sub fn) (Type.subst fvs sub arg)
 
-(**
-  [subst_tm tm id tm'] replaces occurences of [id] in [tm] with [tm'].
-
+(*
   As with [subst_tp], [subst_tm] avoids name capture by following the
   Barendregt convention.
  *)
-let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
-  let rec subst fvs sub tm =
-    let loc = tm.loc in
-    match tm.desc with
-      | Variable id ->
-        Id.Map.find_default tm id sub
-      | Term_abs (arg, tp, body) when Id.Set.mem arg fvs ->
-        let arg' = Id.fresh_lower () in
-        let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
-        abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
-      | Term_abs (arg, tp, body) ->
-        abs loc arg tp @@
-          subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
-      | Term_app (fn, arg) ->
-        app loc (subst fvs sub fn) (subst fvs sub arg)
-      | Type_abs (arg, body) ->
-         tp_abs loc arg @@ subst fvs sub body
-      | Type_app (fn, arg) ->
-        tp_app loc (subst fvs sub fn) arg
-  in
-  subst (free_vars tm') (Id.Map.singleton id tm') tm
+let rec subst_tm fvs sub tm =
+  let loc = tm.loc in
+  match tm.desc with
+    | Variable id ->
+      Id.Map.find_default tm id sub
+    | Term_abs (arg, tp, body) when Id.Set.mem arg fvs ->
+      let arg' = Id.fresh_lower () in
+      let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
+      abs loc arg' tp @@ subst_tm (Id.Set.add arg' fvs) sub' body
+    | Term_abs (arg, tp, body) ->
+      abs loc arg tp @@
+        subst_tm (Id.Set.add arg fvs) (Id.Map.del arg sub) body
+    | Term_app (fn, arg) ->
+      app loc (subst_tm fvs sub fn) (subst_tm fvs sub arg)
+    | Type_abs (arg, body) ->
+       tp_abs loc arg @@ subst_tm fvs sub body
+    | Type_app (fn, arg) ->
+      tp_app loc (subst_tm fvs sub fn) arg
 
 let rec beta_reduce ?deep env tm =
+
   let beta_reduce = beta_reduce ?deep in
+
+  let subst_tp tm id tp =
+    subst_tp (Type.free_vars tp) (Id.Map.singleton id tp) tm
+  in
+
+  let subst_tm tm id tm' =
+    subst_tm (free_vars tm') (Id.Map.singleton id tm') tm
+  in
+
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->

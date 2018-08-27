@@ -29,6 +29,19 @@ let bind loc id value body = { desc = Binding (id, value, body); loc }
 
 (* Typing *)
 
+let coerce tvs qs ir_tm =
+
+  (* Compute unused type variables *)
+  let diff = List.fold_left (fun tvs q -> Id.Set.del q tvs) tvs qs in
+  let unused = Id.Set.elements diff in
+
+  (* Create a substitution *)
+  let id = Id.of_string "_" in
+  let bot = IR.Type.forall id @@ IR.Type.var id in
+  let sub = Id.Map.of_list @@ List.map (fun id -> id, bot) unused in
+
+  IR.Term.subst_tp diff sub ir_tm
+
 (*
   [fresh_type_var] creates and registers a fresh type variable.
  *)
@@ -99,14 +112,15 @@ let infer_hm
         Type.gen_enter ();
         let tp = fresh_type_var () in
         let sub', value_k = infer env sub tp value in
-        let tvs = Type.gen_exit tp in
+        let tvs, qs = Type.gen_exit tp in
         let env' = Id.Map.add id tp env in
         let sub'', body_k = infer env' sub' exp_tp body in
         ( sub'',
           fun sub ->
             IR.Term.app ~loc
               (IR.Term.abs ~loc id (type_to_ir sub tp) (body_k sub))
-              (IR.Term.tp_abs' ~loc tvs @@ value_k sub) )
+              (coerce tvs qs @@
+                IR.Term.tp_abs' ~loc qs @@ value_k sub) )
   in
 
   let sub, k = infer env Sub.identity exp_tp tm in
@@ -124,8 +138,8 @@ let to_intl_repr_hm env tm =
   Type.gen_enter ();
   let tp = fresh_type_var () in
   let sub, tm' = infer_hm env tp tm in
-  let tvs = Type.gen_exit @@ Sub.apply tp sub in
-  IR.Term.tp_abs' ~loc:tm.loc tvs tm'
+  let tvs, qs = Type.gen_exit @@ Sub.apply tp sub in
+  coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs tm'
 
 (*
   [infer_pr env tp tm] performs two tasks: (a) it ensures that [tm]
@@ -165,10 +179,10 @@ let infer_pr
         TC.let_ ~loc id
           (fun tp -> constrain tp value)
           (constrain exp_tp body) <$>
-          fun (tp, tvs, value', body') ->
+          fun (tp, tvs, qs, value', body') ->
             IR.Term.app ~loc
               (IR.Term.abs ~loc id tp body')
-              (IR.Term.tp_abs' ~loc tvs value')
+              (coerce tvs qs @@ IR.Term.tp_abs' ~loc qs value')
 
   in
 
@@ -187,8 +201,8 @@ let to_intl_repr_pr env tm =
   Type.gen_enter ();
   let tp = fresh_type_var () in
   let sub, tm' = infer_pr env tp tm in
-  let tvs = Type.gen_exit @@ Sub.apply tp sub in
-  IR.Term.tp_abs' ~loc:tm.loc tvs tm'
+  let tvs, qs = Type.gen_exit @@ Sub.apply tp sub in
+  coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs tm'
 
 (* Utilities *)
 

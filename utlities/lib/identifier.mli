@@ -34,6 +34,14 @@ module Set : sig
   (** [mem id s] determines whether [id] is a member of [s]. *)
   val mem : elt -> t -> bool
 
+  (**
+    [iter fn s] applies [fn] to each element in [s] in increasing order.
+   *)
+  val iter : (elt -> unit) -> t -> unit
+
+  (** [elements s] computes a list of the elements in [s]. *)
+  val elements : t -> elt list
+
 end
 
 (** Maps from identifiers. *)

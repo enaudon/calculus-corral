@@ -90,7 +90,7 @@ val gen_enter : unit -> unit
   within the let-expression with polymorphic variables.  The result is a
   list of identifiers corresponding the newly polymorphic variables.
  *)
-val gen_exit : t -> Identifier.t list
+val gen_exit : t -> Identifier.Set.t * Identifier.t list
 
 (**
   [inst tp] replaces all polymorphic variables in [tp] with fresh

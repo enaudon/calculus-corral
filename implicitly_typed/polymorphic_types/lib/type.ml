@@ -65,12 +65,13 @@ end
 module Rank : sig
 
   val inc : unit -> unit
-  val dec : unit -> unit
+  val dec : unit -> Id.Set.t
 
   val is_mono : Id.t -> bool
   val is_poly : Id.t -> bool
 
   val register : Id.t -> unit
+  val unregister : Id.t -> unit
   val update : Id.t -> Id.t -> unit
   val make_poly : Id.t -> unit
 
@@ -78,25 +79,72 @@ end = struct
 
   let init = 0
 
+  let void = -1
+
   let poly = -2
 
-  let curr, inc, dec =
-    let rank : int ref = ref init in
-    (fun () -> !rank), (fun () -> incr rank), (fun () -> decr rank)
+  let curr, inc, dec, add, del =
+    let pools : (int, Id.Set.t) Hashtbl.t = Hashtbl.create 32 in
+    let rank : int ref = ref void in
+    let curr () = !rank in
+    let inc () =
+      incr rank;
+      Hashtbl.add pools !rank Id.Set.empty
+    in
+    let dec () =
+      let pool = Hashtbl.find pools !rank in
+      Hashtbl.remove pools !rank;
+      decr rank;
+      pool
+    in
+    let add r id =
+      try
+        Hashtbl.replace pools r @@ Id.Set.add id @@ Hashtbl.find pools r
+      with Not_found ->
+        failwith @@ Printf.sprintf
+          "Type.Rank.add: Not_found %s.%d.  Rank is %d"
+          (Id.to_string id)
+          r
+          !rank
+    in
+    let del r id =
+      try
+        Hashtbl.replace pools r @@ Id.Set.del id @@ Hashtbl.find pools r
+      with Not_found ->
+        failwith @@ Printf.sprintf
+          "Type.Rank.add: Not_found %s.%d.  Rank is %d"
+          (Id.to_string id)
+          r
+          !rank
+    in
+    curr, inc, dec, add, del
 
   let get, set =
-    let ht = Hashtbl.create 2048 in
-    Hashtbl.find ht, Hashtbl.replace ht
+    let ranks : (Id.t, int) Hashtbl.t = Hashtbl.create 2048 in
+    Hashtbl.find ranks, Hashtbl.replace ranks
 
   let is_mono id = get id >= init
 
   let is_poly id = get id = poly
 
-  let register id = set id @@ curr ()
+  let register id =
+    let r = curr () in
+    add r id;
+    set id r
 
-  let update id1 id2 = set id1 @@ min (get id1) (get id2)
+  let unregister id = del (get id) id
 
-  let make_poly id = if get id > curr () then set id poly
+  let update id1 id2 =
+    let r = get id1 in
+    let r' = min r (get id2) in
+    del r id1;
+    add r' id1;
+    set id1 r'
+
+  let make_poly id =
+    let r = get id in
+    if r > curr () then
+      set id poly
 
 end
 
@@ -134,6 +182,11 @@ let unify sub tp1 tp2 =
       update_ranks id res
   in
 
+  let merge id tp sub =
+    Rank.unregister id;
+    Sub.extend id tp sub
+  in
+
   let rec unify sub tp1 tp2 =
     let tp1' = Sub.apply tp1 sub in
     let tp2' = Sub.apply tp2 sub in
@@ -147,11 +200,11 @@ let unify sub tp1 tp2 =
       | Variable id, _ ->
         if occurs id tp2' then raise_occurs id tp2';
         update_ranks id tp2';
-        Sub.extend id tp2' sub
+        merge id tp2' sub
       | _, Variable id ->
         if occurs id tp1' then raise_occurs id tp1';
         update_ranks id tp1';
-        Sub.extend id tp1' sub
+        merge id tp1' sub
       | Function (arg1, res1), Function (arg2, res2) ->
         unify (unify sub arg1 arg2) res1 res2
   in
@@ -167,19 +220,9 @@ let register tp = match tp with
 let gen_enter () = Rank.inc ()
 
 let gen_exit tp =
-
-  Rank.dec ();
-
-  let rec gen tp = match tp with
-    | Variable id ->
-      Rank.make_poly id
-    | Function (arg, res) ->
-      gen arg;
-      gen res
-  in
-
-  gen tp;
-  get_quants tp
+  let vars = Rank.dec () in
+  Id.Set.iter Rank.make_poly vars;
+  vars, get_quants tp
 
 let inst tp =
 

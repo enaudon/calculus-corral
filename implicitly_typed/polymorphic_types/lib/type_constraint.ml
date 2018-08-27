@@ -8,7 +8,8 @@ type co =
   | Conjunction of co * co
   | Existential of Type.t * co
   | Def_binding of Id.t * Type.t * co
-  | Let_binding of Id.t * Type.t * co * co * Id.t list ref
+  | Let_binding of
+    Id.t * Type.t * co * co * Id.Set.t ref * Id.t list ref
   | Localized of Loc.t * co
 
 type 'a t = co * (Sub.s -> 'a)
@@ -36,12 +37,13 @@ let solve (c, k) =
       solve env sub c
     | Def_binding (id, tp, c) ->
       solve (Id.Map.add id tp env) sub c
-    | Let_binding (id, tp, lhs, rhs, tvs_ref) ->
+    | Let_binding (id, tp, lhs, rhs, tvs_ref, qs_ref) ->
       Type.gen_enter ();
       Type.register tp;
       let sub' = solve env sub lhs in
-      let tvs = Type.gen_exit tp in
+      let tvs, qs = Type.gen_exit tp in
       tvs_ref := tvs;
+      qs_ref := qs;
       solve (Id.Map.add id tp env) sub' rhs
     | Localized (loc, c) ->
       try solve env sub c with
@@ -97,7 +99,7 @@ let to_string ?no_simp (c, _) =
           (Id.to_string id)
           (type_to_string tp)
           (to_string c)
-      | Let_binding (id, tp, lhs, rhs, _) ->
+      | Let_binding (id, tp, lhs, rhs, _, _) ->
         Printf.sprintf "let %s = %s[%s] in %s"
           (Id.to_string id)
           (type_to_string tp)
@@ -148,9 +150,11 @@ let def ?loc id tp (c, k) =
 let let_ ?loc id fn (rhs_c, rhs_k) =
   let tv = Type.var id in
   let lhs_c, lhs_k = fn tv in
-  let tvs_ref = ref [] in
-  ( loc_wrap loc @@ Let_binding (id, tv, lhs_c, rhs_c, tvs_ref),
-    fun sub -> type_to_ir sub tv, !tvs_ref, lhs_k sub, rhs_k sub )
+  let tvs_ref = ref Id.Set.empty in
+  let qs_ref = ref [] in
+  ( loc_wrap loc @@ Let_binding (id, tv, lhs_c, rhs_c, tvs_ref, qs_ref),
+    fun sub ->
+      type_to_ir sub tv, !tvs_ref, !qs_ref, lhs_k sub, rhs_k sub )
 
 module Operators = struct
 
