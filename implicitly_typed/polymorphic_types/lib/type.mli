@@ -56,11 +56,6 @@ module Substitution : sig
   val identity : s
 
   (**
-    [extend id tp sub] extends [sub] with a mapping from [id] to [tp].
-   *)
-  val extend : Identifier.t -> t -> s -> s
-
-  (**
     [apply tp sub] applies [sub] to [tp], replacing any variables in
     [tp] which occur in the domain of [sub] with their corresponding
     types in the range of [sub].
@@ -88,19 +83,21 @@ val gen_enter : unit -> unit
   after type-checking the left-hand side of a let-expression.  Here,
   generalization involves replacing all monomorphic variables introduced
   within the let-expression with polymorphic variables.  The result is a
-  list of identifiers corresponding the newly polymorphic variables.
+  list of identifiers corresponding the newly polymorphic variables,
+  along with the newly-polymorphic type.
  *)
-val gen_exit : t -> Identifier.Set.t * Identifier.t list
+val gen_exit : t -> Identifier.Set.t * t
 
 (**
   [inst tp] replaces all polymorphic variables in [tp] with fresh
-  monomorphic variables.  The result is a pair containing the
-  monomorphized type, along with a list of the fresh monomorphic
-  variables.
+  monomorphic variables.  The result is a pair containing a list of the
+  fresh monomorphic variables, along with the newly-monomorphic type.
  *)
 val inst : t -> t list * t
 
 (** {1 Utilities} *)
+
+val get_quants : t -> Identifier.t list
 
 (**
   [to_intl_repr tp] computes an internal representation type which is

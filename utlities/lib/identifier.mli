@@ -34,13 +34,20 @@ module Set : sig
   (** [mem id s] determines whether [id] is a member of [s]. *)
   val mem : elt -> t -> bool
 
+  (** [elements s] computes a list of the elements in [s]. *)
+  val elements : t -> elt list
+
   (**
     [iter fn s] applies [fn] to each element in [s] in increasing order.
    *)
   val iter : (elt -> unit) -> t -> unit
 
-  (** [elements s] computes a list of the elements in [s]. *)
-  val elements : t -> elt list
+  (**
+    [partition fn s] computes [(s1,s2)], where [s1] is the subset of
+    [s] which satisfies the predicate, [fn], and [s2] is the subset
+    which does not.
+   *)
+  val partition : (elt -> bool) -> t -> t * t
 
 end
 

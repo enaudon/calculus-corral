@@ -41,10 +41,10 @@ let solve (c, k) =
       Type.gen_enter ();
       Type.register tp;
       let sub' = solve env sub lhs in
-      let tvs, qs = Type.gen_exit tp in
+      let tvs, tp' = Type.gen_exit tp in
       tvs_ref := tvs;
-      qs_ref := qs;
-      solve (Id.Map.add id tp env) sub' rhs
+      qs_ref := Type.get_quants tp';
+      solve (Id.Map.add id tp' env) sub' rhs
     | Localized (loc, c) ->
       try solve env sub c with
         | Type.Cannot_unify (tp1, tp2) ->

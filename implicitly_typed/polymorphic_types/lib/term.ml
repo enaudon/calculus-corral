@@ -112,13 +112,14 @@ let infer_hm
         Type.gen_enter ();
         let tp = fresh_type_var () in
         let sub', value_k = infer env sub tp value in
-        let tvs, qs = Type.gen_exit tp in
-        let env' = Id.Map.add id tp env in
+        let tvs, tp' = Type.gen_exit tp in
+        let qs = Type.get_quants tp' in
+        let env' = Id.Map.add id tp' env in
         let sub'', body_k = infer env' sub' exp_tp body in
         ( sub'',
           fun sub ->
             IR.Term.app ~loc
-              (IR.Term.abs ~loc id (type_to_ir sub tp) (body_k sub))
+              (IR.Term.abs ~loc id (type_to_ir sub tp') (body_k sub))
               (coerce tvs qs @@
                 IR.Term.tp_abs' ~loc qs @@ value_k sub) )
   in
@@ -131,14 +132,14 @@ let to_type_hm env tm =
   let tp = fresh_type_var () in
   let sub, _ = infer_hm env tp tm in
   let tp' = Sub.apply tp sub in
-  ignore @@ Type.gen_exit tp';
-  tp'
+  snd @@ Type.gen_exit tp'
 
 let to_intl_repr_hm env tm =
   Type.gen_enter ();
   let tp = fresh_type_var () in
   let sub, tm' = infer_hm env tp tm in
-  let tvs, qs = Type.gen_exit @@ Sub.apply tp sub in
+  let tvs, tp' = Type.gen_exit @@ Sub.apply tp sub in
+  let qs = Type.get_quants tp' in
   coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs tm'
 
 (*
@@ -194,14 +195,14 @@ let to_type_pr env tm =
   let tp = fresh_type_var () in
   let sub, _ = infer_pr env tp tm in
   let tp' = Sub.apply tp sub in
-  ignore @@ Type.gen_exit tp';
-  tp'
+  snd @@ Type.gen_exit tp'
 
 let to_intl_repr_pr env tm =
   Type.gen_enter ();
   let tp = fresh_type_var () in
   let sub, tm' = infer_pr env tp tm in
-  let tvs, qs = Type.gen_exit @@ Sub.apply tp sub in
+  let tvs, tp' = Type.gen_exit @@ Sub.apply tp sub in
+  let qs = Type.get_quants tp' in
   coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs tm'
 
 (* Utilities *)

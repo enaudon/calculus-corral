@@ -1,17 +1,26 @@
 module Id = Identifier
 module Misc = Miscellaneous
 
-type t =
+type mono =
   | Variable of Id.t
-  | Function of t * t
+  | Function of mono * mono
 
-(* Exceptions and errors *)
+type t = {
+  quants : Id.t list ;
+  body : mono ;
+}
 
-let error : string -> 'a = fun msg -> failwith msg
+(* Exceptions *)
 
 exception Occurs of Id.t * t
 
 exception Cannot_unify of t * t
+
+exception Expected_mono
+
+(* Internal functions *)
+
+let error : string -> 'a = fun msg -> failwith msg
 
 let raise_occurs : Id.t -> t -> 'a = fun id tp ->
   raise @@ Occurs (id, tp)
@@ -19,14 +28,14 @@ let raise_occurs : Id.t -> t -> 'a = fun id tp ->
 let raise_unify : t -> t -> 'a = fun tp1 tp2 ->
   raise @@ Cannot_unify (tp1, tp2)
 
-(* Constructors *)
+let raise_exp_mono : unit -> 'a = fun () -> raise @@ Expected_mono
 
-let var id = Variable id
+let var : Id.t -> mono = fun id -> Variable id
 
-let func arg res = Function (arg, res)
+let func : mono -> mono -> mono = fun arg res -> Function (arg, res)
 
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+let scheme : Id.t list -> mono -> t = fun quants body ->
+  { quants; body }
 
 (* Inference *)
 
@@ -36,29 +45,34 @@ module Substitution : sig
 
   val identity : s
 
-  val extend : Id.t -> t -> s -> s
+  val extend_mono : Id.t -> mono -> s -> s
 
   val apply : t -> s -> t
 
+  val apply_mono : mono -> s -> mono
+
 end = struct
 
-  type nonrec s = t Id.Map.t
+  type nonrec s = mono Id.Map.t
 
   let identity = Id.Map.empty
 
-  let singleton : Id.t -> t -> s = Id.Map.singleton
+  let singleton : Id.t -> mono -> s = Id.Map.singleton
 
-  let rec apply : s -> t -> t = fun sub tp -> match tp with
-    | Variable id -> Id.Map.find_default tp id sub
-    | Function (arg, res) -> func (apply sub arg) (apply sub res)
+  let rec apply_mono m sub = match m with
+    | Variable id ->
+      Id.Map.find_default m id sub
+    | Function (arg, res) ->
+      func (apply_mono arg sub) (apply_mono res sub)
 
-  let extend id tp sub =
-    Id.Map.add id tp @@ Id.Map.map (apply @@ singleton id tp) sub
+  let extend_mono id m sub =
+    Id.Map.add id m @@
+      Id.Map.map (fun m' -> apply_mono m' @@ singleton id m) sub
 
   let apply tp sub =
-    let tp' = apply sub tp in
-    assert (tp' = apply sub tp');
-    tp'
+    let body = apply_mono tp.body sub in
+    assert (body = apply_mono body sub);
+    scheme tp.quants body
 
 end
 
@@ -67,21 +81,18 @@ module Rank : sig
   val inc : unit -> unit
   val dec : unit -> Id.Set.t
 
-  val is_mono : Id.t -> bool
-  val is_poly : Id.t -> bool
-
   val register : Id.t -> unit
   val unregister : Id.t -> unit
+
+  val is_mono : Id.t -> bool
+
   val update : Id.t -> Id.t -> unit
-  val make_poly : Id.t -> unit
 
 end = struct
 
   let init = 0
 
   let void = -1
-
-  let poly = -2
 
   let curr, inc, dec, add, del =
     let pools : (int, Id.Set.t) Hashtbl.t = Hashtbl.create 32 in
@@ -125,8 +136,6 @@ end = struct
 
   let is_mono id = get id >= init
 
-  let is_poly id = get id = poly
-
   let register id =
     let r = curr () in
     add r id;
@@ -141,102 +150,104 @@ end = struct
     add r' id1;
     set id1 r'
 
-  let make_poly id =
-    let r = get id in
-    if r > curr () then
-      set id poly
-
 end
-
-(*
-  [get_quants tp] computes the set polymorphic type variables appearing
-  as subtypes of [tp].
- *)
-let get_quants : t -> Id.t list = fun tp ->
-  let contains id = List.exists (fun id' -> id = id') in
-  let rec get_quants acc tp = match tp with
-    | Variable id ->
-      if Rank.is_poly id && not @@ contains id acc then
-        id :: acc
-      else
-        acc
-    | Function (arg, res) ->
-      get_quants (get_quants acc arg) res
-  in
-  List.rev @@ get_quants [] tp
 
 let unify sub tp1 tp2 =
 
   let module Sub = Substitution in
 
-  let rec occurs id tp = match tp with
+  let rec occurs : Id.t -> mono -> bool = fun id tp -> match tp with
     | Variable id' -> id = id'
     | Function (arg, res) -> occurs id arg || occurs id res
   in
 
-  let rec update_ranks id tp = match tp with
-    | Variable id' ->
-      Rank.update id' id
-    | Function (arg, res) ->
-      update_ranks id arg;
-      update_ranks id res
+  let rec update_ranks : Id.t -> mono -> unit = fun id tp ->
+    match tp with
+      | Variable id' ->
+        Rank.update id' id
+      | Function (arg, res) ->
+        update_ranks id arg;
+        update_ranks id res
   in
 
-  let merge id tp sub =
+  let merge : Id.t -> mono -> Sub.s -> Sub.s = fun id m sub ->
     Rank.unregister id;
-    Sub.extend id tp sub
+    Sub.extend_mono id m sub
   in
 
-  let rec unify sub tp1 tp2 =
-    let tp1' = Sub.apply tp1 sub in
-    let tp2' = Sub.apply tp2 sub in
-    match tp1', tp2' with
+  let rec unify sub m1 m2 =
+    let m1' = Sub.apply_mono m1 sub in
+    let m2' = Sub.apply_mono m2 sub in
+    match m1', m2' with
       | Variable id, _ when not (Rank.is_mono id) ->
-        raise_unify tp1 tp2
+        raise_unify (scheme tp1.quants m1') (scheme tp2.quants m2')
       | _, Variable id when not (Rank.is_mono id) ->
-        raise_unify tp1 tp2
+        raise_unify (scheme tp1.quants m1') (scheme tp2.quants m2')
       | Variable id1, Variable id2 when id1 = id2->
         sub
       | Variable id, _ ->
-        if occurs id tp2' then raise_occurs id tp2';
-        update_ranks id tp2';
-        merge id tp2' sub
+        if occurs id m2' then raise_occurs id (scheme tp2.quants m2');
+        update_ranks id m2';
+        merge id m2' sub
       | _, Variable id ->
-        if occurs id tp1' then raise_occurs id tp1';
-        update_ranks id tp1';
-        merge id tp1' sub
+        if occurs id m1' then raise_occurs id (scheme tp2.quants m1');
+        update_ranks id m1';
+        merge id m1' sub
       | Function (arg1, res1), Function (arg2, res2) ->
         unify (unify sub arg1 arg2) res1 res2
   in
 
-  let sub' = unify sub tp1 tp2 in
+  if tp1.quants <> [] || tp2.quants <> [] then
+    raise_unify tp1 tp2;
+
+  let sub' = unify sub tp1.body tp2.body in
   assert (Sub.apply tp1 sub' = Sub.apply tp2 sub');
   sub'
 
-let register tp = match tp with
+let register m = match m with
   | Variable id -> Rank.register id
   | _ -> error "Type.register: expected variable"
 
 let gen_enter () = Rank.inc ()
 
+(* [free_vars tp] computes the free variables in [tp]. *)
+let free_vars tp =
+  let rec free_vars (seen, fvs) tp = match tp with
+    | Variable id ->
+      if Id.Set.mem id seen then
+        seen, fvs
+      else
+        Id.Set.add id seen, id :: fvs
+    | Function (arg, res) ->
+      free_vars (free_vars (seen, fvs) arg) res
+  in
+  List.rev @@ snd @@ free_vars (Id.Set.empty, []) tp
+
 let gen_exit tp =
-  let vars = Rank.dec () in
-  Id.Set.iter Rank.make_poly vars;
-  vars, get_quants tp
+
+  if tp.quants <> [] then
+    raise_exp_mono ();
+
+  let qvs = Rank.dec () in
+  let pred id = Id.Set.mem id qvs in
+  let inc, _ = List.partition pred @@ free_vars tp.body in
+  let tp' = { quants = inc; body = tp.body } in
+
+  qvs, tp'
 
 let inst tp =
 
-  let quants = get_quants tp in
+  let quants = tp.quants in
   let vars = List.map (fun _ -> var @@ Id.fresh_upper ()) quants in
   List.iter register vars;
   let env = Id.Map.of_list @@ List.combine quants vars in
 
-  let rec inst tp = match tp with
-    | Variable id -> Id.Map.find_default tp id env
+  let rec inst m = match m with
+    | Variable id -> Id.Map.find_default m id env
     | Function (arg, res) -> func (inst arg) (inst res)
   in
 
-  vars, inst tp
+  List.map (scheme []) vars, scheme [] @@ inst tp.body
 
 (* Utilities *)
 
@@ -248,14 +259,14 @@ let to_intl_repr tp =
     | Function (arg, res) -> IR.func (to_ir arg) (to_ir res)
   in
 
-  IR.forall' (get_quants tp) (to_ir tp)
+  IR.forall' tp.quants @@ to_ir tp.body
 
 (*
   NOTE: [simplify] does not register the new variables that it creates
   with [Rank], so [simplify]'d types cannot be used with inference
   functions.
  *)
-let simplify tp =
+let simplify { quants; body } =
 
   let fresh =
     let cntr = ref (-1) in
@@ -283,7 +294,9 @@ let simplify tp =
       func arg' res'
   in
 
-  simplify tp
+  let quants = List.map simplify_id quants in
+  let body = simplify body in
+  { quants; body }
 
 let to_string ?no_simp ?show_quants tp =
 
@@ -300,11 +313,25 @@ let to_string ?no_simp ?show_quants tp =
         Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
   in
 
-  let tp' = if no_simp = None then simplify tp else tp in
-  if show_quants = None then
-    to_string tp'
+  let { quants; body } = if no_simp = None then simplify tp else tp in
+  if quants = [] || show_quants = None then
+    to_string body
   else
-    let quants = get_quants tp' in
     Printf.sprintf "forall %s . %s"
       (String.concat " " @@ List.map Id.to_string quants)
-      (to_string tp')
+      (to_string body)
+
+(* External functions *)
+
+let var id = scheme [] @@ var id
+
+let func arg res = match arg.quants, res.quants with
+  | [], [] -> scheme [] @@ func arg.body res.body
+  | _, _ -> raise_exp_mono ()
+
+let func' args res =
+  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+
+let get_quants { quants; _ } = quants
+
+let register tp = register tp.body
