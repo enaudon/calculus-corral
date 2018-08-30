@@ -39,10 +39,8 @@ val func' : t list -> t -> t
 
 (** Substitution
 
-  A substitution maps (type variable) identifiers to types, and provide
-  operations for extending substitutions with new mappings and for
-  applying substitutions to types.  Furthermore, substitutions are
-  idempotent by construction.
+  A substitution maps (type variable) identifiers to types.
+  Substitutions are idempotent by construction.
  *)
 module Substitution : sig
 

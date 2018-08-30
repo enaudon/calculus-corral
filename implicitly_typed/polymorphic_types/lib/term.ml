@@ -29,6 +29,7 @@ let bind loc id value body = { desc = Binding (id, value, body); loc }
 
 (* Typing *)
 
+(* TODO: Comment. *)
 let coerce tvs qs ir_tm =
 
   (* Compute unused type variables *)
@@ -43,22 +44,22 @@ let coerce tvs qs ir_tm =
   IR.Term.subst_tp diff sub ir_tm
 
 (*
-  [fresh_type_var] creates and registers a fresh type variable.
- *)
-let fresh_type_var () =
-  let tv = Type.var @@ Id.fresh_upper () in
-  Type.register tv;
-  tv
-
-(*
-  [infer_hm r env tp tm] performs two tasks: (a) it ensures that [tm]
-  has type [tp], via Algorithm W-style Hindley-Milner type inference;
-  and (b) it constructs an internal representation term which is
-  equivalent to [tm].  [tm] is assumed to be closed under [env].
+  [infer_hm r env tp tm] performs two tasks: (a) it infers the type of
+  [tm], via Algorithm W-style Hindley-Milner type inference; and (b) it
+  constructs an internal representation term which is equivalent to
+  [tm].  [tm] is assumed to be closed under [env].
  *)
 let infer_hm
-    : Type.t Id.Map.t -> Type.t -> t -> Sub.s * IR.Term.t
-    = fun env exp_tp tm ->
+    : Type.t Id.Map.t -> t -> Type.t * IR.Term.t
+    = fun env tm ->
+
+  let type_to_ir sub tp = Type.to_intl_repr @@ Sub.apply tp sub in
+
+  let fresh_type_var () =
+    let tv = Type.var @@ Id.fresh_upper () in
+    Type.register tv;
+    tv
+  in
 
   let unify sub tp1 tp2 =
     try Type.unify sub tp1 tp2 with
@@ -75,8 +76,6 @@ let infer_hm
             (Id.to_string id)
             (Type.to_string ~no_simp:() tp)
   in
-
-  let type_to_ir sub tp = Type.to_intl_repr @@ Sub.apply tp sub in
 
   let rec infer env sub exp_tp tm =
     let loc = tm.loc in
@@ -124,51 +123,50 @@ let infer_hm
                 IR.Term.tp_abs' ~loc qs @@ value_k sub) )
   in
 
-  let sub, k = infer env Sub.identity exp_tp tm in
-  sub, k sub
-
-let to_type_hm env tm =
   Type.gen_enter ();
   let tp = fresh_type_var () in
-  let sub, _ = infer_hm env tp tm in
-  snd @@ Type.gen_exit sub tp
-
-let to_intl_repr_hm env tm =
-  Type.gen_enter ();
-  let tp = fresh_type_var () in
-  let sub, tm' = infer_hm env tp tm in
+  let sub, k = infer env Sub.identity tp tm in
   let tvs, tp' = Type.gen_exit sub tp in
   let qs = Type.get_quants tp' in
-  coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs tm'
+  let tm' = coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs @@ k sub in
+
+  tp', tm'
+
+let to_type_hm env tm = fst @@ infer_hm env tm
+
+let to_intl_repr_hm env tm = snd @@ infer_hm env tm
 
 (*
-  [infer_pr env tp tm] performs two tasks: (a) it ensures that [tm]
-  has type [tp], via constraint-based type inference a la Pottier and
-  Remy; and (b) it constructs an internal representation term which is
-  equivalent to [tm].  [tm] is assumed to be closed under [env].
+  [infer_pr env tm] performs two tasks: (a) it infers the type of [tm],
+  via constraint-based type inference a la Pottier and Remy; and (b) it
+  constructs an internal representation term which is equivalent to
+  [tm].  [tm] is assumed to be closed under [env].
  *)
 let infer_pr
-    : Type.t Id.Map.t -> Type.t -> t -> Sub.s * IR.Term.t
-    = fun env exp_tp tm ->
+    : Type.t Id.Map.t -> t -> Type.t * IR.Term.t
+    = fun env tm ->
 
   let module TC = Type_constraint in
+  let open TC.Operators in
 
   let rec constrain exp_tp tm =
-
-    let open TC.Operators in
 
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
         TC.inst ~loc id exp_tp <$>
-          fun tps -> IR.Term.tp_app' ~loc (IR.Term.var ~loc id) tps
+          fun tps ->
+            let tps' = List.map Type.to_intl_repr tps in
+            IR.Term.tp_app' ~loc (IR.Term.var ~loc id) tps'
       | Abstraction (arg, body) ->
         TC.exists ~loc (fun arg_tp ->
           TC.exists' ~loc @@ fun body_tp ->
             TC.conj_left
               (TC.def arg arg_tp @@ constrain body_tp body)
               (TC.equals exp_tp @@ Type.func arg_tp body_tp)) <$>
-          fun (arg_tp, body') -> IR.Term.abs ~loc arg arg_tp body'
+          fun (arg_tp, body') ->
+            let arg_tp' = Type.to_intl_repr arg_tp in
+            IR.Term.abs ~loc arg arg_tp' body'
       | Application (fn, arg) ->
         TC.exists' ~loc (fun arg_tp ->
           TC.conj
@@ -179,29 +177,28 @@ let infer_pr
         TC.let_ ~loc id
           (fun tp -> constrain tp value)
           (constrain exp_tp body) <$>
-          fun (tp, tvs, qs, value', body') ->
+          fun (tp, tvs, value', body') ->
+            let tp' = Type.to_intl_repr tp in
+            let qs = fst @@ IR.Type.get_forall' tp' in
             IR.Term.app ~loc
-              (IR.Term.abs ~loc id tp body')
+              (IR.Term.abs ~loc id tp' body')
               (coerce tvs qs @@ IR.Term.tp_abs' ~loc qs value')
 
   in
 
-  TC.solve @@
-    Id.Map.fold (fun id -> TC.def id) env (constrain exp_tp tm)
+  let loc = tm.loc in
+  let c =
+    TC.top ~loc
+      (fun tp -> constrain tp tm) <$>
+      fun (tp, tvs, tm') ->
+        let qs = fst @@ IR.Type.get_forall' @@ Type.to_intl_repr tp in
+        tp, coerce tvs qs @@ IR.Term.tp_abs' ~loc qs tm'
+  in
+  TC.solve @@ Id.Map.fold (fun id -> TC.def id) env c
 
-let to_type_pr env tm =
-  Type.gen_enter ();
-  let tp = fresh_type_var () in
-  let sub, _ = infer_pr env tp tm in
-  snd @@ Type.gen_exit sub tp
+let to_type_pr env tm = fst @@ infer_pr env tm
 
-let to_intl_repr_pr env tm =
-  Type.gen_enter ();
-  let tp = fresh_type_var () in
-  let sub, tm' = infer_pr env tp tm in
-  let tvs, tp' = Type.gen_exit sub tp in
-  let qs = Type.get_quants tp' in
-  coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs tm'
+let to_intl_repr_pr env tm = snd @@ infer_pr env tm
 
 (* Utilities *)
 

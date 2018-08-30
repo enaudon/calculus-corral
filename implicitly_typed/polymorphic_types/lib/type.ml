@@ -131,8 +131,28 @@ end = struct
     curr, inc, dec, add, del
 
   let get, set =
+
     let ranks : (Id.t, int) Hashtbl.t = Hashtbl.create 2048 in
-    Hashtbl.find ranks, Hashtbl.replace ranks
+
+    let get id =
+      try
+        Hashtbl.find ranks id
+      with Not_found ->
+        failwith @@ Printf.sprintf
+          "Type.Rank.get: could not find %s"
+          (Id.to_string id)
+    in
+
+    let set id r =
+      try
+        Hashtbl.replace ranks id r
+      with Not_found ->
+        failwith @@ Printf.sprintf
+          "Type.Rank.get: could not find %s"
+          (Id.to_string id)
+    in
+
+    get, set
 
   let is_mono id = get id >= init
 

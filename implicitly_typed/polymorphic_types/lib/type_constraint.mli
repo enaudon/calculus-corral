@@ -9,11 +9,7 @@ type 'a t
   [inst id tp] ensures that [tp] is an instance of the scheme to
   which [id] is bound.
  *)
-val inst :
-  ?loc : Location.t ->
-  Identifier.t ->
-  Type.t ->
-  Universal_types.Type.t list t
+val inst : ?loc : Location.t -> Identifier.t -> Type.t -> Type.t list t
 
 (** [equals lhs rhs] equates the two types [lhs] and [rhs]. *)
 val equals : ?loc : Location.t -> Type.t -> Type.t -> unit t
@@ -34,10 +30,7 @@ val conj_left : ?loc : Location.t -> 'a t -> 'b t -> 'a t
 val conj_right : ?loc : Location.t -> 'a t -> 'b t -> 'b t
 
 (** [exists (fun tp -> c)] existentially quantifies [tp] in [c]. *)
-val exists :
-  ?loc : Location.t ->
-  (Type.t -> 'a t) ->
-  (Universal_types.Type.t * 'a) t
+val exists : ?loc : Location.t -> (Type.t -> 'a t) -> (Type.t * 'a) t
 
 (**
   [exists' (fun tp -> c)] behaves as [exists], but does not return the
@@ -57,11 +50,15 @@ val let_ :
   Identifier.t ->
   (Type.t -> 'a t) ->
   'b t ->
-  ( Universal_types.Type.t *
-    Identifier.Set.t *
-    Identifier.t list *
-    'a *
-    'b ) t
+  (Type.t * Identifier.Set.t * 'a * 'b) t
+
+(**
+  [top c]
+ *)
+val top :
+  ?loc : Location.t ->
+  (Type.t -> 'a t) ->
+  (Type.t * Identifier.Set.t * 'a) t
 
 (**
   [map f c] produces a constraint that is identical to [c] except that
@@ -76,7 +73,7 @@ val map : ('a -> 'b) -> 'a t -> 'b t
   [solve c] solves [c] and, if [c] is satisfiable, produces a result
   value.
  *)
-val solve : 'a t -> Type.Substitution.s * 'a
+val solve : 'a t -> 'a
 
 (** {1 Utilities} *)
 

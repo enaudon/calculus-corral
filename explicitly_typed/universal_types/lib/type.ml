@@ -35,7 +35,8 @@ let get_forall' tp =
     | Universal (quant, body) -> get_forall (quant :: acc) body
     | _ -> acc, tp
   in
-  get_forall [] tp
+  let quants, tp = get_forall [] tp in
+  List.rev quants, tp
 
 (* Transformations *)
 
