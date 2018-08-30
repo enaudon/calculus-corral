@@ -79,21 +79,22 @@ val register : t -> unit
 val gen_enter : unit -> unit
 
 (**
-  [gen_exit tp] updates the internal state and performs generalization
-  after type-checking the left-hand side of a let-expression.  Here,
-  generalization involves replacing all monomorphic variables introduced
-  within the let-expression with polymorphic variables.  The result is a
-  list of identifiers corresponding the newly polymorphic variables,
-  along with the newly-polymorphic type.
+  [gen_exit sub tp] updates the internal state and performs
+  generalization after type-checking the left-hand side of a
+  let-expression.  Here, generalization involves replacing all
+  monomorphic variables introduced within the let-expression with
+  polymorphic variables.  The result is a list of identifiers
+  corresponding the newly polymorphic variables, along with the
+  newly-polymorphic type.
  *)
-val gen_exit : t -> Identifier.Set.t * t
+val gen_exit : Substitution.s -> t -> Identifier.Set.t * t
 
 (**
-  [inst tp] replaces all polymorphic variables in [tp] with fresh
+  [inst sub tp] replaces all polymorphic variables in [tp] with fresh
   monomorphic variables.  The result is a pair containing a list of the
   fresh monomorphic variables, along with the newly-monomorphic type.
  *)
-val inst : t -> t list * t
+val inst : Substitution.s -> t -> t list * t
 
 (** {1 Utilities} *)
 

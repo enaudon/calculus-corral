@@ -141,7 +141,8 @@ end = struct
     add r id;
     set id r
 
-  let unregister id = del (get id) id
+  let unregister id =
+    del (get id) id
 
   let update id1 id2 =
     let r = get id1 in
@@ -152,9 +153,9 @@ end = struct
 
 end
 
-let unify sub tp1 tp2 =
+module Sub = Substitution
 
-  let module Sub = Substitution in
+let unify sub tp1 tp2 =
 
   let rec occurs : Id.t -> mono -> bool = fun id tp -> match tp with
     | Variable id' -> id = id'
@@ -223,7 +224,9 @@ let free_vars tp =
   in
   List.rev @@ snd @@ free_vars (Id.Set.empty, []) tp
 
-let gen_exit tp =
+let gen_exit sub tp =
+
+  let tp = Sub.apply tp sub in
 
   if tp.quants <> [] then
     raise_exp_mono ();
@@ -235,7 +238,9 @@ let gen_exit tp =
 
   qvs, tp'
 
-let inst tp =
+let inst sub tp =
+
+  let tp = Sub.apply tp sub in
 
   let quants = tp.quants in
   let vars = List.map (fun _ -> var @@ Id.fresh_upper ()) quants in

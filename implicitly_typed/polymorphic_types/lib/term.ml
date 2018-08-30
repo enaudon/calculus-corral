@@ -82,7 +82,7 @@ let infer_hm
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        let tvs, tp = try Type.inst @@ Id.Map.find id env with
+        let tvs, tp = try Type.inst sub @@ Id.Map.find id env with
           | Id.Unbound id ->
             error tm.loc @@
               Printf.sprintf
@@ -112,7 +112,7 @@ let infer_hm
         Type.gen_enter ();
         let tp = fresh_type_var () in
         let sub', value_k = infer env sub tp value in
-        let tvs, tp' = Type.gen_exit tp in
+        let tvs, tp' = Type.gen_exit sub' tp in
         let qs = Type.get_quants tp' in
         let env' = Id.Map.add id tp' env in
         let sub'', body_k = infer env' sub' exp_tp body in
@@ -131,14 +131,13 @@ let to_type_hm env tm =
   Type.gen_enter ();
   let tp = fresh_type_var () in
   let sub, _ = infer_hm env tp tm in
-  let tp' = Sub.apply tp sub in
-  snd @@ Type.gen_exit tp'
+  snd @@ Type.gen_exit sub tp
 
 let to_intl_repr_hm env tm =
   Type.gen_enter ();
   let tp = fresh_type_var () in
   let sub, tm' = infer_hm env tp tm in
-  let tvs, tp' = Type.gen_exit @@ Sub.apply tp sub in
+  let tvs, tp' = Type.gen_exit sub tp in
   let qs = Type.get_quants tp' in
   coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs tm'
 
@@ -194,14 +193,13 @@ let to_type_pr env tm =
   Type.gen_enter ();
   let tp = fresh_type_var () in
   let sub, _ = infer_pr env tp tm in
-  let tp' = Sub.apply tp sub in
-  snd @@ Type.gen_exit tp'
+  snd @@ Type.gen_exit sub tp
 
 let to_intl_repr_pr env tm =
   Type.gen_enter ();
   let tp = fresh_type_var () in
   let sub, tm' = infer_pr env tp tm in
-  let tvs, tp' = Type.gen_exit @@ Sub.apply tp sub in
+  let tvs, tp' = Type.gen_exit sub tp in
   let qs = Type.get_quants tp' in
   coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs tm'
 

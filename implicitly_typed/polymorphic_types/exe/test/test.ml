@@ -33,6 +33,7 @@ let _ =
 
   let repl_exe, case_dir = parse_cmd_args () in
   let repl_cases = [
+    ("hotcw.lc", []) ;
     ("function.lc", []) ;
     ("church_pair.lc", []) ;
     ("church_boolean.lc", ["church_pair.lc"]) ;
