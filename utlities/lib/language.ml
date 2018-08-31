@@ -100,22 +100,28 @@ module Repl (Input : Sig) = struct
     with
       | Parsing.Parse_error ->
         Printf.eprintf "Parser: error\n%!";
-        exit (-1)
+        kn_env, tp_env, vl_env
       | Failure msg ->
         Printf.eprintf "%s\n%!" msg;
-        exit (-1)
+        kn_env, tp_env, vl_env
 
   let main () =
 
     parse_cmd_args ();
 
+    let lexbuf_set_filename lexbuf f =
+      let open Lexing in
+      lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = f };
+    in
+
     match !mode with
       | Repl ->
         let rec eval_phrase kn_env tp_env vl_env =
           Printf.printf "> %!";
+          let lexbuf = Lexing.from_string @@ input_line stdin in
+          lexbuf_set_filename lexbuf "<repl>";
           let kn_env', tp_env', vl_env' =
-            evaluate kn_env tp_env vl_env @@
-              Lexing.from_string (input_line stdin)
+            evaluate kn_env tp_env vl_env lexbuf
           in
           eval_phrase kn_env' tp_env' vl_env'
         in
@@ -123,9 +129,9 @@ module Repl (Input : Sig) = struct
       | File fs ->
         let eval_file f (kn_env, tp_env, vl_env) =
           let chan = open_in f in
-          let envs =
-            evaluate kn_env tp_env vl_env @@ Lexing.from_channel chan
-          in
+          let lexbuf = Lexing.from_channel chan in
+          lexbuf_set_filename lexbuf f;
+          let envs = evaluate kn_env tp_env vl_env lexbuf in
           close_in chan;
           envs
         in
