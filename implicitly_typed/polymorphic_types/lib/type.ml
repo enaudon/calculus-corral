@@ -20,7 +20,8 @@ exception Expected_mono
 
 (* Internal functions *)
 
-let error : string -> 'a = fun msg -> failwith msg
+let error : string -> string -> 'a = fun fn_name msg ->
+  failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
 let raise_occurs : Id.t -> t -> 'a = fun id tp ->
   raise @@ Occurs (id, tp)
@@ -227,7 +228,7 @@ let unify sub tp1 tp2 =
 
 let register m = match m with
   | Variable id -> Rank.register id
-  | _ -> error "Type.register: expected variable"
+  | _ -> error "register" "expected variable"
 
 let gen_enter () = Rank.inc ()
 

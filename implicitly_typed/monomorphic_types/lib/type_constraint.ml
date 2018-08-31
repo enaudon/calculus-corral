@@ -12,8 +12,13 @@ type t =
 
 (* Internal helpers *)
 
-let error : Loc.t -> string -> 'a = fun loc msg ->
-  failwith @@ Printf.sprintf "%s: %s" (Loc.to_string loc) msg
+let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
+  failwith @@
+    Printf.sprintf "%s %s.%s: %s"
+      (Loc.to_string loc)
+      __MODULE__
+      fn_name
+      msg
 
 (* Solving *)
 
@@ -21,7 +26,7 @@ let solve c =
 
   let rec solve env sub c = match c with
     | Variable_equality (id, tp) ->
-      Type.unify sub (Id.Map.find id env) tp
+      Type.unify sub tp @@ Id.Map.find id env
     | Type_equality (lhs, rhs) ->
       Type.unify sub lhs rhs
     | Conjunction (lhs, rhs) ->
@@ -33,16 +38,14 @@ let solve c =
     | Localized (loc, c) ->
       try solve env sub c with
         | Type.Occurs (id, tp) ->
-          error loc @@
+          error loc "solve" @@
             Printf.sprintf
-              "Occurs check failed -- '%s' occurs in '%s'"
+            "type variable '%s' occurs in '%s'"
               (Id.to_string id)
-              (Type.to_string tp)
+              (Type.to_string ~no_simp:() tp)
         | Id.Unbound id ->
-          error loc @@
-            Printf.sprintf
-              "Undefined identifier '%s'\n%!"
-              (Id.to_string id)
+          error loc "solve" @@
+            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
   in
 
   solve Id.Map.empty Sub.identity c

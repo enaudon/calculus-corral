@@ -14,8 +14,13 @@ and t = {
 
 (* Internal utilities *)
 
-let error : Loc.t -> string -> 'a = fun loc msg ->
-  failwith @@ Printf.sprintf "%s: %s" (Loc.to_string loc) msg
+let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
+  failwith @@
+    Printf.sprintf "%s %s.%s: %s"
+      (Loc.to_string loc)
+      __MODULE__
+      fn_name
+      msg
 
 let var loc id = { desc = Variable id; loc }
 
@@ -33,35 +38,34 @@ let app loc fn arg = { desc = Application (fn, arg); loc }
 let infer_hm : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
     fun env exp_tp tm ->
 
-  let unify sub tp1 tp2 =
+  let unify loc sub tp1 tp2 =
     try Type.unify sub tp1 tp2 with
       | Type.Occurs (id, tp) ->
-        error tm.loc @@
+        error loc "infer_hm" @@
           Printf.sprintf
-            "Occurs check failed -- '%s' occurs in '%s'"
+            "type variable '%s' occurs in '%s'"
             (Id.to_string id)
             (Type.to_string ~no_simp:() tp)
   in
 
-  let rec infer env sub exp_tp tm = match tm.desc with
-    | Variable id ->
-      let tp = try Id.Map.find id env with
-        | Id.Unbound id ->
-          error tm.loc @@
-            Printf.sprintf
-              "%s: Undefined identifier '%s'\n%!"
-              (Loc.to_string tm.loc)
-              (Id.to_string id)
-      in
-      unify sub tp exp_tp
-    | Abstraction (arg, body) ->
-      let arg_tp = Type.var @@ Id.fresh_upper () in
-      let body_tp = Type.var @@ Id.fresh_upper () in
-      let sub' = infer (Id.Map.add arg arg_tp env) sub body_tp body in
-      unify sub' exp_tp @@ Type.func arg_tp body_tp
-    | Application (fn, arg) ->
-      let tp = Type.var @@ Id.fresh_upper () in
-      infer env (infer env sub (Type.func tp exp_tp) fn) tp arg
+  let rec infer env sub exp_tp tm =
+    let loc = tm.loc in
+    match tm.desc with
+      | Variable id ->
+        let tp = try Id.Map.find id env with
+          | Id.Unbound id ->
+          error loc "infer_hm" @@
+            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
+        in
+        unify loc sub exp_tp tp
+      | Abstraction (arg, body) ->
+        let arg_tp = Type.var @@ Id.fresh_upper () in
+        let body_tp = Type.var @@ Id.fresh_upper () in
+        let sub' = infer (Id.Map.add arg arg_tp env) sub body_tp body in
+        unify loc sub' exp_tp @@ Type.func arg_tp body_tp
+      | Application (fn, arg) ->
+        let tp = Type.var @@ Id.fresh_upper () in
+        infer env (infer env sub (Type.func tp exp_tp) fn) tp arg
   in
 
   infer env Sub.identity exp_tp tm

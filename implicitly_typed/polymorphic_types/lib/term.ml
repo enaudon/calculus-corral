@@ -16,8 +16,13 @@ and t = {
 
 (* Internal utilities *)
 
-let error : Loc.t -> string -> 'a = fun loc msg ->
-  failwith @@ Printf.sprintf "%s: %s" (Loc.to_string loc) msg
+let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
+  failwith @@
+    Printf.sprintf "%s %s.%s: %s"
+      (Loc.to_string loc)
+      __MODULE__
+      fn_name
+      msg
 
 let var loc id = { desc = Variable id; loc }
 
@@ -61,18 +66,18 @@ let infer_hm
     tv
   in
 
-  let unify sub tp1 tp2 =
+  let unify loc sub tp1 tp2 =
     try Type.unify sub tp1 tp2 with
       | Type.Cannot_unify (tp1, tp2) ->
-        error tm.loc @@
+        error loc "infer_hm" @@
           Printf.sprintf
-            "Unification failed -- '%s' ~ '%s'"
+            "expected '%s', but found '%s'"
             (Type.to_string ~no_simp:() tp1)
             (Type.to_string ~no_simp:() tp2)
       | Type.Occurs (id, tp) ->
-        error tm.loc @@
+        error loc "infer_hm" @@
           Printf.sprintf
-            "Occurs-check failed -- '%s' occurs in '%s'"
+            "type variable '%s' occurs in '%s'"
             (Id.to_string id)
             (Type.to_string ~no_simp:() tp)
   in
@@ -83,13 +88,12 @@ let infer_hm
       | Variable id ->
         let tvs, tp = try Type.inst sub @@ Id.Map.find id env with
           | Id.Unbound id ->
-            error tm.loc @@
+            error tm.loc "infer_hm" @@
               Printf.sprintf
-                "%s: Undefined identifier '%s'\n%!"
-                (Loc.to_string tm.loc)
+                "undefined identifier '%s'"
                 (Id.to_string id)
         in
-        ( unify sub tp exp_tp,
+        ( unify loc sub exp_tp tp,
           fun sub ->
             IR.Term.tp_app' ~loc
               (IR.Term.var ~loc id)
@@ -99,7 +103,7 @@ let infer_hm
         let body_tp = fresh_type_var () in
         let env' = Id.Map.add arg arg_tp env in
         let sub', body_k = infer env' sub body_tp body in
-        ( unify sub' exp_tp @@ Type.func arg_tp body_tp,
+        ( unify loc sub' exp_tp @@ Type.func arg_tp body_tp,
           fun sub ->
             IR.Term.abs ~loc arg (type_to_ir sub arg_tp) (body_k sub) )
       | Application (fn, arg) ->

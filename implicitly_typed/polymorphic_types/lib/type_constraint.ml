@@ -16,8 +16,13 @@ type 'a t = co * (Sub.s -> 'a)
 
 (* Internal helpers *)
 
-let error : Loc.t -> string -> 'a = fun loc msg ->
-  failwith @@ Printf.sprintf "%s: %s" (Loc.to_string loc) msg
+let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
+  failwith @@
+    Printf.sprintf "%s %s.%s: %s"
+      (Loc.to_string loc)
+      __MODULE__
+      fn_name
+      msg
 
 let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
   | Some p -> fun c -> Localized (p, c)
@@ -49,7 +54,7 @@ let solve (c, k) =
     | Instance (id, tp, tvs_ref) ->
       let tvs, tp' = Type.inst sub @@ Id.Map.find id env in
       tvs_ref := tvs;
-      Type.unify sub tp' tp
+      Type.unify sub tp tp'
     | Equality (lhs, rhs) ->
       Type.unify sub lhs rhs
     | Conjunction (lhs, rhs) ->
@@ -71,22 +76,22 @@ let solve (c, k) =
     | Localized (loc, c) ->
       try solve env sub c with
         | Type.Cannot_unify (tp1, tp2) ->
-          error loc @@
+          error loc "solve" @@
             Printf.sprintf
-              "Unification failed -- '%s' ~ '%s'"
+              "expected '%s', but found '%s'"
               (Type.to_string ~no_simp:() tp1)
               (Type.to_string ~no_simp:() tp2)
         | Type.Occurs (id, tp) ->
-          error loc @@
+          error loc "solve" @@
             Printf.sprintf
-              "Occurs check failed -- '%s' occurs in '%s'"
+              "type variable '%s' occurs in '%s'"
               (Id.to_string id)
               (Type.to_string ~no_simp:() tp)
         | Id.Unbound id ->
-          error loc @@
-            Printf.sprintf
-              "Undefined identifier '%s'\n%!"
-              (Id.to_string id)
+            error loc "solve" @@
+              Printf.sprintf
+                "undefined identifier '%s'"
+                (Id.to_string id)
   in
 
   k @@ solve Id.Map.empty Sub.identity c
