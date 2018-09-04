@@ -12,13 +12,11 @@ let var id = Variable id
 
 let func arg res = Function (arg, res)
 
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+let func' args res = List.fold_right func args res
 
 let forall quant body = Universal (quant, body)
 
-let forall' quants body =
-  List.fold_left (fun body q -> forall q body) body (List.rev quants)
+let forall' quants body = List.fold_right forall quants body
 
 (* Destructors *)
 

@@ -355,8 +355,7 @@ let func arg res = match arg.quants, res.quants with
   | [], [] -> scheme [] @@ func arg.body res.body
   | _, _ -> raise_exp_mono ()
 
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+let func' args res = List.fold_right func args res
 
 let get_quants { quants; _ } = quants
 

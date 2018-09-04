@@ -35,6 +35,9 @@ val func : t -> t -> t
  *)
 val func' : t list -> t -> t
 
+(** [get_forall' tp] computes the variable quantifier of [tp]. *)
+val get_quants : t -> Identifier.t list
+
 (** {1 Inference} *)
 
 (** Substitution
@@ -95,8 +98,6 @@ val gen_exit : Substitution.s -> t -> Identifier.Set.t * t
 val inst : Substitution.s -> t -> t list * t
 
 (** {1 Utilities} *)
-
-val get_quants : t -> Identifier.t list
 
 (**
   [to_intl_repr tp] computes an internal representation type which is

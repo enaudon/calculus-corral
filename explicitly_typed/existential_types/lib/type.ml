@@ -16,13 +16,11 @@ let base = var (Id.of_string base_id)
 
 let func arg res = Function (arg, res)
 
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+let func' args res = List.fold_right func args res
 
 let exists quant body = Existential (quant, body)
 
-let exists' quants body =
-  List.fold_left (fun body q -> exists q body) body (List.rev quants)
+let exists' quants body = List.fold_right exists quants body
 
 (* Destructors *)
 

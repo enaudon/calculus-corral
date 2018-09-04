@@ -358,13 +358,11 @@ let var ?(loc = Loc.dummy) id = var loc id
 let abs ?(loc = Loc.dummy) arg tp body = abs loc arg tp body
 
 let abs' ?(loc = Loc.dummy) args body =
-  let abs' body (arg, tp) = abs ~loc arg tp body in
-  List.fold_left abs' body (List.rev args)
+  List.fold_right (fun (arg, tp) body -> abs ~loc arg tp body) args body
 
 let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 
-let app' ?(loc = Loc.dummy) fn args =
-  List.fold_left (fun fn args -> app ~loc fn args) fn args
+let app' ?(loc = Loc.dummy) fn args = List.fold_left (app ~loc) fn args
 
 let pack ?(loc = Loc.dummy) tp1 tm tp2 = pack loc tp1 tm tp2
 

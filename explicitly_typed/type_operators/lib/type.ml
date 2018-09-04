@@ -22,20 +22,17 @@ let abs : Id.t -> Kind.t -> t -> t =
   fun arg kn body -> Abstraction (arg, kn, body)
 
 let abs' args body =
-  let abs' body (arg, kn) = abs arg kn body in
-  List.fold_left abs' body (List.rev args)
+  List.fold_right (fun (arg, kn) body -> abs arg kn body) args body
 
 let app : t -> t -> t = fun fn arg -> Application (fn, arg)
 
-let app' fn args =
-  List.fold_left (fun fn args -> app fn args) fn args
+let app' fn args = List.fold_left app fn args
 
 let func_id = "->"
 
 let func arg res = app' (var @@ Id.of_string func_id) [arg; res]
 
-let func' args res =
-  List.fold_left (fun res arg -> func arg res) res (List.rev args)
+let func' args res = List.fold_right func args res
 
 (* Destructors *)
 

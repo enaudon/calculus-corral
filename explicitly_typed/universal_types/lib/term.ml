@@ -290,21 +290,18 @@ let var ?(loc = Loc.dummy) id = var loc id
 let abs ?(loc = Loc.dummy) arg tp body = abs loc arg tp body
 
 let abs' ?(loc = Loc.dummy) args body =
-  let abs' body (arg, tp) = abs ~loc arg tp body in
-  List.fold_left abs' body (List.rev args)
+  List.fold_right (fun (arg, tp) body -> abs ~loc arg tp body) args body
 
 let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 
-let app' ?(loc = Loc.dummy) fn args =
-  List.fold_left (fun fn args -> app ~loc fn args) fn args
+let app' ?(loc = Loc.dummy) fn args = List.fold_left (app ~loc) fn args
 
 let tp_abs ?(loc = Loc.dummy) arg body = tp_abs loc arg body
 
 let tp_abs' ?(loc = Loc.dummy) args body =
-  let tp_abs' body arg = tp_abs ~loc arg body in
-  List.fold_left tp_abs' body (List.rev args)
+  List.fold_right (tp_abs ~loc) args body
 
 let tp_app ?(loc = Loc.dummy) fn arg = tp_app loc fn arg
 
 let tp_app' ?(loc = Loc.dummy) fn args =
-  List.fold_left (fun fn args -> tp_app ~loc fn args) fn args
+  List.fold_left (tp_app ~loc) fn args

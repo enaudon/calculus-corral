@@ -28,7 +28,6 @@ let app fn arg = Term.app ~loc:(get_loc ()) fn arg
 
 /* Symbols */
 %token B_SLASH
-%token S_ARROW
 %token PERIOD
 %token SEMICOLON
 %token EQ

@@ -143,10 +143,8 @@ let var ?(loc = Loc.dummy) id = var loc (Id.of_string id)
 let abs ?(loc = Loc.dummy) arg body = abs loc (Id.of_string arg) body
 
 let abs' ?(loc = Loc.dummy) args body =
-  let abs' body arg = abs ~loc arg body in
-  List.fold_left abs' body (List.rev args)
+  List.fold_right (abs ~loc) args body
 
 let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 
-let app' ?(loc = Loc.dummy) fn args =
-  List.fold_left (fun fn args -> app ~loc fn args) fn args
+let app' ?(loc = Loc.dummy) fn args = List.fold_left (app ~loc) fn args

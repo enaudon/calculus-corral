@@ -33,7 +33,6 @@ let bind id value body = Term.bind ~loc:(get_loc ()) id value body
 
 /* Symbols */
 %token B_SLASH
-%token S_ARROW
 %token PERIOD
 %token SEMICOLON
 %token EQ

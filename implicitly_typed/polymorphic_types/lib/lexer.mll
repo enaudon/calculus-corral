@@ -31,7 +31,6 @@ let upper_id = ['A'-'Z'] id_char*
 rule prog = parse
   | whitespace                        { skip_char lexbuf; prog lexbuf }
   | newline                           { skip_line lexbuf; prog lexbuf }
-  | "->"                              { Parser.S_ARROW }
   | "\\"                              { Parser.B_SLASH }
   | "."                               { Parser.PERIOD }
   | ";"                               { Parser.SEMICOLON }
