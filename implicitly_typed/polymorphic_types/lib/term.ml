@@ -1,7 +1,7 @@
 module Id = Identifier
 module IR = Universal_types
 module Loc = Location
-module Sub = Type.Substitution
+module State = Type.State
 
 type desc =
   | Variable of Id.t
@@ -58,22 +58,17 @@ let infer_hm
     : Type.t Id.Map.t -> t -> Type.t * IR.Term.t
     = fun env tm ->
 
-  let type_to_ir sub tp = Type.to_intl_repr @@ Sub.apply tp sub in
-
-  let fresh_type_var () =
-    let tv = Type.var @@ Id.fresh_upper () in
-    Type.register tv;
-    tv
+  let type_to_ir state tp =
+    Type.to_intl_repr @@ State.apply_solution tp state
   in
 
-  let unify loc sub tp1 tp2 =
-    try Type.unify sub tp1 tp2 with
-      | Type.Cannot_unify (tp1, tp2) ->
-        error loc "infer_hm" @@
-          Printf.sprintf
-            "expected '%s', but found '%s'"
-            (Type.to_string ~no_simp:() tp1)
-            (Type.to_string ~no_simp:() tp2)
+  let fresh_type_var state =
+    let tv = Type.var @@ Id.fresh_upper () in
+    Type.register state tv, tv
+  in
+
+  let unify loc state tp1 tp2 =
+    try Type.unify state tp1 tp2 with
       | Type.Occurs (id, tp) ->
         error loc "infer_hm" @@
           Printf.sprintf
@@ -82,57 +77,64 @@ let infer_hm
             (Type.to_string ~no_simp:() tp)
   in
 
-  let rec infer env sub exp_tp tm =
+  let rec infer env state exp_tp tm =
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        let tvs, tp = try Type.inst sub @@ Id.Map.find id env with
-          | Id.Unbound id ->
+        let state, tvs, tp =
+          try
+            Type.inst state @@ Id.Map.find id env
+          with Id.Unbound id ->
             error tm.loc "infer_hm" @@
               Printf.sprintf
                 "undefined identifier '%s'"
                 (Id.to_string id)
         in
-        ( unify loc sub exp_tp tp,
-          fun sub ->
+        ( unify loc state exp_tp tp,
+          fun state ->
             IR.Term.tp_app' ~loc
               (IR.Term.var ~loc id)
-              (List.map (type_to_ir sub) tvs) )
+              (List.map (type_to_ir state) tvs) )
       | Abstraction (arg, body) ->
-        let arg_tp = fresh_type_var () in
-        let body_tp = fresh_type_var () in
+        let state, arg_tp = fresh_type_var state in
+        let state, body_tp = fresh_type_var state in
         let env' = Id.Map.add arg arg_tp env in
-        let sub', body_k = infer env' sub body_tp body in
-        ( unify loc sub' exp_tp @@ Type.func arg_tp body_tp,
-          fun sub ->
-            IR.Term.abs ~loc arg (type_to_ir sub arg_tp) (body_k sub) )
+        let state, body_k = infer env' state body_tp body in
+        ( unify loc state exp_tp @@ Type.func arg_tp body_tp,
+          fun state ->
+            let arg_tp' = type_to_ir state arg_tp in
+            IR.Term.abs ~loc arg arg_tp' (body_k state) )
       | Application (fn, arg) ->
-        let tp = fresh_type_var () in
-        let sub', fn_k = infer env sub (Type.func tp exp_tp) fn in
-        let sub'', arg_k = infer env sub' tp arg in
-        ( sub'', fun sub -> IR.Term.app ~loc (fn_k sub) (arg_k sub) )
+        let state, tp = fresh_type_var state in
+        let state, fn_k = infer env state (Type.func tp exp_tp) fn in
+        let state, arg_k = infer env state tp arg in
+        ( state,
+          fun state -> IR.Term.app ~loc (fn_k state) (arg_k state) )
       | Binding (id, value, body) ->
-        Type.gen_enter ();
-        let tp = fresh_type_var () in
-        let sub', value_k = infer env sub tp value in
-        let tvs, tp' = Type.gen_exit sub' tp in
+        let state = Type.gen_enter state in
+        let state, tp = fresh_type_var state in
+        let state, value_k = infer env state tp value in
+        let state, tvs, tp' = Type.gen_exit state tp in
         let qs = Type.get_quants tp' in
         let env' = Id.Map.add id tp' env in
-        let sub'', body_k = infer env' sub' exp_tp body in
-        ( sub'',
-          fun sub ->
+        let state, body_k = infer env' state exp_tp body in
+        ( state,
+          fun state ->
+            let tp'' = type_to_ir state tp' in
             IR.Term.app ~loc
-              (IR.Term.abs ~loc id (type_to_ir sub tp') (body_k sub))
+              (IR.Term.abs ~loc id tp'' (body_k state))
               (coerce tvs qs @@
-                IR.Term.tp_abs' ~loc qs @@ value_k sub) )
+                IR.Term.tp_abs' ~loc qs @@ value_k state) )
   in
 
-  Type.gen_enter ();
-  let tp = fresh_type_var () in
-  let sub, k = infer env Sub.identity tp tm in
-  let tvs, tp' = Type.gen_exit sub tp in
+  let state = Type.gen_enter State.initial in
+  let state, tp = fresh_type_var state in
+  let state, k = infer env state tp tm in
+  let state, tvs, tp' = Type.gen_exit state tp in
   let qs = Type.get_quants tp' in
-  let tm' = coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs @@ k sub in
+  let tm' =
+    coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs @@ k state
+  in
 
   tp', tm'
 
@@ -164,19 +166,19 @@ let infer_pr
             IR.Term.tp_app' ~loc (IR.Term.var ~loc id) tps'
       | Abstraction (arg, body) ->
         TC.exists ~loc (fun arg_tp ->
-          TC.exists' ~loc @@ fun body_tp ->
+          TC.exists ~loc @@ fun body_tp ->
             TC.conj_left
               (TC.def arg arg_tp @@ constrain body_tp body)
               (TC.equals exp_tp @@ Type.func arg_tp body_tp)) <$>
-          fun (arg_tp, body') ->
+          fun (arg_tp, (_, body')) ->
             let arg_tp' = Type.to_intl_repr arg_tp in
             IR.Term.abs ~loc arg arg_tp' body'
       | Application (fn, arg) ->
-        TC.exists' ~loc (fun arg_tp ->
+        TC.exists ~loc (fun arg_tp ->
           TC.conj
             (constrain (Type.func arg_tp exp_tp) fn)
             (constrain arg_tp arg)) <$>
-          fun (fn', arg') -> IR.Term.app ~loc fn' arg'
+          fun (_, (fn', arg')) -> IR.Term.app ~loc fn' arg'
       | Binding (id, value, body) ->
         TC.let_ ~loc id
           (fun tp -> constrain tp value)

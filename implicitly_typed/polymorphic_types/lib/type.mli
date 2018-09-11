@@ -11,12 +11,6 @@ type t
  *)
 exception Occurs of Identifier.t * t
 
-(**
-  [Cannot_unify (tp1, tp2)] indicates that unification failed because
-  the types [tp1] and [tp2] are not unifiable.
- *)
-exception Cannot_unify of t * t
-
 (** {1 Constructors and Destructors} *)
 
 (** [var id] constructs a variable with the identifier [id]. *)
@@ -40,28 +34,29 @@ val get_quants : t -> Identifier.t list
 
 (** {1 Inference} *)
 
-(** Substitution
+(** Inference State
 
-  A substitution maps (type variable) identifiers to types.
-  Substitutions are idempotent by construction.
+  This module encapsulates the internal state of the inference engine.
+  The most significant piece of the state, from the user's perspective,
+  is a substitution, which represents the solution computed by type
+  inference.  After type inference this solution may be applied via the
+  [apply_solution] function.
  *)
-module Substitution : sig
+module State : sig
 
-  (** The type of substitutions. *)
+  (** The type of inference engine state. *)
   type s
 
-  (**
-    [identity] is the identity substitution.  It maps every variable
-    to itself.
-  *)
-  val identity : s
+  (** [initial] is the initial state. *)
+  val initial : s
 
   (**
-    [apply tp sub] applies [sub] to [tp], replacing any variables in
-    [tp] which occur in the domain of [sub] with their corresponding
-    types in the range of [sub].
+    [apply_solution tp state] applies the solution in [state] to [tp],
+    replacing any variables in [tp] which occur in the domain of the
+    substitution with their corresponding concrete types in the range of
+    the substitution.
    *)
-  val apply : t -> s -> t
+  val apply_solution : t -> s -> t
 
 end
 
@@ -69,33 +64,38 @@ end
   [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
   [tp2].
  *)
-val unify : Substitution.s -> t -> t -> Substitution.s
-
-val register : t -> unit
+val unify : State.s -> t -> t -> State.s
 
 (**
-  [gen_enter ()] updates the internal state before type-checking the
-  left-hand side of a let-expression.
+  [register state tv] registers the type variable, [tv], with the
+  inference engine so that it may be used in type-checking.
  *)
-val gen_enter : unit -> unit
+val register : State.s -> t -> State.s
 
 (**
-  [gen_exit sub tp] updates the internal state and performs
+  [gen_enter state] updates the state before type-checking the left-hand
+  side of a let-expression.
+ *)
+val gen_enter : State.s -> State.s
+
+(**
+  [gen_exit state tp] updates the internal state and performs
   generalization after type-checking the left-hand side of a
   let-expression.  Here, generalization involves replacing all
   monomorphic variables introduced within the let-expression with
-  polymorphic variables.  The result is a list of identifiers
-  corresponding the newly polymorphic variables, along with the
-  newly-polymorphic type.
+  polymorphic variables.  The result contains three things: a) the
+  updated state, b) a list of identifiers corresponding the newly
+  polymorphic variables, and c) the newly-polymorphic type.
  *)
-val gen_exit : Substitution.s -> t -> Identifier.Set.t * t
+val gen_exit : State.s -> t -> State.s * Identifier.Set.t * t
 
 (**
-  [inst sub tp] replaces all polymorphic variables in [tp] with fresh
-  monomorphic variables.  The result is a pair containing a list of the
-  fresh monomorphic variables, along with the newly-monomorphic type.
+  [inst state tp] replaces all polymorphic variables in [tp] with fresh
+  monomorphic variables.  The result contains three things: a) the
+  updated state, b) a list of the fresh monomorphic variables, and c)
+  the newly-monomorphic type.
  *)
-val inst : Substitution.s -> t -> t list * t
+val inst : State.s -> t -> State.s * t list * t
 
 (** {1 Utilities} *)
 

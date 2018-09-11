@@ -1,6 +1,6 @@
 module Id = Identifier
 module Loc = Location
-module Sub = Type.Substitution
+module State = Type.State
 
 type co =
   | True
@@ -12,7 +12,7 @@ type co =
   | Let_binding of Id.t option * Type.t ref * co * co * Id.Set.t ref
   | Localized of Loc.t * co
 
-type 'a t = co * (Sub.s -> 'a)
+type 'a t = co * (State.s -> 'a)
 
 (* Internal helpers *)
 
@@ -42,45 +42,39 @@ let let_impl
   let tvs_ref = ref Id.Set.empty in
   let tp_ref = ref tv in
   ( loc_wrap loc @@ Let_binding (id_opt, tp_ref, lhs_c, rhs_c, tvs_ref),
-    fun sub -> Sub.apply !tp_ref sub, !tvs_ref, lhs_k sub, rhs_k sub )
+    fun state ->
+      let tp = State.apply_solution !tp_ref state in
+      tp, !tvs_ref, lhs_k state, rhs_k state )
 
 (* Solving *)
 
 let solve (c, k) =
 
-  let rec solve env sub c = match c with
+  let rec solve env state c = match c with
     | True ->
-      sub
+      state
     | Instance (id, tp, tvs_ref) ->
-      let tvs, tp' = Type.inst sub @@ Id.Map.find id env in
+      let state, tvs, tp' = Type.inst state @@ Id.Map.find id env in
       tvs_ref := tvs;
-      Type.unify sub tp tp'
+      Type.unify state tp tp'
     | Equality (lhs, rhs) ->
-      Type.unify sub lhs rhs
+      Type.unify state lhs rhs
     | Conjunction (lhs, rhs) ->
-      solve env (solve env sub lhs) rhs
+      solve env (solve env state lhs) rhs
     | Existential (tv, c) ->
-      Type.register tv;
-      solve env sub c
+      solve env (Type.register state tv) c
     | Def_binding (id, tp, c) ->
-      solve (Id.Map.add id tp env) sub c
+      solve (Id.Map.add id tp env) state c
     | Let_binding (id_opt, tp_ref, lhs, rhs, tvs_ref) ->
-      Type.gen_enter ();
-      Type.register !tp_ref;
-      let sub' = solve env sub lhs in
-      let tvs, tp = Type.gen_exit sub' !tp_ref in
+      let state = Type.gen_enter state in
+      let state = solve env (Type.register state !tp_ref) lhs in
+      let state, tvs, tp = Type.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
       let fn env id = Id.Map.add id tp env in
-      solve (Option.fold fn env id_opt) sub' rhs
+      solve (Option.fold fn env id_opt) state rhs
     | Localized (loc, c) ->
-      try solve env sub c with
-        | Type.Cannot_unify (tp1, tp2) ->
-          error loc "solve" @@
-            Printf.sprintf
-              "expected '%s', but found '%s'"
-              (Type.to_string ~no_simp:() tp1)
-              (Type.to_string ~no_simp:() tp2)
+      try solve env state c with
         | Type.Occurs (id, tp) ->
           error loc "solve" @@
             Printf.sprintf
@@ -94,7 +88,7 @@ let solve (c, k) =
                 (Id.to_string id)
   in
 
-  k @@ solve Id.Map.empty Sub.identity c
+  k @@ solve Id.Map.empty State.initial c
 
 (* Utilities *)
 
@@ -122,7 +116,9 @@ let to_string ?no_simp (c, _) =
         in
         Printf.sprintf "%s & %s" (to_string' lhs) (to_string' rhs)
       | Existential (tv, c) ->
-        Printf.sprintf "exists %s . %s" (Type.to_string tv) (to_string c)
+        Printf.sprintf "exists %s . %s"
+          (type_to_string tv)
+          (to_string c)
       | Def_binding (id, tp, c) ->
         Printf.sprintf "def %s = %s in %s"
           (Id.to_string id)
@@ -146,19 +142,20 @@ let to_string ?no_simp (c, _) =
 
 (* Constructors *)
 
-let map f (c, k) = c, fun sub -> f @@ k sub
+let map f (c, k) = c, fun state -> f @@ k state
 
 let inst ?loc id tp =
   let tvs_ref = ref [] in
   ( loc_wrap loc @@ Instance (id, tp, tvs_ref),
-    fun sub -> List.map (fun tv -> Sub.apply tv sub) !tvs_ref )
+    fun state ->
+      List.map (fun tv -> State.apply_solution tv state) !tvs_ref )
 
 let equals ?loc lhs rhs =
   ( loc_wrap loc @@ Equality (lhs, rhs), fun _ -> () )
 
 let conj ?loc (lhs_c, lhs_k) (rhs_c, rhs_k) =
   ( loc_wrap loc @@ Conjunction (lhs_c, rhs_c),
-    fun sub -> lhs_k sub, rhs_k sub )
+    fun state -> lhs_k state, rhs_k state )
 
 let conj_left ?loc lhs rhs = map fst @@ conj ?loc lhs rhs
 
@@ -168,9 +165,7 @@ let exists ?loc fn =
   let tv = Type.var @@ Id.fresh_upper () in
   let c, k = fn tv in
   ( loc_wrap loc @@ Existential (tv, c),
-    fun sub -> Sub.apply tv sub, k sub )
-
-let exists' ?loc fn = map snd @@ exists ?loc fn
+    fun state -> State.apply_solution tv state, k state )
 
 let def ?loc id tp (c, k) =
   ( loc_wrap loc @@ Def_binding (id, tp, c), k )
