@@ -1,0 +1,565 @@
+module Id = Identifier
+module Loc = Location
+module Misc = Miscellaneous
+
+type desc =
+  | Variable of Id.t
+  | Term_abs of Id.t * Type.t * t
+  | Term_app of t * t
+  | Type_abs of Id.t * t
+  | Type_app of t * Type.t
+  | Record of (Id.t * t) list
+  | Projection of t * Id.t
+  | Variant of Id.t * t * Type.t
+  | Case of t * (Id.t * Id.t * t) list
+
+and t = {
+  desc : desc ;
+  loc : Loc.t ;
+}
+
+(* Internal utilities *)
+
+let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
+  failwith @@
+    Printf.sprintf "%s %s.%s: %s"
+      (Loc.to_string loc)
+      __MODULE__
+      fn_name
+      msg
+
+let var : Loc.t -> Id.t -> t = fun loc id ->
+  { desc = Variable id; loc }
+
+let abs : Loc.t -> Id.t -> Type.t -> t -> t = fun loc arg tp body ->
+  { desc = Term_abs (arg, tp, body); loc }
+
+let app : Loc.t -> t -> t -> t = fun loc fn arg ->
+  { desc = Term_app (fn, arg); loc }
+
+let tp_abs : Loc.t -> Id.t -> t -> t = fun loc arg body ->
+  { desc = Type_abs (arg, body); loc }
+
+let tp_app : Loc.t -> t -> Type.t -> t = fun loc fn arg ->
+  { desc = Type_app (fn, arg); loc }
+
+let rcrd : Loc.t -> (Id.t * t) list -> t = fun loc fields ->
+  { desc = Record fields; loc }
+
+let proj : Loc.t -> t -> Id.t -> t = fun loc rcrd field ->
+  { desc = Projection (rcrd, field); loc }
+
+let vrnt : Loc.t -> Id.t -> t -> Type.t -> t = fun loc case data tp ->
+  { desc = Variant (case, data, tp); loc }
+
+let case : Loc.t -> t -> (Id.t * Id.t * t) list -> t =
+    fun loc vrnt cases ->
+  { desc = Case (vrnt, cases); loc }
+
+(* Typing *)
+
+let rec to_type (kn_env, tp_env) tm =
+  let to_type kn_env tp_env = to_type (kn_env, tp_env) in
+  match tm.desc with
+    | Variable id ->
+      begin try Id.Map.find id tp_env with
+        | Id.Unbound id ->
+          error tm.loc "to_type" @@
+            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
+      end
+    | Term_abs (arg, arg_tp, body) ->
+      let tp_env' = Id.Map.add arg arg_tp tp_env in
+      Type.func arg_tp @@ to_type kn_env tp_env' body
+    | Term_app (fn, arg) ->
+      let fn_tp = to_type kn_env tp_env fn in
+      let fml_arg_tp, res_tp =
+        try
+          Type.get_func (Type.beta_reduce ~deep:() tp_env fn_tp)
+        with Invalid_argument _ ->
+          error tm.loc "to_type" @@
+            Printf.sprintf
+              "expected function type; found '%s'"
+              (Type.to_string fn_tp)
+      in
+      let act_arg_tp = to_type kn_env tp_env arg in
+      let beta_env = tp_env in
+      if Type.alpha_equivalent ~beta_env act_arg_tp fml_arg_tp then
+        res_tp
+      else
+        error arg.loc "to_type" @@
+            Printf.sprintf
+              "expected type '%s'; found type '%s'"
+              (Type.to_string fml_arg_tp)
+              (Type.to_string act_arg_tp)
+    | Type_abs (arg, body) ->
+      Type.forall arg @@ to_type (Id.Set.add arg kn_env) tp_env body
+    | Type_app (fn, arg) ->
+      let fn_tp = to_type kn_env tp_env fn in
+      let tv, tp =
+        try
+          Type.get_forall @@ Type.beta_reduce ~deep:() tp_env fn_tp
+        with Invalid_argument _ ->
+          error tm.loc "to_type" @@
+            Printf.sprintf
+              "expected universal type; found '%s'"
+              (Type.to_string fn_tp)
+      in
+      Type.check kn_env arg;
+      Type.subst kn_env (Id.Map.singleton tv arg) tp
+    | Record fields ->
+      Type.rcrd @@
+        List.map (fun (id, tm) -> id, to_type kn_env tp_env tm) fields
+    | Projection (rcrd, field) ->
+      let rcrd_tp = to_type kn_env tp_env rcrd in
+      let fields =
+        try
+          Type.get_rcrd rcrd_tp
+        with Invalid_argument _ ->
+          error tm.loc "to_type" @@
+            Printf.sprintf
+              "expected record type; found '%s'"
+              (Type.to_string rcrd_tp)
+      in
+      begin try
+        List.assoc field fields
+      with Not_found ->
+        error tm.loc "to_type" @@
+          Printf.sprintf
+            "'%s' is not a field of record type '%s'"
+            (Id.to_string field)
+            (Type.to_string rcrd_tp)
+      end
+    | Variant (case, data, tp) ->
+      let cases =
+        try
+          Type.get_vrnt @@ Type.beta_reduce ~deep:() tp_env tp
+        with Invalid_argument _ ->
+          error tm.loc "to_type" @@
+            Printf.sprintf
+              "expected variant type; found '%s'"
+              (Type.to_string tp)
+      in
+      let case_tp =
+        try
+          List.assoc case cases
+        with Not_found ->
+          error tm.loc "to_type" @@
+            Printf.sprintf
+              "'%s' is not a case of variant type'%s'"
+              (Id.to_string case)
+              (Type.to_string tp)
+      in
+      let data_tp = to_type kn_env tp_env data in
+      if Type.alpha_equivalent ~beta_env:tp_env case_tp data_tp then
+        tp
+      else
+        error data.loc "to_type" @@
+            Printf.sprintf
+              "expected type '%s'; found type '%s'"
+              (Type.to_string case_tp)
+              (Type.to_string data_tp)
+    | Case (vrnt, cases) ->
+      let case_to_type (_, tp) (_, id, tm) =
+        to_type kn_env (Id.Map.add id tp tp_env) tm, tm.loc
+      in
+      let rec cases_to_type tps tms = match tps, tms with
+        | [tp], [tm] ->
+          fst @@ case_to_type tp tm
+        | tp :: tps', tm :: tms' ->
+          let case_tp, loc = case_to_type tp tm in
+          let res_tp = cases_to_type tps' tms' in
+          if Type.alpha_equivalent ~beta_env:tp_env res_tp case_tp then
+            res_tp
+          else
+            error loc "to_type" @@
+                Printf.sprintf
+                  "this branch has type '%s'; the others have type '%s'"
+                  (Type.to_string case_tp)
+                  (Type.to_string res_tp)
+        | [], _ | _, [] ->
+          error tm.loc "to_type" @@
+            Printf.sprintf
+              "unexpectedly empty list of cases"
+      in
+      let vrnt_tp = to_type kn_env tp_env vrnt in
+      let vrnt_cases =
+        try
+          Type.get_vrnt @@ Type.beta_reduce ~deep:() tp_env vrnt_tp
+        with Invalid_argument _ ->
+          error tm.loc "to_type" @@
+            Printf.sprintf
+              "expected variant type; found '%s'"
+              (Type.to_string vrnt_tp)
+      in
+      cases_to_type vrnt_cases cases
+
+(* Transformations *)
+
+(** [free_vars tm] computes the free term variables in [tm]. *)
+let free_vars : t -> Id.Set.t =
+  let rec free_vars fvs tm = match tm.desc with
+    | Variable id ->
+      Id.Set.add id fvs
+    | Term_abs (arg, _, body) ->
+      Id.Set.del arg @@ free_vars fvs body
+    | Term_app (fn, arg) ->
+      free_vars (free_vars fvs fn) arg
+    | Type_abs (_, body) ->
+      free_vars fvs body
+    | Type_app (fn, _) ->
+      free_vars fvs fn
+    | Record fields ->
+      List.fold_left (fun fvs (_, tm) -> free_vars fvs tm) fvs fields
+    | Projection (rcrd, _) ->
+      free_vars fvs rcrd
+    | Variant (_, data, _) ->
+      free_vars fvs data
+    | Case (vrnt, cases) ->
+      List.fold_left
+        (fun fvs (_, _, tm) -> free_vars fvs tm)
+        (free_vars fvs vrnt)
+        cases
+  in
+  free_vars Id.Set.empty
+
+(**
+  [subst_tp tm id tp'] replaces occurences of [id] in [tm] with [tp'].
+
+  [subst_tp] avoids name capture by renaming binders in [tp] to follow
+  the Barendregt convention--i.e. the names of bound variable are chosen
+  distinct from those of free variables.
+ *)
+let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
+  let rec subst fvs sub tm =
+    let loc = tm.loc in
+    match tm.desc with
+      | Variable _ ->
+        tm
+      | Term_abs (arg, tp, body) ->
+        abs loc arg (Type.subst fvs sub tp) (subst fvs sub body)
+      | Term_app (fn, arg) ->
+        app loc (subst fvs sub fn) (subst fvs sub arg)
+      | Type_abs (arg, body) when Id.Set.mem arg fvs ->
+        let arg' = Id.fresh_upper () in
+        let sub' = Id.Map.add arg (Type.var arg') sub in
+        tp_abs loc arg' @@ subst (Id.Set.add arg' fvs) sub' body
+      | Type_abs (arg, body) ->
+        tp_abs loc arg @@
+          subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
+      | Type_app (fn, arg) ->
+        tp_app loc (subst fvs sub fn) (Type.subst fvs sub arg)
+      | Record fields ->
+        rcrd loc @@
+          List.map (fun (id, tm) -> id, subst fvs sub tm) fields
+      | Projection (rcrd, field) ->
+        proj loc (subst fvs sub rcrd) field
+      | Variant (case, data, tp) ->
+        vrnt loc case (subst fvs sub data) (Type.subst fvs sub tp)
+      | Case (vrnt, cases) ->
+        let subst_case (case, id, tm) = case, id, subst fvs sub tm in
+        case loc (subst fvs sub vrnt) (List.map subst_case cases)
+  in
+  subst (Type.free_vars tp') (Id.Map.singleton id tp') tm
+
+(**
+  [subst_tm tm id tm'] replaces occurences of [id] in [tm] with [tm'].
+
+  As with [subst_tp], [subst_tm] avoids name capture by following the
+  Barendregt convention.
+ *)
+let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
+  let rec subst fvs sub tm =
+    let loc = tm.loc in
+    match tm.desc with
+      | Variable id ->
+        Id.Map.find_default tm id sub
+      | Term_abs (arg, tp, body) when Id.Set.mem arg fvs ->
+        let arg' = Id.fresh_lower () in
+        let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
+        abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
+      | Term_abs (arg, tp, body) ->
+        abs loc arg tp @@
+          subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
+      | Term_app (fn, arg) ->
+        app loc (subst fvs sub fn) (subst fvs sub arg)
+      | Type_abs (arg, body) ->
+         tp_abs loc arg @@ subst fvs sub body
+      | Type_app (fn, arg) ->
+        tp_app loc (subst fvs sub fn) arg
+      | Record fields ->
+        rcrd loc @@
+          List.map (fun (id, tm) -> id, subst fvs sub tm) fields
+      | Projection (rcrd, field) ->
+        proj loc (subst fvs sub rcrd) field
+      | Variant (case, data, tp) ->
+        vrnt loc case (subst fvs sub data) tp
+      | Case (vrnt, cases) ->
+        let subst_case (case, id, tm) = case, id, subst fvs sub tm in
+        case loc (subst fvs sub vrnt) (List.map subst_case cases)
+  in
+  subst (free_vars tm') (Id.Map.singleton id tm') tm
+
+let rec beta_reduce ?deep env tm =
+  let beta_reduce = beta_reduce ?deep in
+  let loc = tm.loc in
+  match tm.desc with
+    | Variable id ->
+      Id.Map.find_default tm id env
+    | Term_abs (arg, tp, body) ->
+      if deep <> None then
+        let env' = Id.Map.del arg env in
+        abs loc arg tp @@ beta_reduce env' body
+      else
+        tm
+    | Term_app (fn, act_arg) ->
+      let fn' = beta_reduce env fn in
+      let act_arg' = beta_reduce env act_arg in
+      begin match fn'.desc with
+        | Term_abs (fml_arg, _, body) ->
+          let body' = subst_tm body fml_arg act_arg' in
+          let env' = Id.Map.del fml_arg env in
+          beta_reduce env' body'
+        | _ ->
+          app loc fn' act_arg'
+      end
+    | Type_abs (arg, body) ->
+      if deep <> None then
+        let env' = Id.Map.del arg env in
+        tp_abs loc arg @@ beta_reduce env' body
+      else
+        tm
+    | Type_app (fn, act_arg) ->
+      let fn' = beta_reduce env fn in
+      begin match fn'.desc with
+        | Type_abs (fml_arg, body) ->
+          let body' = subst_tp body fml_arg act_arg in
+          let env' = Id.Map.del fml_arg env in
+          beta_reduce env' body'
+        | _ ->
+          tp_app loc fn' act_arg
+      end
+    | Record fields ->
+      rcrd loc @@
+        List.map (fun (id, tm) -> id, beta_reduce env tm) fields
+    | Projection (rcrd, field) ->
+      let rcrd' = beta_reduce env rcrd in
+      begin match rcrd'.desc with
+        | Record fields ->
+          begin try
+            beta_reduce env @@ List.assoc field fields
+          with Not_found ->
+            error tm.loc "beta_reduce" @@
+              Printf.sprintf
+                "'%s' is not a field of this record"
+                (Id.to_string field)
+          end
+        | _ ->
+          proj loc rcrd' field
+      end
+    | Variant (case, data, tp) ->
+      vrnt loc case (beta_reduce env data) tp
+    | Case (vrnt, cases) ->
+      let beta_reduce_case (case, id, tm) =
+        case, id, if deep <> None then beta_reduce env tm else tm 
+      in
+      let vrnt' = beta_reduce env vrnt in
+      let cases' = List.map beta_reduce_case cases in
+      match vrnt'.desc with
+        | Variant (case, data, _) ->
+          let _, id, tm =
+            try
+              List.find (fun (case', _, _) -> case' = case) cases
+            with Not_found ->
+              error tm.loc "beta_reduce" @@
+                Printf.sprintf
+                  "'%s' is not a case of this variant"
+                  (Id.to_string case)
+          in
+          beta_reduce (Id.Map.del id env) (subst_tm tm id data)
+        | _ ->
+          case loc vrnt' cases'
+
+(* Utilities *)
+
+let alpha_equivalent =
+  let rec alpha_equiv tp_env tm_env tm1 tm2 =
+    match tm1.desc, tm2.desc with
+      | Variable id1, Variable id2 ->
+        Id.alpha_equivalent tm_env id1 id2
+      | Term_abs (arg1, tp1, body1), Term_abs (arg2, tp2, body2) ->
+        Type.alpha_equivalent ~env:tp_env tp1 tp2 &&
+          alpha_equiv tp_env ((arg1, arg2) :: tm_env) body1 body2
+      | Term_app (fn1, arg1), Term_app (fn2, arg2) ->
+        alpha_equiv tp_env tm_env fn1 fn2 &&
+          alpha_equiv tp_env tm_env arg1 arg2
+      | Type_abs (arg1, body1), Type_abs (arg2, body2) ->
+        alpha_equiv ((arg1, arg2) :: tp_env) tm_env body1 body2
+      | Type_app (fn1, arg1), Type_app (fn2, arg2) ->
+        alpha_equiv tp_env tm_env fn1 fn2 &&
+          Type.alpha_equivalent ~env:tp_env arg1 arg2
+      | Record fields1, Record fields2 ->
+        let alpha_equiv_field (id1, tm1) (id2, tm2) =
+          Id.alpha_equivalent tm_env id1 id2 &&
+            alpha_equiv tp_env tm_env tm1 tm2
+        in
+        List.for_all2 alpha_equiv_field fields1 fields2
+      | Projection (rcrd1, field1), Projection (rcrd2, field2) ->
+        alpha_equiv tp_env tm_env rcrd1 rcrd2 &&
+          Id.alpha_equivalent tm_env field1 field2
+      | Variant (case1, data1, tp1), Variant (case2, data2, tp2) ->
+        Id.alpha_equivalent tm_env case1 case2 &&
+          alpha_equiv tp_env tm_env data1 data2 &&
+          Type.alpha_equivalent ~env:tp_env tp1 tp2
+      | Case (vrnt1, cases1), Case (vrnt2, cases2) ->
+        let alpha_equiv_case (case1, id1, tm1) (case2, id2, tm2) =
+          Id.alpha_equivalent tm_env case1 case2 &&
+            Id.alpha_equivalent tm_env id1 id2 &&
+            alpha_equiv tp_env ((id1, id2) :: tm_env) tm1 tm2
+        in
+        alpha_equiv tp_env tm_env vrnt1 vrnt2 &&
+          List.for_all2 alpha_equiv_case cases1 cases2
+      | _ ->
+        false
+  in
+  alpha_equiv [] []
+
+let simplify tm =
+
+  let fresh =
+    let cntr = ref (-1) in
+    fun () ->
+      incr cntr;
+      Id.of_string @@ Misc.int_to_upper !cntr
+  in
+
+  let rec simplify env tm =
+    let loc = tm.loc in
+    match tm.desc with
+      | Variable _ ->
+        tm
+      | Term_abs (arg, tp, body) ->
+        let tp' = Type.simplify ~ctx:(fresh, env) tp in
+        let body' = simplify env body in
+        abs loc arg tp' body'
+      | Term_app (fn, arg) ->
+        let fn' = simplify env fn in
+        let arg' = simplify env arg in
+        app loc fn' arg'
+      | Type_abs (arg, body) ->
+        let arg' = fresh () in
+        let env' = Id.Map.add arg (Type.var arg') env in
+        let body' = simplify env' body in
+        tp_abs loc arg' body'
+      | Type_app (fn, arg) ->
+        let fn' = simplify env fn in
+        let arg' = Type.simplify ~ctx:(fresh, env) arg in
+        tp_app loc fn' arg'
+      | Record fields ->
+        rcrd loc @@
+          List.map (fun (id, tm) -> id, simplify env tm) fields
+      | Projection (rcrd, field) ->
+        proj loc (simplify env rcrd) field
+      | Variant (case, data, tp) ->
+        vrnt loc case
+          (simplify env data)
+          (Type.simplify ~ctx:(fresh, env) tp)
+      | Case (vrnt, cases) ->
+        let simplify_case (case, id, tm) = case, id, simplify env tm in
+        case loc (simplify env vrnt) (List.map simplify_case cases)
+  in
+
+  simplify Id.Map.empty tm
+
+let rec to_string tm =
+
+  let to_paren_string tm = Printf.sprintf "(%s)" (to_string tm) in
+
+  let fn_to_string tm = match tm.desc with
+    | Variable _ | Term_app _ | Type_app _ | Record _ | Projection _
+        | Variant _ ->
+      to_string tm
+    | Term_abs _ | Type_abs _ | Case _ ->
+      to_paren_string tm
+  in
+
+  let arg_to_string tm = match tm.desc with
+    | Variable _ | Record _ | Projection _ | Variant _ ->
+      to_string tm
+    | Term_abs _ | Term_app _ | Type_abs _ | Type_app _ | Case _ ->
+      to_paren_string tm
+  in
+
+  match tm.desc with
+    | Variable id ->
+      Id.to_string id
+    | Term_abs (arg, tp, body) ->
+      Printf.sprintf "\\%s : %s . %s"
+        (Id.to_string arg)
+        (Type.to_string tp)
+        (to_string body)
+    | Term_app (fn, arg) ->
+      Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
+    | Type_abs (arg, body) ->
+      Printf.sprintf "\\%s . %s"
+        (Id.to_string arg)
+        (to_string body)
+    | Type_app (fn, arg) ->
+      Printf.sprintf "%s %s" (fn_to_string fn) (Type.to_string arg)
+    | Record fields ->
+      let field_to_string (id, tm) =
+        Printf.sprintf "%s : %s"
+          (Id.to_string id)
+          (to_string tm)
+      in
+      Printf.sprintf "{%s}"
+        (String.concat "; " @@ List.map field_to_string fields)
+    | Projection (rcrd, field) ->
+      Printf.sprintf "%s.%s"
+        (arg_to_string rcrd)
+        (Id.to_string field)
+    | Variant (case, data, tp) ->
+      Printf.sprintf "[%s %s : %s]"
+        (Id.to_string case)
+        (arg_to_string data)
+        (Type.to_string tp)
+    | Case (vrnt, cases) ->
+      let case_to_string (case, id, tm) =
+        Printf.sprintf "%s %s -> %s"
+          (Id.to_string case)
+          (Id.to_string id)
+          (to_string tm)
+      in
+      Printf.sprintf "case %s [%s]"
+        (to_string vrnt)
+        (String.concat "; " @@ List.map case_to_string cases)
+
+(* Constructors *)
+
+let var ?(loc = Loc.dummy) id = var loc id
+
+let abs ?(loc = Loc.dummy) arg tp body = abs loc arg tp body
+
+let abs' ?(loc = Loc.dummy) args body =
+  List.fold_right (fun (arg, tp) body -> abs ~loc arg tp body) args body
+
+let app ?(loc = Loc.dummy) fn arg = app loc fn arg
+
+let app' ?(loc = Loc.dummy) fn args = List.fold_left (app ~loc) fn args
+
+let tp_abs ?(loc = Loc.dummy) arg body = tp_abs loc arg body
+
+let tp_abs' ?(loc = Loc.dummy) args body =
+  List.fold_right (tp_abs ~loc) args body
+
+let tp_app ?(loc = Loc.dummy) fn arg = tp_app loc fn arg
+
+let tp_app' ?(loc = Loc.dummy) fn args =
+  List.fold_left (tp_app ~loc) fn args
+
+let rcrd ?(loc = Loc.dummy) fields = rcrd loc fields
+
+let proj ?(loc = Loc.dummy) rcrd field = proj loc rcrd field
+
+let vrnt ?(loc = Loc.dummy) case data tp = vrnt loc case data tp
+
+let case ?(loc = Loc.dummy) vrnt cases = case loc vrnt cases

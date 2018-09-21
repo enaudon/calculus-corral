@@ -1,0 +1,81 @@
+Nat
+  : *
+  = forall A . (A -> A) -> A -> A ;
+zero
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . z ;
+one
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s z ;
+two
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s z) ;
+three
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s (s z)) ;
+four
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s (s (s z))) ;
+eight
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
+succ
+  : Nat -> forall A . (A -> A) -> A -> A
+  = \n : Nat . \A . \s : A -> A . \z : A . s (n A s z) ;
+add
+  : Nat -> Nat -> forall A . (A -> A) -> A -> A
+  = \m : Nat . \n : Nat . \A . \s : A -> A . \z : A . m A s (n A s z) ;
+mul
+  : Nat -> Nat -> forall A . (A -> A) -> A -> A
+  = \m : Nat . \n : Nat . \A . \s : A -> A . m A (n A s) ;
+if_zero
+  : Nat -> Nat -> Nat -> forall A . (A -> A) -> A -> A
+  = \m : Nat . \n : Nat . \o : Nat . \A . \s : A -> A . \z : A . m A (\x : A . o A s z) (n A s z) ;
+succ one
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s z) ;
+add one zero
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s z ;
+add one two
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s (s z)) ;
+mul two two
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s (s (s z))) ;
+mul two zero
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . z ;
+mul two (mul two two)
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
+if_zero zero one two
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s z ;
+if_zero one one two
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s z) ;
+if_zero two one two
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s z) ;
+if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s (s (s (s z))) ;
+pair Nat Nat zero one
+  : forall C . ((forall A . (A -> A) -> A -> A) -> (forall A . (A -> A) -> A -> A) -> C) -> C
+  = \A . \p : Nat -> Nat -> A . p (\B . \s : B -> B . \z : B . z) (\C . \s : C -> C . \z : C . s z) ;
+fst Nat Nat (pair Nat Nat zero one)
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . z ;
+snd Nat Nat (pair Nat Nat zero one)
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s z ;
+pair Nat forall A . A -> A zero (\A . \x : A . x)
+  : forall C . ((forall A . (A -> A) -> A -> A) -> (forall A . A -> A) -> C) -> C
+  = \A . \p : Nat -> (forall B . B -> B) -> A . p (\C . \s : C -> C . \z : C . z) (\D . \x : D . x) ;
+fst Nat forall A . A -> A (pair Nat forall A . A -> A zero (\A . \x : A . x))
+  : forall A . (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . z ;
+snd Nat forall A . A -> A (pair Nat forall A . A -> A zero (\A . \x : A . x))
+  : forall A . A -> A
+  = \A . \x : A . x ;

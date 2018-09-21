@@ -1,0 +1,21 @@
+(jbuild_version 1)
+
+(executable
+  ((name test)
+    (libraries (oUnit records_and_variants))
+    (flags (-w +A-4 -warn-error +A-4))))
+
+(rule (
+  (targets (cases))
+  (action (run
+    cp -r
+      ${ROOT}/../../explicitly_typed/records_and_variants/exe/test/cases/
+      .))))
+
+(alias
+  ((name runtest)
+   (deps (test.exe ../repl/repl.exe cases))
+   (action (run
+    ${exe:test.exe}
+      -repl-exe ${exe:../repl/repl.exe}
+      -case-dir ./cases/))))

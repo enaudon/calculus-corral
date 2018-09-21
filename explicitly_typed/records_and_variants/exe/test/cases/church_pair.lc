@@ -1,0 +1,26 @@
+pair = \A . \B . \f : A . \s : B . \C . \p : A -> B -> C . p f s ;
+
+fst =
+  \A . \B . \p : forall C . (A -> B -> C) -> C .
+    p A (\f : A . \s : B . f) ;
+
+snd =
+  \A . \B . \p : forall C . (A -> B -> C) -> C .
+    p B (\f : A . \s : B . s) ;
+
+p =
+  pair
+    (forall A . A -> A)
+    (forall A . A -> A -> A)
+    (\A . \x : A . x)
+    (\A . \x : A . \y : A . x) ;
+
+fst
+  (forall A . A -> A)
+  (forall A . A -> A -> A)
+  p ;
+
+snd
+  (forall A . A -> A)
+  (forall A . A -> A -> A)
+  p ;

@@ -1,0 +1,78 @@
+Bool
+  : *
+  = forall A . A -> A -> A ;
+fls
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . f ;
+tru
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . t ;
+not
+  : Bool -> forall A . A -> A -> A
+  = \p : Bool . p Bool (\A . \t : A . \f : A . f) (\B . \t : B . \f : B . t) ;
+and
+  : Bool -> Bool -> forall A . A -> A -> A
+  = \p : Bool . \q : Bool . p Bool q (\A . \t : A . \f : A . f) ;
+or
+  : Bool -> Bool -> forall A . A -> A -> A
+  = \p : Bool . \q : Bool . p Bool (\A . \t : A . \f : A . t) q ;
+if
+  : forall A . Bool -> A -> A -> A
+  = \A . \p : Bool . \t : A . \e : A . p A t e ;
+not fls
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . t ;
+not tru
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . f ;
+and fls fls
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . f ;
+and fls tru
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . f ;
+and tru fls
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . f ;
+and tru tru
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . t ;
+or fls fls
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . f ;
+or fls tru
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . t ;
+or tru fls
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . t ;
+or tru tru
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . t ;
+if Bool fls fls tru
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . t ;
+if Bool tru fls tru
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . f ;
+if forall A . A -> A fls (\A . \x : A . x) (\B . \y : B . y)
+  : forall A . A -> A
+  = \A . \y : A . y ;
+pair Bool Bool fls tru
+  : forall C . ((forall A . A -> A -> A) -> (forall A . A -> A -> A) -> C) -> C
+  = \A . \p : Bool -> Bool -> A . p (\B . \t : B . \f : B . f) (\C . \t : C . \f : C . t) ;
+fst Bool Bool (pair Bool Bool fls tru)
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . f ;
+snd Bool Bool (pair Bool Bool fls tru)
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . t ;
+pair Bool forall A . A -> A fls (\A . \x : A . x)
+  : forall C . ((forall A . A -> A -> A) -> (forall A . A -> A) -> C) -> C
+  = \A . \p : Bool -> (forall B . B -> B) -> A . p (\C . \t : C . \f : C . f) (\D . \x : D . x) ;
+fst Bool forall A . A -> A (pair Bool forall A . A -> A fls (\A . \x : A . x))
+  : forall A . A -> A -> A
+  = \A . \t : A . \f : A . f ;
+snd Bool forall A . A -> A (pair Bool forall A . A -> A fls (\A . \x : A . x))
+  : forall A . A -> A
+  = \A . \x : A . x ;
