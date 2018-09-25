@@ -21,7 +21,7 @@ module Type = struct
 
   let var id = var @@ Id.of_string id
 
-  let forall quants body = forall (Id.of_string quants) body
+  let forall quant body = forall (Id.of_string quant) body
 
 end
 
@@ -100,8 +100,8 @@ term :
 
 comp_term :
   | atom_term                     { $1 }
-  | comp_term atom_term           { Term.app $1 $2 }
   | comp_term atom_typo           { Term.tp_app $1 $2 }
+  | comp_term atom_term           { Term.app $1 $2 }
 
 atom_term :
   | O_PAREN term C_PAREN          { $2 }

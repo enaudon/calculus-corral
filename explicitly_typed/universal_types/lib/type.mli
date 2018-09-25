@@ -50,6 +50,13 @@ val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
 (** {1 Utilities} *)
 
 (**
+  [check env tp] verifies that [tp] is well-formed under [env].  In the
+  absence of kinding, this just means checking that all variables are
+  bound.
+ *)
+val check : Identifier.Set.t -> t -> unit
+
+(**
   [alpha_equivalent ~beta_env ~env tp1 tp2] determines whether [tp1] and
   [tp2] are equivalent up to renaming of variables.  The optional
   argument, [env], specifies the renaming between bound variables, while

@@ -8,6 +8,11 @@ type t =
 
 (* Internal utilities *)
 
+let error : string -> string -> 'a = fun fn_name msg ->
+  failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
+
+(* Constructors *)
+
 let var id = Variable id
 
 let base_id = "*"
@@ -48,6 +53,17 @@ let rec beta_reduce ?deep env tp =
         tp
 
 (* Utilities *)
+
+let rec check env tp = match tp with
+  | Variable id ->
+    if not @@ Id.Set.mem id env && id <> Id.of_string base_id then
+      error "check" @@
+        Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
+  | Function (arg, res) ->
+    check env arg;
+    check env res
+  | Existential (quant, body) ->
+    check (Id.Set.add quant env) body
 
 let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env=[]) tp1 tp2 =
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with

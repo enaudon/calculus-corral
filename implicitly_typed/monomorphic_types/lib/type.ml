@@ -12,7 +12,7 @@ exception Occurs of Id.t * t
 let raise_occurs : Id.t -> t -> 'a = fun id tp ->
   raise @@ Occurs (id, tp)
 
-(* Internal constructors *)
+(* Constructors *)
 
 let var id = Variable id
 

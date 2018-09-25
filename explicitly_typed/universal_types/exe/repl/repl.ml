@@ -1,3 +1,4 @@
+module Id = Identifier
 module Misc = Miscellaneous
 
 module Repl = Language.Repl (struct
@@ -19,7 +20,9 @@ module Repl = Language.Repl (struct
 
     let default_env = Identifier.Map.empty
 
-    let to_kind _ _ = Kind.Base
+    let to_kind env tp =
+      check (Id.Set.of_list @@ Id.Map.keys env) tp;
+      Kind.Base
 
   end
 
@@ -27,7 +30,8 @@ module Repl = Language.Repl (struct
 
     include Universal_types.Term
 
-    let to_type env tm = to_type (snd env) tm
+    let to_type (kn_env, tp_env) tm =
+      to_type (Id.Set.of_list @@ Id.Map.keys kn_env, tp_env) tm
 
     let to_value ?deep env tm =
       simplify @@ beta_reduce ?deep (Misc.fst_of_3 env) tm

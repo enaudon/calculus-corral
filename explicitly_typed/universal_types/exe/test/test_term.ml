@@ -8,7 +8,7 @@ module Type = struct
 
   let var id = var @@ Id.of_string id
 
-  let forall quants body = forall (Id.of_string quants) body
+  let forall quant body = forall (Id.of_string quant) body
 
 end
 

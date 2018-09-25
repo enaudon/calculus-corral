@@ -1,3 +1,4 @@
+module Id = Identifier
 module Misc = Miscellaneous
 
 module Repl = Language.Repl (struct
@@ -19,7 +20,9 @@ module Repl = Language.Repl (struct
 
     let default_env = Identifier.Map.empty
 
-    let to_kind _ _ = Kind.Base
+    let to_kind env tp =
+      check (Id.Set.of_list @@ Id.Map.keys env) tp;
+      Kind.Base
 
   end
 

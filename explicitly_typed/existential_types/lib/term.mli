@@ -40,7 +40,8 @@ val unpack :
 (** {1 Typing} *)
 
 (** [to_type env tm] computes the type of [tm] under [env]. *)
-val to_type : Type.t Identifier.Map.t -> t -> Type.t
+val to_type :
+  (Identifier.Set.t * Type.t Identifier.Map.t) -> t -> Type.t
 
 (** {1 Transformations} *)
 
