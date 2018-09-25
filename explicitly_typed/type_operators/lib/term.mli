@@ -25,6 +25,24 @@ val app : ?loc : Location.t -> t -> t -> t
 (** [app' fn arg] constructs the application of [fn] to [args]. *)
 val app' : ?loc : Location.t -> t -> t list -> t
 
+(**
+  [tp_abs arg kn body] constructs the abstraction of [arg] of kind [kn]
+  from [body].
+ *)
+val tp_abs : ?loc : Location.t -> Identifier.t -> Kind.t -> t -> t
+
+(**
+  [tp_abs' args kn body] constructs the abstraction of [args] from [body].
+ *)
+val tp_abs' :
+  ?loc : Location.t -> (Identifier.t * Kind.t) list -> t -> t
+
+(** [tp_app fn arg] constructs the application of [fn] to [arg]. *)
+val tp_app : ?loc : Location.t -> t -> Type.t -> t
+
+(** [tp_app' fn arg] constructs the application of [fn] to [args]. *)
+val tp_app' : ?loc : Location.t -> t -> Type.t list -> t
+
 (** {1 Typing} *)
 
 (** [to_type env tm] computes the type of [tm] under [env]. *)
@@ -49,6 +67,12 @@ val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
   equivalent up to renaming of variables.
  *)
 val alpha_equivalent : t -> t -> bool
+
+(**
+  [simplify tm] replaces each type variable in [tm] with the
+  lexicographically lowest unused variable.
+ *)
+val simplify : t -> t
 
 (** [to_string tm] computes a string representation of [tm]. *)
 val to_string : t -> string

@@ -1,21 +1,61 @@
-Bool = * -> * -> * ;
+Bool = forall A :: * . A -> A -> A ;
 
-fls = \t : * . \f : * . f ;
+fls = \A :: * . \t : A . \f : A . f ;
 
-tru = \t : * . \f : * . t ;
+tru = \A :: * . \t : A . \f : A . t ;
 
-if = \p : Bool . \t : * . \e : * . p t e ;
+not = \p : Bool . p Bool fls tru ;
 
-BoolPair = Pair Bool Bool Bool ;
+and = \p : Bool . \q : Bool . p Bool q fls ;
 
-pair = \f : Bool . \s : Bool . \p : Bool -> Bool -> Bool . p f s ;
+or = \p : Bool . \q : Bool . p  Bool tru q ;
 
-fst = \p : BoolPair . p (\f : Bool . \s : Bool . f) ;
+if = \A :: * . \p : Bool . \t : A . \e : A . p A t e ;
 
-snd = \p : BoolPair . p (\f : Bool . \s : Bool . s) ;
+not fls ;
 
-pair fls tru ;
+not tru ;
 
-fst (pair fls tru) ;
+and fls fls ;
 
-snd (pair fls tru) ;
+and fls tru ;
+
+and tru fls ;
+
+and tru tru ;
+
+or fls fls ;
+
+or fls tru ;
+
+or tru fls ;
+
+or tru tru ;
+
+if Bool fls fls tru ;
+
+if Bool tru fls tru ;
+
+if
+  (forall A :: * . A -> A)
+  fls
+  (\A :: * . \x : A . x)
+  (\B :: * . \y : B . y) ;
+
+pair Bool Bool fls tru ;
+
+fst Bool Bool (pair Bool Bool fls tru) ;
+
+snd Bool Bool (pair Bool Bool fls tru) ;
+
+pair Bool (forall A :: * . A -> A) fls (\A :: * . \x : A . x) ;
+
+fst
+  Bool
+  (forall A :: * . A -> A)
+  (pair Bool (forall A :: * . A -> A) fls (\A :: * . \x : A . x)) ;
+
+snd
+  Bool
+  (forall A :: * . A -> A)
+  (pair Bool (forall A :: * . A -> A) fls (\A :: * . \x : A . x)) ;

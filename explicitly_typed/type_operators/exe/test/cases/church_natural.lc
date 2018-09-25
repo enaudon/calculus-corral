@@ -1,26 +1,29 @@
-Nat = (* -> *) -> * -> * ;
+Nat = forall A :: * . (A -> A) -> A -> A ;
 
-zero = \s : * -> * . \z : * . z ;
+zero = \A :: * . \s : A -> A . \z : A . z ;
 
-one = \s : * -> * . \z : * . s z ;
+one = \A :: * . \s : A -> A . \z : A . s z ;
 
-two = \s : * -> * . \z : * . s (s z) ;
+two = \A :: * . \s : A -> A . \z : A . s (s z) ;
 
-three = \s : * -> * . \z : * . s (s (s z)) ;
+three = \A :: * . \s : A -> A . \z : A . s (s (s z)) ;
 
-four = \s : * -> * . \z : * . s (s (s (s z))) ;
+four = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;
 
-eight = \s : * -> * . \z : * . s (s (s (s (s (s (s (s z))))))) ;
+eight =
+  \A :: * . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
 
-succ = \n : Nat . \s : * -> * . \z : * . s (n s z) ;
+succ = \n : Nat . \A :: * . \s : A -> A . \z : A . s (n A s z) ;
 
-add = \m : Nat . \n : Nat . \s : * -> * . \z : * . m s (n s z) ;
+add =
+  \m : Nat . \n : Nat . \A :: * . \s : A -> A . \z : A .
+    m A s (n A s z) ;
 
-mul = \m : Nat . \n : Nat . \s : * -> * . m (n s) ;
+mul = \m : Nat . \n : Nat . \A :: * . \s : A -> A . m A (n A s) ;
 
 if_zero =
-  \m : Nat . \n : Nat . \o : Nat . \s : * -> * . \z : * .
-    m (\x : * . o s z) (n s z) ;
+  \m : Nat . \n : Nat . \o : Nat . \A :: * . \s : A -> A . \z : A .
+    m A (\x : A . o A s z) (n A s z) ;
 
 succ one;
 
@@ -45,16 +48,20 @@ if_zero
   (mul eight two)
   (add one (add two one)) ;
 
-NatPair = Pair Nat Nat Nat ;
+pair Nat Nat zero one ;
 
-pair = \m : Nat . \n : Nat . \p : Nat -> Nat -> Nat . p m n ;
+fst Nat Nat (pair Nat Nat zero one) ;
 
-fst = \p : NatPair .  p (\m : Nat . \n : Nat . m) ;
+snd Nat Nat (pair Nat Nat zero one) ;
 
-snd = \p : NatPair .  p (\m : Nat . \n : Nat . n) ;
+pair Nat (forall A :: * . A -> A) zero (\A :: * . \x : A . x) ;
 
-pair zero one ;
+fst
+  Nat
+  (forall A :: * . A -> A)
+  (pair Nat (forall A :: * . A -> A) zero (\A :: * . \x : A . x)) ;
 
-fst (pair zero one) ;
-
-snd (pair zero one) ;
+snd
+  Nat
+  (forall A :: * . A -> A)
+  (pair Nat (forall A :: * . A -> A) zero (\A :: * . \x : A . x)) ;

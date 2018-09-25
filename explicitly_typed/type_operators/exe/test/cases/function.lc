@@ -1,9 +1,35 @@
-id = \x : * . x ;
+id = \A :: * . \x : A . x ;
 
-app = \f : * -> * . \x : * . f x ;
+app = \A :: * . \B :: * . \f : A -> B . \x : A . f x ;
 
-rev_app = \x : * . \f : * -> * . f x ;
+rev_app = \A :: * . \B :: * . \x : A . \f : A -> B . f x ;
 
-compose = \f : * -> * . \g : * -> * . \x : * . f (g x) ;
+compose =
+  \A :: * . \B :: * . \C :: * . \f : A -> B . \g : C -> A . \x : C .
+    f (g x) ;
 
-arg_swap = \f : * -> * -> * . \x : * . \y : * . f y x ;
+arg_swap =
+  \A :: * . \B :: * . \C :: * . \f : A -> B -> C . \x : B . \y : A .
+    f y x ;
+
+rev_app' = \A :: * . \B :: *. arg_swap (A -> B) A B (app A B) ;
+
+id (forall A :: * . A -> A) id ;
+
+app
+  (forall A :: * . A -> A)
+  (forall A :: * . A -> A)
+  (id  (forall A :: * . A -> A))
+  id ;
+
+rev_app
+  (forall A :: * . A -> A)
+  (forall A :: * . A -> A)
+  id
+  (id  (forall A :: * . A -> A)) ;
+
+rev_app'
+  (forall A :: * . A -> A)
+  (forall A :: * . A -> A)
+  id
+  (id  (forall A :: * . A -> A)) ;

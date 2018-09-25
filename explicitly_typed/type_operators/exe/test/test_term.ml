@@ -2,7 +2,17 @@ module Id = Identifier
 
 open OUnit
 
-module Type = Type_operators.Type
+module Kind = Type_operators.Kind 
+
+module Type = struct
+
+  include Type_operators.Type
+
+  let var id = var @@ Id.of_string id
+
+  let forall quant kn body = forall (Id.of_string quant) kn body
+
+end
 
 module Term = struct
 
@@ -13,6 +23,10 @@ module Term = struct
   let abs arg tp body = abs (Id.of_string arg) tp body
 
   let app fn arg = app fn arg
+
+  let tp_abs arg body = tp_abs (Id.of_string arg) body
+
+  let tp_app fn arg = tp_app fn arg
 
 end
 
@@ -51,9 +65,15 @@ let assert_alpha_equivalent tm1 tm2 exp =
 
 (* Utility functions *)
 
-let id v = Term.abs v Type.base @@ Term.var v
+let a = Type.var "A"
 
-let id_fn v = Term.abs v (Type.func Type.base Type.base) (Term.var v)
+let b = Type.var "B"
+
+let id_tp = Type.forall "A" Kind.base (Type.func a a)
+
+let id v = Term.tp_abs "A" Kind.base (Term.abs v a @@ Term.var v)
+
+let id_fn v = Term.tp_app (id v) id_tp
 
 let alpha_equivalent_tests = "alpha_equivalent", [
 
@@ -83,13 +103,28 @@ let alpha_equivalent_tests = "alpha_equivalent", [
   ( "id_fn <> id", fun _ ->
     assert_alpha_equivalent (id_fn "x") (id "x") false ) ;
 
-  ( "\\y : * . x = \\y : * . x", fun _ ->
-    let tm = Term.abs "y" Type.base @@ Term.var "x" in
+  ( "\\A . \\y : A . x = \\A . \\y : A . x", fun _ ->
+    let tm =
+      Term.tp_abs "A" Kind.base (Term.abs "y" a @@ Term.var "x")
+    in
     assert_alpha_equivalent tm tm true ) ;
 
-  ( "\\y : * . x <> \\x : * . x", fun _ ->
-    let tm1 = Term.abs "y" Type.base @@ Term.var "x" in
-    let tm2 = Term.abs "x" Type.base @@ Term.var "x" in
+  ( "\\A . \\y : A . x <> \\A . \\x : A . x", fun _ ->
+    let tm1 =
+      Term.tp_abs "A" Kind.base (Term.abs "y" a @@ Term.var "x")
+    in
+    let tm2 =
+      Term.tp_abs "A" Kind.base (Term.abs "x" a @@ Term.var "x")
+    in
+    assert_alpha_equivalent tm1 tm2 false ) ;
+
+  ( "\\A . \\y : B . y = \\A . \\y : A . x", fun _ ->
+    let tm1 =
+      Term.tp_abs "A" Kind.base (Term.abs "y" b @@ Term.var "y")
+    in
+    let tm2 =
+      Term.tp_abs "A" Kind.base (Term.abs "x" a @@ Term.var "x")
+    in
     assert_alpha_equivalent tm1 tm2 false ) ;
 
 ]
@@ -109,11 +144,14 @@ let beta_reduce_tests = "beta_reduce", [
     let redux = Term.app (id_fn "x") tm in
     assert_beta_reduce redux tm tm ) ;
 
-  ( "\\x : * . id_fn id", fun _ ->
+  ( "\\A . \\x : A . id_fn id", fun _ ->
     let redux =
-      Term.abs "x" Type.base @@ Term.app (id_fn "x") (id "x")
+      Term.tp_abs "A" Kind.base
+        (Term.abs "x" a @@ Term.app (id_fn "x") (id "x"))
     in
-    let exp_deep = Term.abs "x" Type.base @@ id "x" in
+    let exp_deep =
+      Term.tp_abs "A" Kind.base (Term.abs "x" a @@ id "x")
+    in
     assert_beta_reduce redux redux exp_deep ) ;
 
 ]

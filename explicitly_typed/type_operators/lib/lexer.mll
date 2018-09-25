@@ -42,6 +42,7 @@ rule prog = parse
   | "="                               { Parser.EQ }
   | "("                               { Parser.O_PAREN }
   | ")"                               { Parser.C_PAREN }
+  | "forall"                          { Parser.FOR_ALL }
   | lower_id as id                    { Parser.LOWER_ID id }
   | upper_id as id                    { Parser.UPPER_ID id }
   | eof                               { Parser.EOF }

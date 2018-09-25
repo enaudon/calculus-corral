@@ -1,46 +1,28 @@
 module Id = Identifier
+module Misc = Miscellaneous
 
 type t =
   | Variable of Id.t
   | Abstraction of Id.t * Kind.t * t
   | Application of t * t
+  | Universal of Id.t * Kind.t * t
 
 (* Internal utilities *)
 
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
-(* Constructors *)
+let func_id = "->"
 
 let var : Id.t -> t = fun id -> Variable id
-
-let base_id = "*"
-
-let base = var @@ Id.of_string base_id
 
 let abs : Id.t -> Kind.t -> t -> t =
   fun arg kn body -> Abstraction (arg, kn, body)
 
-let abs' args body =
-  List.fold_right (fun (arg, kn) body -> abs arg kn body) args body
-
 let app : t -> t -> t = fun fn arg -> Application (fn, arg)
 
-let app' fn args = List.fold_left app fn args
-
-let func_id = "->"
-
-let func arg res = app' (var @@ Id.of_string func_id) [arg; res]
-
-let func' args res = List.fold_right func args res
-
-(* Destructors *)
-
-let get_func tp = match tp with
-  | Application (Application (Variable id, arg), res)
-      when Id.to_string id = func_id ->
-    arg, res
-  | _ -> invalid_arg "Type.get_func: expected function"
+let forall : Id.t -> Kind.t -> t -> t = fun quant kn body ->
+  Universal (quant, kn, body)
 
 (* Kinding *)
 
@@ -48,7 +30,6 @@ let default_env =
   let base = Kind.base in
   let func' = Kind.func' in
   Id.Map.empty |>
-    Id.Map.add (Id.of_string base_id) base |>
     Id.Map.add (Id.of_string func_id) (func' [base; base] base)
 
 let rec to_kind env tp = match tp with
@@ -58,12 +39,12 @@ let rec to_kind env tp = match tp with
         error "to_kind" @@
           Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
     end
-  | Abstraction (arg, arg_tp, body) ->
-    let body_tp = to_kind (Id.Map.add arg arg_tp env) body in
-    Kind.func arg_tp body_tp
+  | Abstraction (arg, arg_kn, body) ->
+    let body_kn = to_kind (Id.Map.add arg arg_kn env) body in
+    Kind.func arg_kn body_kn
   | Application (fn, arg) ->
     let fn' = to_kind env fn in
-    let fml_arg_tp, res_tp =
+    let fml_arg_kn, res_kn =
       try
         Kind.get_func fn'
       with Invalid_argument _ ->
@@ -72,23 +53,31 @@ let rec to_kind env tp = match tp with
             "expected function kind; found '%s'"
             (Kind.to_string fn')
     in
-    let act_arg_tp = to_kind env arg in
-    if Kind.alpha_equivalent act_arg_tp fml_arg_tp then
-      res_tp
+    let act_arg_kn = to_kind env arg in
+    if Kind.alpha_equivalent act_arg_kn fml_arg_kn then
+      res_kn
     else
         error "to_kind" @@
           Printf.sprintf
             "expected kind '%s'; found kind '%s'"
-              (Kind.to_string fml_arg_tp)
-              (Kind.to_string act_arg_tp)
+              (Kind.to_string fml_arg_kn)
+              (Kind.to_string act_arg_kn)
+  | Universal (quant, kn, body) ->
+    to_kind (Id.Map.add quant kn env) body
 
 (* Transformations *)
 
+(* TODO: Think, is [default_env] safe here? *)
 let free_vars : t -> Id.Set.t =
   let rec free_vars fvs tp = match tp with
-    | Variable id -> Id.Set.add id fvs
-    | Abstraction (arg, _, body) -> Id.Set.del arg @@ free_vars fvs body
-    | Application (fn, arg) -> free_vars (free_vars fvs fn) arg
+    | Variable id ->
+      Id.Set.add id fvs
+    | Abstraction (arg, _, body) ->
+      Id.Set.del arg @@ free_vars fvs body
+    | Application (fn, arg) ->
+      free_vars (free_vars fvs fn) arg
+    | Universal (quant, _, body) ->
+      Id.Set.del quant @@ free_vars fvs body
   in
   free_vars Id.Set.empty
 
@@ -99,46 +88,54 @@ let free_vars : t -> Id.Set.t =
   Barendregt convention--i.e. the names of bound variable are chosen
   distinct from those of free variables.
  *)
-let subst : t -> Id.t -> t -> t = fun tp id tp' ->
-  let rec subst fvs sub tp = match tp with
-    | Variable id ->
-      Id.Map.find_default tp id sub
-    | Abstraction (arg, kn, body) when Id.Set.mem arg fvs ->
-      let arg' = Id.fresh_upper () in
-      let sub' = Id.Map.add arg (var arg') sub in
-      abs arg' kn @@ subst (Id.Set.add arg' fvs) sub' body
-    | Abstraction (arg, kn, body) ->
-      abs arg kn @@
-        subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
-    | Application (fn, arg) ->
-      app (subst fvs sub fn) (subst fvs sub arg)
-  in
-  subst (free_vars tp') (Id.Map.singleton id tp') tp
+let rec subst fvs sub tp = match tp with
+  | Variable id ->
+    Id.Map.find_default tp id sub
+  | Abstraction (arg, kn, body) when Id.Set.mem arg fvs ->
+    let arg' = Id.fresh_upper () in
+    let sub' = Id.Map.add arg (var arg') sub in
+    abs arg' kn @@ subst (Id.Set.add arg' fvs) sub' body
+  | Abstraction (arg, kn, body) ->
+    abs arg kn @@
+      subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
+  | Application (fn, arg) ->
+    app (subst fvs sub fn) (subst fvs sub arg)
+  | Universal (quant, kn, body) when Id.Set.mem quant fvs ->
+    let quant' = Id.fresh_upper () in
+    let sub' = Id.Map.add quant (var quant') sub in
+    forall quant' kn @@ subst (Id.Set.add quant' fvs) sub' body
+  | Universal (quant, kn, body) ->
+    forall quant kn @@
+      subst (Id.Set.add quant fvs) (Id.Map.del quant sub) body
 
-let rec beta_reduce ?deep env tp =
-  let beta_reduce = beta_reduce ?deep env in
-  match tp with
-    | Variable id ->
-      Id.Map.find_default tp id env
-    | Abstraction (arg, kn, body) ->
-      if deep <> None then
-        abs arg kn @@ beta_reduce body
-      else
-        tp
-    | Application (fn, act_arg) ->
-      let fn' = beta_reduce fn in
-      let act_arg' = beta_reduce act_arg in
-      begin match fn' with
-        | Abstraction (fml_arg, _, body) ->
-          let body' = subst body fml_arg act_arg' in
-          beta_reduce body'
-        | _ ->
-          app fn' act_arg'
-      end
+let rec beta_reduce ?deep env tp = match tp with
+  | Variable id ->
+    Id.Map.find_default tp id env
+  | Abstraction (arg, kn, body) ->
+    if deep <> None then
+      abs arg kn @@ beta_reduce env body
+    else
+      tp
+  | Application (fn, act_arg) ->
+    let fn' = beta_reduce env fn in
+    let act_arg' = beta_reduce env act_arg in
+    begin match fn' with
+      | Abstraction (fml_arg, _, body) ->
+        let sub = Id.Map.singleton fml_arg act_arg' in
+        let body' = subst (free_vars act_arg') sub body in
+        beta_reduce env body'
+      | _ ->
+        app fn' act_arg'
+    end
+  | Universal (quant, kn, body) ->
+    if deep <> None then
+      forall quant kn @@ beta_reduce (Id.Map.del quant env) body
+    else
+      tp
 
 (* Utilities *)
 
-let alpha_equivalent ?(beta_env = Id.Map.empty) tp1 tp2 =
+let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env = []) tp1 tp2 =
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
     | Variable id1, Variable id2 ->
       Id.alpha_equivalent env id1 id2
@@ -147,19 +144,54 @@ let alpha_equivalent ?(beta_env = Id.Map.empty) tp1 tp2 =
         alpha_equiv ((arg1, arg2) :: env) body1 body2
     | Application (fn1, arg1), Application (fn2, arg2) ->
       alpha_equiv env fn1 fn2 && alpha_equiv env arg1 arg2
+    | Universal (quant1, kn1, body1), Universal (quant2, kn2, body2) ->
+      Kind.alpha_equivalent kn1 kn2 &&
+        alpha_equiv ((quant1, quant2) :: env) body1 body2
     | _ ->
       false
   in
   alpha_equiv
-    []
+    env
     (beta_reduce ~deep:() beta_env tp1)
     (beta_reduce ~deep:() beta_env tp2)
+
+let simplify ?ctx:ctx_opt tp =
+
+  let fresh, env = match ctx_opt with
+    | None ->
+      let cntr = ref (-1) in
+      let fresh () =
+        incr cntr;
+        Id.of_string @@ Misc.int_to_upper !cntr
+      in
+      fresh, Id.Map.empty
+    | Some ctx_opt ->
+      ctx_opt
+  in
+
+  let rec simplify env tp = match tp with
+    | Variable id ->
+      Id.Map.find_default tp id env
+    | Abstraction (arg, kn, body) ->
+      let arg' = fresh () in
+      abs arg' kn @@ simplify (Id.Map.add arg (var arg') env) body
+    | Application (fn, arg) ->
+      let fn' = simplify env fn in
+      let arg' = simplify env arg in
+      app fn' arg'
+    | Universal (quant, kn, body) ->
+      let quant' = fresh () in
+      forall quant' kn @@
+        simplify (Id.Map.add quant (var quant') env) body
+  in
+
+  simplify env tp
 
 let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
   let arg_to_string tp = match tp with
     | Variable _ -> to_string tp
-    | Abstraction _ | Application _ -> to_paren_string tp
+    | Abstraction _ | Application _ | Universal _ -> to_paren_string tp
   in
   match tp with
     | Variable id ->
@@ -178,6 +210,47 @@ let rec to_string tp =
     | Application (fn, arg) ->
       let fn_to_string tp = match tp with
         | Variable _ | Application _ -> to_string tp
-        | Abstraction _ -> to_paren_string tp
+        | Abstraction _ | Universal _ -> to_paren_string tp
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
+    | Universal (quant, kn, body) ->
+      Printf.sprintf "forall %s :: %s . %s"
+        (Id.to_string quant)
+        (Kind.to_string kn)
+        (to_string body)
+
+(* Constructors *)
+
+let abs' args body =
+  List.fold_right (fun (arg, kn) body -> abs arg kn body) args body
+
+let app' fn args = List.fold_left app fn args
+
+let func arg res = app' (var @@ Id.of_string func_id) [arg; res]
+
+let func' args res = List.fold_right func args res
+
+let forall' quants body =
+  let forall (quant, kn) body = forall quant kn body in
+  List.fold_right forall quants body
+
+(* Destructors *)
+
+let get_func tp = match tp with
+  | Application (Application (Variable id, arg), res)
+      when Id.to_string id = func_id ->
+    arg, res
+  | _ -> invalid_arg "Type.get_func: expected function"
+
+let get_forall tp = match tp with
+  | Universal (quant, kn, body) -> quant, kn, body
+  | _ -> invalid_arg "Type.get_forall: expected universal"
+
+let get_forall' tp =
+  let rec get_forall acc tp = match tp with
+    | Universal (quant, kn, body) ->
+      get_forall ((quant, kn) :: acc) body
+    | _ ->
+      acc, tp
+  in
+  get_forall [] tp

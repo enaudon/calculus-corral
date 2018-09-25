@@ -23,6 +23,8 @@ module Type = struct
 
   let abs arg kn body = abs (Id.of_string arg) kn body
 
+  let forall quant kn body = forall (Id.of_string quant) kn body
+
 end
 
 module Term = struct
@@ -35,6 +37,10 @@ module Term = struct
 
   let app fn arg = app ~loc:(get_loc ()) fn arg
 
+  let tp_abs arg body = tp_abs ~loc:(get_loc ()) (Id.of_string arg) body
+
+  let tp_app fn arg = tp_app ~loc:(get_loc ()) fn arg
+
 end
 
 %}
@@ -42,6 +48,9 @@ end
 /* Literals and identifiers */
 %token <string> LOWER_ID
 %token <string> UPPER_ID
+
+/* Keywords */
+%token FOR_ALL
 
 /* Symbols */
 %token ASTERIKS
@@ -89,6 +98,7 @@ atom_kind :
 typo :
   | arrow_typo                    { $1 }
   | B_SLASH UPPER_ID COL_COL kind PERIOD typo   { Type.abs $2 $4 $6 }
+  | FOR_ALL UPPER_ID COL_COL kind PERIOD typo   { Type.forall $2 $4 $6 }
 
 arrow_typo :
   | app_typo                      { $1 }
@@ -100,19 +110,20 @@ app_typo :
 
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
-  | O_PAREN typo error            { error "closed parenthesis" }
-  | ASTERIKS                      { Type.base }
+  | O_PAREN typo error            { error "unclosed parenthesis" }
   | UPPER_ID                      { Type.var $1 }
 
 term :
   | comp_term                     { $1 }
+  | B_SLASH UPPER_ID COL_COL kind PERIOD term   { Term.tp_abs $2 $4 $6 }
   | B_SLASH LOWER_ID COLON typo PERIOD term   { Term.abs $2 $4 $6 }
 
 comp_term :
   | atom_term                     { $1 }
+  | comp_term atom_typo           { Term.tp_app $1 $2 }
   | comp_term atom_term           { Term.app $1 $2 }
 
 atom_term :
   | O_PAREN term C_PAREN          { $2 }
-  | O_PAREN term error            { error "closed parenthesis" }
+  | O_PAREN term error            { error "unclosed parenthesis" }
   | LOWER_ID                      { Term.var $1 }
