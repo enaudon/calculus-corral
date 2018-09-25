@@ -17,8 +17,8 @@ or
   : Bool -> Bool -> Bool
   = \p : Bool . \q : Bool . case p [True _ -> [True {} : Bool]; False _ -> q] ;
 if
-  : forall A . Bool -> A -> A -> A
-  = \A . \p : Bool . \t : A . \e : A . case p [True _ -> t; False _ -> e] ;
+  : forall A :: * . Bool -> A -> A -> A
+  = \A :: * . \p : Bool . \t : A . \e : A . case p [True _ -> t; False _ -> e] ;
 not fls
   : [False : {}; True : {}]
   = [True {} : Bool] ;
@@ -55,9 +55,9 @@ if Bool fls fls tru
 if Bool tru fls tru
   : [False : {}; True : {}]
   = [False {} : Bool] ;
-if forall A . A -> A fls (\A . \x : A . x) (\B . \y : B . y)
-  : forall A . A -> A
-  = \A . \y : A . y ;
+if forall A :: * . A -> A fls (\A :: * . \x : A . x) (\B :: * . \y : B . y)
+  : forall A :: * . A -> A
+  = \A :: * . \y : A . y ;
 pair Bool Bool fls tru
   : {fst : [False : {}; True : {}]; snd : [False : {}; True : {}]}
   = {fst : [False {} : Bool]; snd : [True {} : Bool]} ;
@@ -67,12 +67,12 @@ fst Bool Bool (pair Bool Bool fls tru)
 snd Bool Bool (pair Bool Bool fls tru)
   : [False : {}; True : {}]
   = [True {} : Bool] ;
-pair Bool forall A . A -> A fls (\A . \x : A . x)
-  : {fst : [False : {}; True : {}]; snd : forall A . A -> A}
-  = {fst : [False {} : Bool]; snd : \A . \x : A . x} ;
-fst Bool forall A . A -> A (pair Bool forall A . A -> A fls (\A . \x : A . x))
+pair Bool forall A :: * . A -> A fls (\A :: * . \x : A . x)
+  : {fst : [False : {}; True : {}]; snd : forall A :: * . A -> A}
+  = {fst : [False {} : Bool]; snd : \A :: * . \x : A . x} ;
+fst Bool forall A :: * . A -> A (pair Bool forall A :: * . A -> A fls (\A :: * . \x : A . x))
   : [False : {}; True : {}]
   = [False {} : Bool] ;
-snd Bool forall A . A -> A (pair Bool forall A . A -> A fls (\A . \x : A . x))
-  : forall A . A -> A
-  = \A . \x : A . x ;
+snd Bool forall A :: * . A -> A (pair Bool forall A :: * . A -> A fls (\A :: * . \x : A . x))
+  : forall A :: * . A -> A
+  = \A :: * . \x : A . x ;

@@ -5,33 +5,13 @@ module Repl = Language.Repl (struct
 
   module Value = Records_and_variants.Term
 
-  module Kind = struct
+  module Kind = Records_and_variants.Kind
 
-    type t =
-      | Base
-
-    let to_string _ = "*"
-
-  end
-
-  module Type = struct
-
-    include Records_and_variants.Type
-
-    let default_env = Identifier.Map.empty
-
-    let to_kind env tp =
-      check (Id.Set.of_list @@ Id.Map.keys env) tp;
-      Kind.Base
-
-  end
+  module Type = Records_and_variants.Type
 
   module Term = struct
 
     include Records_and_variants.Term
-
-    let to_type (kn_env, tp_env) tm =
-      to_type (Id.Set.of_list @@ Id.Map.keys kn_env, tp_env) tm
 
     let to_value ?deep env tm =
       simplify @@ beta_reduce ?deep (Misc.fst_of_3 env) tm

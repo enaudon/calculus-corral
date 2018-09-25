@@ -2,13 +2,15 @@ module Id = Identifier
 
 open OUnit
 
+module Kind = Records_and_variants.Kind 
+
 module Type = struct
 
   include Records_and_variants.Type
 
   let var id = var @@ Id.of_string id
 
-  let forall quants body = forall (Id.of_string quants) body
+  let forall quant kn body = forall (Id.of_string quant) kn body
 
 end
 
@@ -67,9 +69,9 @@ let a = Type.var "A"
 
 let b = Type.var "B"
 
-let id_tp = Type.forall "A" (Type.func a a)
+let id_tp = Type.forall "A" Kind.base (Type.func a a)
 
-let id v = Term.tp_abs "A" (Term.abs v a @@ Term.var v)
+let id v = Term.tp_abs "A" Kind.base (Term.abs v a @@ Term.var v)
 
 let id_fn v = Term.tp_app (id v) id_tp
 
@@ -102,17 +104,27 @@ let alpha_equivalent_tests = "alpha_equivalent", [
     assert_alpha_equivalent (id_fn "x") (id "x") false ) ;
 
   ( "\\A . \\y : A . x = \\A . \\y : A . x", fun _ ->
-    let tm = Term.tp_abs "A" (Term.abs "y" a @@ Term.var "x") in
+    let tm =
+      Term.tp_abs "A" Kind.base (Term.abs "y" a @@ Term.var "x")
+    in
     assert_alpha_equivalent tm tm true ) ;
 
   ( "\\A . \\y : A . x <> \\A . \\x : A . x", fun _ ->
-    let tm1 = Term.tp_abs "A" (Term.abs "y" a @@ Term.var "x") in
-    let tm2 = Term.tp_abs "A" (Term.abs "x" a @@ Term.var "x") in
+    let tm1 =
+      Term.tp_abs "A" Kind.base (Term.abs "y" a @@ Term.var "x")
+    in
+    let tm2 =
+      Term.tp_abs "A" Kind.base (Term.abs "x" a @@ Term.var "x")
+    in
     assert_alpha_equivalent tm1 tm2 false ) ;
 
   ( "\\A . \\y : B . y = \\A . \\y : A . x", fun _ ->
-    let tm1 = Term.tp_abs "A" (Term.abs "y" b @@ Term.var "y") in
-    let tm2 = Term.tp_abs "A" (Term.abs "x" a @@ Term.var "x") in
+    let tm1 =
+      Term.tp_abs "A" Kind.base (Term.abs "y" b @@ Term.var "y")
+    in
+    let tm2 =
+      Term.tp_abs "A" Kind.base (Term.abs "x" a @@ Term.var "x")
+    in
     assert_alpha_equivalent tm1 tm2 false ) ;
 
 ]
@@ -134,9 +146,12 @@ let beta_reduce_tests = "beta_reduce", [
 
   ( "\\A . \\x : A . id_fn id", fun _ ->
     let redux =
-      Term.tp_abs "A" (Term.abs "x" a @@ Term.app (id_fn "x") (id "x"))
+      Term.tp_abs "A" Kind.base
+        (Term.abs "x" a @@ Term.app (id_fn "x") (id "x"))
     in
-    let exp_deep = Term.tp_abs "A" (Term.abs "x" a @@ id "x") in
+    let exp_deep =
+      Term.tp_abs "A" Kind.base (Term.abs "x" a @@ id "x")
+    in
     assert_beta_reduce redux redux exp_deep ) ;
 
 ]

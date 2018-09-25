@@ -8,17 +8,34 @@ type t
 (** [var id] constructs a type variable identified by [id]. *)
 val var : Identifier.t -> t
 
+(**
+  [abs arg kn body] constructs the abstraction of [arg] of kind [kn]
+  from [body].
+ *)
+val abs : Identifier.t -> Kind.t -> t -> t
+
+(**
+  [abs' args body] constructs the abstraction of [args] from [body].
+ *)
+val abs' : (Identifier.t * Kind.t) list -> t -> t
+
+(** [app fn arg] constructs the application of [fn] to [arg]. *)
+val app : t -> t -> t
+
+(** [app' fn arg] constructs the application of [fn] to [args]. *)
+val app' : t -> t list -> t
+
 (** [func arg res] constructs a function from [arg] to [res]. *)
 val func : t -> t -> t
 
 (** [func' args res] constructs a function from [args] to [res]. *)
 val func' : t list -> t -> t
 
-(** [forall id tp] constructs a universally quantified type. *)
-val forall : Identifier.t -> t -> t
+(** [forall id kn tp] constructs a universally quantified type. *)
+val forall : Identifier.t -> Kind.t -> t -> t
 
 (** [forall' ids tp] constructs a universally quantified type. *)
-val forall' : Identifier.t list -> t -> t
+val forall' : (Identifier.t * Kind.t) list -> t -> t
 
 (** [rcrd fields] constructs a record type. *)
 val rcrd : (Identifier.t * t) list -> t
@@ -33,16 +50,17 @@ val vrnt : (Identifier.t * t) list -> t
 val get_func : t -> t * t
 
 (**
-  [get_forall tp] computes the variable quantifier and body of [tp], if
-  [tp] is a universally quantified type.  Otherwise, [get_forall] raises
-  [Invalid_argument].
+  [get_forall tp] computes the variable quantifier/kind and body of
+  [tp], if [tp] is a universally quantified type.  Otherwise,
+  [get_forall] raises [Invalid_argument].
  *)
-val get_forall : t -> Identifier.t * t
+val get_forall : t -> Identifier.t * Kind.t * t
 
 (**
-  [get_forall' tp] computes the variable quantifier and body of [tp].
+  [get_forall' tp] computes the variable quantifier/kind and body of
+  [tp].
  *)
-val get_forall' : t -> Identifier.t list * t
+val get_forall' : t -> (Identifier.t * Kind.t) list * t
 
 (**
   [get_rcrd tp] computes the fields of [tp], if [tp] is a record type.
@@ -56,6 +74,14 @@ val get_rcrd : t -> (Identifier.t * t) list
  *)
 val get_vrnt : t -> (Identifier.t * t) list
 
+(** {1 Kinding} *)
+
+(** [default_env] is the default typing environment. *)
+val default_env : Kind.t Identifier.Map.t
+
+(** [to_kind env tp] computes the kind of [tp] under [env]. *)
+val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
+
 (** {1 Transformations} *)
 
 (**
@@ -66,13 +92,6 @@ val get_vrnt : t -> (Identifier.t * t) list
 val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
 
 (** {1 Utilities} *)
-
-(**
-  [check env tp] verifies that [tp] is well-formed under [env].  In the
-  absence of kinding, this just means checking that all variables are
-  bound.
- *)
-val check : Identifier.Set.t -> t -> unit
 
 (**
   [alpha_equivalent ~beta_env ~env tp1 tp2] determines whether [tp1] and
@@ -87,7 +106,10 @@ val alpha_equivalent :
   t ->
   bool
 
-(** [free_vars tp] computes the free variables in [tp]. *)
+(**
+  [free_vars bvs tp] computes the free variables in [tp], assuming that
+  the variables in [bvs] are already bound.
+ *)
 val free_vars : t -> Identifier.Set.t
 
 (**

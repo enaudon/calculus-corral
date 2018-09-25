@@ -26,14 +26,16 @@ val app : ?loc : Location.t -> t -> t -> t
 val app' : ?loc : Location.t -> t -> t list -> t
 
 (**
-  [tp_abs arg body] constructs the abstraction of [arg] from [body].
+  [tp_abs arg kn body] constructs the abstraction of [arg] of kind [kn]
+  from [body].
  *)
-val tp_abs : ?loc : Location.t -> Identifier.t -> t -> t
+val tp_abs : ?loc : Location.t -> Identifier.t -> Kind.t -> t -> t
 
 (**
-  [abs' args body] constructs the abstraction of [args] from [body].
+  [tp_abs' args kn body] constructs the abstraction of [args] from [body].
  *)
-val tp_abs' : ?loc : Location.t -> Identifier.t list -> t -> t
+val tp_abs' :
+  ?loc : Location.t -> (Identifier.t * Kind.t) list -> t -> t
 
 (** [tp_app fn arg] constructs the application of [fn] to [arg]. *)
 val tp_app : ?loc : Location.t -> t -> Type.t -> t
@@ -58,7 +60,9 @@ val case :
 
 (** [to_type env tm] computes the type of [tm] under [env]. *)
 val to_type :
-  (Identifier.Set.t * Type.t Identifier.Map.t) -> t -> Type.t
+  (Kind.t Identifier.Map.t * Type.t Identifier.Map.t) ->
+  t ->
+  Type.t
 
 (** {1 Transformations} *)
 

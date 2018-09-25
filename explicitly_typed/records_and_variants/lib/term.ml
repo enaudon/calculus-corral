@@ -6,12 +6,13 @@ type desc =
   | Variable of Id.t
   | Term_abs of Id.t * Type.t * t
   | Term_app of t * t
-  | Type_abs of Id.t * t
+  | Type_abs of Id.t * Kind.t * t
   | Type_app of t * Type.t
   | Record of (Id.t * t) list
   | Projection of t * Id.t
   | Variant of Id.t * t * Type.t
   | Case of t * (Id.t * Id.t * t) list
+
 
 and t = {
   desc : desc ;
@@ -37,8 +38,8 @@ let abs : Loc.t -> Id.t -> Type.t -> t -> t = fun loc arg tp body ->
 let app : Loc.t -> t -> t -> t = fun loc fn arg ->
   { desc = Term_app (fn, arg); loc }
 
-let tp_abs : Loc.t -> Id.t -> t -> t = fun loc arg body ->
-  { desc = Type_abs (arg, body); loc }
+let tp_abs : Loc.t -> Id.t -> Kind.t -> t -> t = fun loc arg kn body ->
+  { desc = Type_abs (arg, kn, body); loc }
 
 let tp_app : Loc.t -> t -> Type.t -> t = fun loc fn arg ->
   { desc = Type_app (fn, arg); loc }
@@ -91,11 +92,12 @@ let rec to_type (kn_env, tp_env) tm =
               "expected type '%s'; found type '%s'"
               (Type.to_string fml_arg_tp)
               (Type.to_string act_arg_tp)
-    | Type_abs (arg, body) ->
-      Type.forall arg @@ to_type (Id.Set.add arg kn_env) tp_env body
+    | Type_abs (arg, kn, body) ->
+      Type.forall arg kn @@
+        to_type (Id.Map.add arg kn kn_env) tp_env body
     | Type_app (fn, arg) ->
       let fn_tp = to_type kn_env tp_env fn in
-      let tv, tp =
+      let fn_quant, fn_kn, fn_body =
         try
           Type.get_forall @@ Type.beta_reduce ~deep:() tp_env fn_tp
         with Invalid_argument _ ->
@@ -104,8 +106,15 @@ let rec to_type (kn_env, tp_env) tm =
               "expected universal type; found '%s'"
               (Type.to_string fn_tp)
       in
-      Type.check kn_env arg;
-      Type.subst kn_env (Id.Map.singleton tv arg) tp
+      let arg_kn = Type.to_kind kn_env arg in
+      if not (Kind.alpha_equivalent arg_kn fn_kn) then
+        error tm.loc "to_type" @@
+          Printf.sprintf
+            "expected %s; found '%s'"
+            (Kind.to_string fn_kn)
+            (Kind.to_string arg_kn);
+      let ftvs = Id.Set.of_list @@ Id.Map.keys kn_env in
+      Type.subst ftvs (Id.Map.singleton fn_quant arg) fn_body
     | Record fields ->
       Type.rcrd @@
         List.map (fun (id, tm) -> id, to_type kn_env tp_env tm) fields
@@ -113,7 +122,7 @@ let rec to_type (kn_env, tp_env) tm =
       let rcrd_tp = to_type kn_env tp_env rcrd in
       let fields =
         try
-          Type.get_rcrd rcrd_tp
+          Type.get_rcrd @@ Type.beta_reduce ~deep:() tp_env rcrd_tp
         with Invalid_argument _ ->
           error tm.loc "to_type" @@
             Printf.sprintf
@@ -193,6 +202,7 @@ let rec to_type (kn_env, tp_env) tm =
       in
       cases_to_type vrnt_cases cases
 
+
 (* Transformations *)
 
 (** [free_vars tm] computes the free term variables in [tm]. *)
@@ -204,7 +214,7 @@ let free_vars : t -> Id.Set.t =
       Id.Set.del arg @@ free_vars fvs body
     | Term_app (fn, arg) ->
       free_vars (free_vars fvs fn) arg
-    | Type_abs (_, body) ->
+    | Type_abs (_, _, body) ->
       free_vars fvs body
     | Type_app (fn, _) ->
       free_vars fvs fn
@@ -239,12 +249,12 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
         abs loc arg (Type.subst fvs sub tp) (subst fvs sub body)
       | Term_app (fn, arg) ->
         app loc (subst fvs sub fn) (subst fvs sub arg)
-      | Type_abs (arg, body) when Id.Set.mem arg fvs ->
+      | Type_abs (arg, kn, body) when Id.Set.mem arg fvs ->
         let arg' = Id.fresh_upper () in
         let sub' = Id.Map.add arg (Type.var arg') sub in
-        tp_abs loc arg' @@ subst (Id.Set.add arg' fvs) sub' body
-      | Type_abs (arg, body) ->
-        tp_abs loc arg @@
+        tp_abs loc arg' kn @@ subst (Id.Set.add arg' fvs) sub' body
+      | Type_abs (arg, kn, body) ->
+        tp_abs loc arg kn @@
           subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
       | Type_app (fn, arg) ->
         tp_app loc (subst fvs sub fn) (Type.subst fvs sub arg)
@@ -282,8 +292,8 @@ let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
           subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
       | Term_app (fn, arg) ->
         app loc (subst fvs sub fn) (subst fvs sub arg)
-      | Type_abs (arg, body) ->
-         tp_abs loc arg @@ subst fvs sub body
+      | Type_abs (arg, kn, body) ->
+         tp_abs loc arg kn @@ subst fvs sub body
       | Type_app (fn, arg) ->
         tp_app loc (subst fvs sub fn) arg
       | Record fields ->
@@ -322,16 +332,16 @@ let rec beta_reduce ?deep env tm =
         | _ ->
           app loc fn' act_arg'
       end
-    | Type_abs (arg, body) ->
+    | Type_abs (arg, kn, body) ->
       if deep <> None then
         let env' = Id.Map.del arg env in
-        tp_abs loc arg @@ beta_reduce env' body
+        tp_abs loc arg kn @@ beta_reduce env' body
       else
         tm
     | Type_app (fn, act_arg) ->
       let fn' = beta_reduce env fn in
       begin match fn'.desc with
-        | Type_abs (fml_arg, body) ->
+        | Type_abs (fml_arg, _, body) ->
           let body' = subst_tp body fml_arg act_arg in
           let env' = Id.Map.del fml_arg env in
           beta_reduce env' body'
@@ -379,6 +389,7 @@ let rec beta_reduce ?deep env tm =
         | _ ->
           case loc vrnt' cases'
 
+
 (* Utilities *)
 
 let alpha_equivalent =
@@ -392,8 +403,9 @@ let alpha_equivalent =
       | Term_app (fn1, arg1), Term_app (fn2, arg2) ->
         alpha_equiv tp_env tm_env fn1 fn2 &&
           alpha_equiv tp_env tm_env arg1 arg2
-      | Type_abs (arg1, body1), Type_abs (arg2, body2) ->
-        alpha_equiv ((arg1, arg2) :: tp_env) tm_env body1 body2
+      | Type_abs (arg1, kn1, body1), Type_abs (arg2, kn2, body2) ->
+        Kind.alpha_equivalent kn1 kn2 &&
+          alpha_equiv ((arg1, arg2) :: tp_env) tm_env body1 body2
       | Type_app (fn1, arg1), Type_app (fn2, arg2) ->
         alpha_equiv tp_env tm_env fn1 fn2 &&
           Type.alpha_equivalent ~env:tp_env arg1 arg2
@@ -445,11 +457,11 @@ let simplify tm =
         let fn' = simplify env fn in
         let arg' = simplify env arg in
         app loc fn' arg'
-      | Type_abs (arg, body) ->
+      | Type_abs (arg, kn, body) ->
         let arg' = fresh () in
         let env' = Id.Map.add arg (Type.var arg') env in
         let body' = simplify env' body in
-        tp_abs loc arg' body'
+        tp_abs loc arg' kn body'
       | Type_app (fn, arg) ->
         let fn' = simplify env fn in
         let arg' = Type.simplify ~ctx:(fresh, env) arg in
@@ -499,9 +511,10 @@ let rec to_string tm =
         (to_string body)
     | Term_app (fn, arg) ->
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
-    | Type_abs (arg, body) ->
-      Printf.sprintf "\\%s . %s"
+    | Type_abs (arg, kn, body) ->
+      Printf.sprintf "\\%s :: %s . %s"
         (Id.to_string arg)
+        (Kind.to_string kn)
         (to_string body)
     | Type_app (fn, arg) ->
       Printf.sprintf "%s %s" (fn_to_string fn) (Type.to_string arg)
@@ -533,6 +546,7 @@ let rec to_string tm =
         (to_string vrnt)
         (String.concat "; " @@ List.map case_to_string cases)
 
+
 (* Constructors *)
 
 let var ?(loc = Loc.dummy) id = var loc id
@@ -546,10 +560,11 @@ let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 
 let app' ?(loc = Loc.dummy) fn args = List.fold_left (app ~loc) fn args
 
-let tp_abs ?(loc = Loc.dummy) arg body = tp_abs loc arg body
+let tp_abs ?(loc = Loc.dummy) arg kn body = tp_abs loc arg kn body
 
 let tp_abs' ?(loc = Loc.dummy) args body =
-  List.fold_right (tp_abs ~loc) args body
+  let tp_abs (arg, kn) body = tp_abs ~loc arg kn body in
+  List.fold_right tp_abs args body
 
 let tp_app ?(loc = Loc.dummy) fn arg = tp_app loc fn arg
 
