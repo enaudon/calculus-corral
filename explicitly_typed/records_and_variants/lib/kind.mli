@@ -5,23 +5,23 @@ type t
 
 (** {1 Constructors and Destructors} *)
 
-(** [base] is the base kind. *)
-val base : t
+(** [prop] is the proper kind. *)
+val prop : t
 
 (** [row] is the row kind. *)
 val row : t
 
-(** [func arg res] constructs a function from [arg] to [res]. *)
-val func : t -> t -> t
+(** [oper arg res] constructs an operator from [arg] to [res]. *)
+val oper : t -> t -> t
 
-(** [func' args res] constructs a function from [args] to [res]. *)
-val func' : t list -> t -> t
+(** [oper' args res] constructs an operator from [args] to [res]. *)
+val oper' : t list -> t -> t
 
 (**
-  [get_func kn] computes the argument and result kind of [kn], if [kn]
-  is a function.  Otherwise, [get_func] raises [Invalid_argument].
+  [get_oper kn] computes the argument and result kind of [kn], if [kn]
+  is an operator.  Otherwise, [get_oper] raises [Invalid_argument].
  *)
-val get_func : t -> t * t
+val get_oper : t -> t * t
 
 (** {1 Utilities} *)
 

@@ -39,6 +39,7 @@ let _ =
     ("church_natural.lc", ["church_pair.lc"]) ;
     ("record_pair.lc", []) ;
     ("variant_boolean.lc", ["record_pair.lc"]) ;
+    ("row_polymorphism.lc", []) ;
   ] in
 
   let test_suite = "records_and_variants" >::: [

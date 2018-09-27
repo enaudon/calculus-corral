@@ -6,18 +6,19 @@ type t =
   | Abstraction of Id.t * Kind.t * t
   | Application of t * t
   | Universal of Id.t * Kind.t * t
-  | Row of t Row.t
+  | Row_nil
+  | Row_cons of Id.t * t * t
 
 (* Internal utilities *)
 
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
-let func_id = "->"
+let func_id = Id.of_string "->"
 
-let rcrd_id = "rcrd"
+let rcrd_id = Id.of_string "rcrd"
 
-let vrnt_id = "vrnt"
+let vrnt_id = Id.of_string "vrnt"
 
 let var : Id.t -> t = fun id -> Variable id
 
@@ -29,19 +30,40 @@ let app : t -> t -> t = fun fn arg -> Application (fn, arg)
 let forall : Id.t -> Kind.t -> t -> t = fun quant kn body ->
   Universal (quant, kn, body)
 
-let row : t Row.t -> t = fun r -> Row r
+let row_nil : t = Row_nil
+
+let row_cons : Id.t -> t -> t -> t = fun id tp rest ->
+  Row_cons (id, tp, rest)
+
+let row_of_list fields rest_opt =
+  let cons (id, tp) rest = row_cons id tp rest in
+  let nil = match rest_opt with
+    | None -> row_nil
+    | Some id -> var id
+  in
+  List.fold_right cons fields nil
+
+let row_to_list row =
+  let rec to_list acc tp = match tp with
+    | Variable id -> acc, Some id
+    | Row_nil -> acc, None
+    | Row_cons (id, tp, rest) -> to_list ((id, tp) :: acc) rest
+    | _ -> error "row_to_list" "found mal-formed row"
+  in
+  let fields, rest = to_list [] row in
+  List.rev fields, rest
 
 (* Kinding *)
 
 let default_env =
-  let base = Kind.base in
+  let prop = Kind.prop in
   let row = Kind.row in
-  let func = Kind.func in
-  let func' = Kind.func' in
+  let oper = Kind.oper in
+  let oper' = Kind.oper' in
   Id.Map.empty |>
-    Id.Map.add (Id.of_string func_id) (func' [base; base] base) |>
-    Id.Map.add (Id.of_string rcrd_id) (func row base) |>
-    Id.Map.add (Id.of_string vrnt_id) (func row base)
+    Id.Map.add func_id (oper' [prop; prop] prop) |>
+    Id.Map.add rcrd_id (oper row prop) |>
+    Id.Map.add vrnt_id (oper row prop)
 
 let rec to_kind env tp = match tp with
   | Variable id ->
@@ -52,32 +74,41 @@ let rec to_kind env tp = match tp with
     end
   | Abstraction (arg, arg_kn, body) ->
     let body_kn = to_kind (Id.Map.add arg arg_kn env) body in
-    Kind.func arg_kn body_kn
+    Kind.oper arg_kn body_kn
   | Application (fn, arg) ->
-    let fn' = to_kind env fn in
+    let fn_kn = to_kind env fn in
     let fml_arg_kn, res_kn =
       try
-        Kind.get_func fn'
+        Kind.get_oper fn_kn
       with Invalid_argument _ ->
         error "to_kind" @@
           Printf.sprintf
             "expected function kind; found '%s'"
-            (Kind.to_string fn')
+            (Kind.to_string fn_kn)
     in
     let act_arg_kn = to_kind env arg in
     if Kind.alpha_equivalent act_arg_kn fml_arg_kn then
       res_kn
     else
-        error "to_kind" @@
-          Printf.sprintf
-            "expected kind '%s'; found kind '%s'"
-              (Kind.to_string fml_arg_kn)
-              (Kind.to_string act_arg_kn)
+      error "to_kind" @@
+        Printf.sprintf
+          "expected kind '%s'; found kind '%s'"
+            (Kind.to_string fml_arg_kn)
+            (Kind.to_string act_arg_kn)
   | Universal (quant, kn, body) ->
     to_kind (Id.Map.add quant kn env) body
-  | Row r ->
-    Row.iter (fun _ tp -> ignore @@ to_kind env tp; ()) r;
+  | Row_nil ->
     Kind.row
+  | Row_cons (_, tp, rest) ->
+    ignore @@ to_kind env tp;
+    let rest_kn = to_kind env rest in
+    if Kind.alpha_equivalent rest_kn Kind.row then
+      Kind.row
+    else
+      error "to_kind" @@
+        Printf.sprintf
+          "expected row kind; found kind '%s'"
+            (Kind.to_string rest_kn)
 
 (* Transformations *)
 
@@ -92,8 +123,10 @@ let free_vars : t -> Id.Set.t =
       free_vars (free_vars fvs fn) arg
     | Universal (quant, _, body) ->
       Id.Set.del quant @@ free_vars fvs body
-    | Row r ->
-      Row.fold (fun _ tp fvs -> free_vars fvs tp) r fvs
+    | Row_nil ->
+      fvs
+    | Row_cons (_, tp, rest) ->
+      free_vars (free_vars fvs tp) rest
   in
   free_vars Id.Set.empty
 
@@ -123,8 +156,10 @@ let rec subst fvs sub tp = match tp with
   | Universal (quant, kn, body) ->
     forall quant kn @@
       subst (Id.Set.add quant fvs) (Id.Map.del quant sub) body
-  | Row r ->
-    row @@ Row.map (subst fvs sub) r
+  | Row_nil ->
+    row_nil
+  | Row_cons (id, tp, rest) ->
+    row_cons id (subst fvs sub tp) (subst fvs sub rest)
 
 let rec beta_reduce ?deep env tp = match tp with
   | Variable id ->
@@ -150,12 +185,15 @@ let rec beta_reduce ?deep env tp = match tp with
       forall quant kn @@ beta_reduce (Id.Map.del quant env) body
     else
       tp
-  | Row r ->
-    row @@ Row.map (beta_reduce env) r
+  | Row_nil ->
+    row_nil
+  | Row_cons (id, tp, rest) ->
+    row_cons id (beta_reduce env tp) (beta_reduce env rest)
 
 (* Utilities *)
 
 let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env = []) tp1 tp2 =
+
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
     | Variable id1, Variable id2 ->
       Id.alpha_equivalent env id1 id2
@@ -167,15 +205,34 @@ let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env = []) tp1 tp2 =
     | Universal (quant1, kn1, body1), Universal (quant2, kn2, body2) ->
       Kind.alpha_equivalent kn1 kn2 &&
         alpha_equiv ((quant1, quant2) :: env) body1 body2
-    | Row r1, Row r2 ->
-      Row.for_all2
-        (fun id1 tp1 id2 tp2 ->
-          Id.alpha_equivalent env id1 id2 && alpha_equiv env tp1 tp2)
-        r1
-        r2
+    | Row_nil, Row_nil ->
+      true
+    | Row_cons _, Row_cons _ ->
+      let alpha_equiv_rest env rest1 rest2 = match rest1, rest2 with
+        | None, None -> true
+        | None, _ | _, None -> false
+        | Some r1, Some r2 -> Id.alpha_equivalent env r1 r2
+      in
+      let alpha_equiv_row env row1 row2 =
+        let alpha_equiv_field env (id1, tp1) (id2, tp2) =
+          Id.alpha_equivalent env id1 id2 && alpha_equiv env tp1 tp2
+        in
+        let compare_fields (id1, _) (id2, _) =
+          String.compare (Id.to_string id1) (Id.to_string id2)
+        in
+        let fields1, rest1 = row_to_list row1 in
+        let fields2, rest2 = row_to_list row2 in
+        List.for_all2
+          (alpha_equiv_field env)
+          (List.sort compare_fields fields1)
+          (List.sort compare_fields fields2) &&
+          alpha_equiv_rest env rest1 rest2
+      in
+      alpha_equiv_row env tp1 tp2
     | _ ->
       false
   in
+
   alpha_equiv
     env
     (beta_reduce ~deep:() beta_env tp1)
@@ -209,8 +266,12 @@ let simplify ?ctx:ctx_opt tp =
       let quant' = fresh () in
       forall quant' kn @@
         simplify (Id.Map.add quant (var quant') env) body
-    | Row r ->
-      row @@ Row.map (simplify env) r
+    | Row_nil ->
+      row_nil
+    | Row_cons (id, tp, rest) ->
+      let tp' = simplify env tp in
+      let rest' = simplify env rest in
+      row_cons id tp' rest'
   in
 
   simplify env tp
@@ -220,16 +281,25 @@ let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
 
   let arg_to_string tp = match tp with
-    | Variable _ | Row _ -> to_string tp
-    | Abstraction _ | Application _ | Universal _ -> to_paren_string tp
+    | Application (Variable id, _) when id = rcrd_id || id = vrnt_id ->
+      to_string tp
+    | Variable _ | Row_nil | Row_cons _ ->
+      to_string tp
+    | Abstraction _ | Application _ | Universal _ ->
+      to_paren_string tp
   in
 
   let row_to_string row =
-    String.concat "; " @@
-      List.map
-        (fun (id, tp) ->
-          Printf.sprintf "%s : %s" (Id.to_string id) (to_string tp))
-        (Row.to_list row)
+    let fields, rest = row_to_list row in
+    let field_to_string (id, tp) =
+      Printf.sprintf "%s : %s" (Id.to_string id) (to_string tp)
+    in
+    let fields_str =
+      String.concat "; " @@ List.map field_to_string fields
+    in
+    match rest with
+      | None -> fields_str
+      | Some id -> Printf.sprintf "%s | %s" fields_str (Id.to_string id)
   in
 
   match tp with
@@ -241,21 +311,21 @@ let rec to_string tp =
         (Kind.to_string kn)
         (to_string body)
     | Application (Application (Variable id, arg), res)
-        when Id.to_string id = func_id ->
+        when id = func_id ->
       Printf.sprintf "%s %s %s"
         (arg_to_string arg)
-        func_id
+        (Id.to_string func_id)
         (to_string res)
-    | Application (Variable id, Row row)
-        when Id.to_string id = rcrd_id ->
+    | Application (Variable id, row) when id = rcrd_id ->
       Printf.sprintf "{%s}" (row_to_string row)
-    | Application (Variable id, Row row)
-        when Id.to_string id = vrnt_id ->
+    | Application (Variable id, row) when id = vrnt_id ->
       Printf.sprintf "[%s]" (row_to_string row)
     | Application (fn, arg) ->
       let fn_to_string tp = match tp with
-        | Variable _ | Application _ | Row _ -> to_string tp
-        | Abstraction _ | Universal _ -> to_paren_string tp
+        | Variable _ | Application _ | Row_nil | Row_cons _ ->
+          to_string tp
+        | Abstraction _ | Universal _ ->
+          to_paren_string tp
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
     | Universal (quant, kn, body) ->
@@ -263,8 +333,10 @@ let rec to_string tp =
         (Id.to_string quant)
         (Kind.to_string kn)
         (to_string body)
-    | Row row ->
-      Printf.sprintf "<%s>" (row_to_string row)
+    | Row_nil ->
+      "<>"
+    | Row_cons _ ->
+      Printf.sprintf "<%s>" (row_to_string tp)
 
 
 (* Constructors *)
@@ -274,7 +346,7 @@ let abs' args body =
 
 let app' fn args = List.fold_left app fn args
 
-let func arg res = app' (var @@ Id.of_string func_id) [arg; res]
+let func arg res = app' (var func_id) [arg; res]
 
 let func' args res = List.fold_right func args res 
 
@@ -282,15 +354,17 @@ let forall' quants body =
   let forall (quant, kn) body = forall quant kn body in
   List.fold_right forall quants body
 
-let rcrd r = app (var @@ Id.of_string rcrd_id) (row @@ Row.of_list r)
+let rcrd fields rest = app (var rcrd_id) (row_of_list fields rest)
 
-let vrnt r = app (var @@ Id.of_string vrnt_id)  (row @@ Row.of_list r)
+let vrnt cases rest = app (var vrnt_id)  (row_of_list cases rest)
+
+let row = row_of_list
 
 (* Destructors *)
 
 let get_func tp = match tp with
   | Application (Application (Variable id, arg), res)
-      when Id.to_string id = func_id ->
+      when id = func_id ->
     arg, res
   | _ -> invalid_arg "Type.get_func: expected function"
 
@@ -308,11 +382,11 @@ let get_forall' tp =
   get_forall [] tp
 
 let get_rcrd tp = match tp with
-  | Application (Variable id, Row row) when Id.to_string id = rcrd_id ->
-    Row.to_list row
+  | Application (Variable id, row) when id = rcrd_id ->
+    row_to_list row
   | _ -> invalid_arg "Type.get_rcrd: expected record"
 
 let get_vrnt tp = match tp with
-  | Application (Variable id, Row row) when Id.to_string id = vrnt_id ->
-    Row.to_list row
+  | Application (Variable id, row) when id = vrnt_id ->
+    row_to_list row
   | _ -> invalid_arg "Type.get_vrnt: expected variant"

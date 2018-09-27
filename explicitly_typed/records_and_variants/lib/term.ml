@@ -69,6 +69,12 @@ let rec to_type (kn_env, tp_env) tm =
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Term_abs (arg, arg_tp, body) ->
+      let arg_kn = Type.to_kind kn_env arg_tp in
+      if not (Kind.alpha_equivalent arg_kn Kind.prop) then
+        error tm.loc "to_type" @@
+          Printf.sprintf
+            "expected proper kind; found '%s'"
+            (Kind.to_string arg_kn);
       let tp_env' = Id.Map.add arg arg_tp tp_env in
       Type.func arg_tp @@ to_type kn_env tp_env' body
     | Term_app (fn, arg) ->
@@ -110,17 +116,17 @@ let rec to_type (kn_env, tp_env) tm =
       if not (Kind.alpha_equivalent arg_kn fn_kn) then
         error tm.loc "to_type" @@
           Printf.sprintf
-            "expected %s; found '%s'"
+            "expected '%s'; found '%s'"
             (Kind.to_string fn_kn)
             (Kind.to_string arg_kn);
       let ftvs = Id.Set.of_list @@ Id.Map.keys kn_env in
       Type.subst ftvs (Id.Map.singleton fn_quant arg) fn_body
     | Record fields ->
-      Type.rcrd @@
-        List.map (fun (id, tm) -> id, to_type kn_env tp_env tm) fields
+      let field_to_type (id, tm) = id, to_type kn_env tp_env tm in
+      Type.rcrd (List.map field_to_type fields) None
     | Projection (rcrd, field) ->
       let rcrd_tp = to_type kn_env tp_env rcrd in
-      let fields =
+      let fields, _ =
         try
           Type.get_rcrd @@ Type.beta_reduce ~deep:() tp_env rcrd_tp
         with Invalid_argument _ ->
@@ -139,7 +145,13 @@ let rec to_type (kn_env, tp_env) tm =
             (Type.to_string rcrd_tp)
       end
     | Variant (case, data, tp) ->
-      let cases =
+      let kn = Type.to_kind kn_env tp in
+      if not (Kind.alpha_equivalent kn Kind.prop) then
+        error tm.loc "to_type" @@
+          Printf.sprintf
+            "expected proper kind; found '%s'"
+            (Kind.to_string kn);
+      let cases, _ =
         try
           Type.get_vrnt @@ Type.beta_reduce ~deep:() tp_env tp
         with Invalid_argument _ ->
@@ -191,7 +203,8 @@ let rec to_type (kn_env, tp_env) tm =
               "unexpectedly empty list of cases"
       in
       let vrnt_tp = to_type kn_env tp_env vrnt in
-      let vrnt_cases =
+      (* TODO: See about using the elided [rest] variable. *)
+      let vrnt_cases, _ =
         try
           Type.get_vrnt @@ Type.beta_reduce ~deep:() tp_env vrnt_tp
         with Invalid_argument _ ->
@@ -304,7 +317,14 @@ let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
       | Variant (case, data, tp) ->
         vrnt loc case (subst fvs sub data) tp
       | Case (vrnt, cases) ->
-        let subst_case (case, id, tm) = case, id, subst fvs sub tm in
+        let subst_case (case, id, tm) =
+          if Id.Set.mem id fvs then
+            let id' = Id.fresh_lower () in
+            let sub' = Id.Map.add id (var Loc.dummy id') sub in
+            case, id', subst (Id.Set.add id' fvs) sub' tm
+          else
+            case, id, subst (Id.Set.add id fvs) (Id.Map.del id sub) tm
+        in
         case loc (subst fvs sub vrnt) (List.map subst_case cases)
   in
   subst (free_vars tm') (Id.Map.singleton id tm') tm
@@ -388,7 +408,6 @@ let rec beta_reduce ?deep env tm =
           beta_reduce (Id.Map.del id env) (subst_tm tm id data)
         | _ ->
           case loc vrnt' cases'
-
 
 (* Utilities *)
 
@@ -477,7 +496,9 @@ let simplify tm =
           (Type.simplify ~ctx:(fresh, env) tp)
       | Case (vrnt, cases) ->
         let simplify_case (case, id, tm) = case, id, simplify env tm in
-        case loc (simplify env vrnt) (List.map simplify_case cases)
+        let vrnt' = simplify env vrnt in
+        let cases' = List.map simplify_case cases in
+        case loc vrnt' cases'
   in
 
   simplify Id.Map.empty tm
@@ -531,7 +552,7 @@ let rec to_string tm =
         (arg_to_string rcrd)
         (Id.to_string field)
     | Variant (case, data, tp) ->
-      Printf.sprintf "[%s %s : %s]"
+      Printf.sprintf "[%s %s of %s]"
         (Id.to_string case)
         (arg_to_string data)
         (Type.to_string tp)
@@ -545,7 +566,6 @@ let rec to_string tm =
       Printf.sprintf "case %s [%s]"
         (to_string vrnt)
         (String.concat "; " @@ List.map case_to_string cases)
-
 
 (* Constructors *)
 

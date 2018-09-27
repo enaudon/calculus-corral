@@ -35,6 +35,7 @@ rule prog = parse
   | "->"                              { Parser.S_ARROW }
   | "*"                               { Parser.ASTERIKS }
   | "\\"                              { Parser.B_SLASH }
+  | "|"                               { Parser.V_BAR }
   | "."                               { Parser.PERIOD }
   | ":"                               { Parser.COLON }
   | "::"                              { Parser.COL_COL }
@@ -46,6 +47,8 @@ rule prog = parse
   | "]"                               { Parser.C_BRACK }
   | "{"                               { Parser.O_BRACE }
   | "}"                               { Parser.C_BRACE }
+  | "<"                               { Parser.O_CHEVR }
+  | ">"                               { Parser.C_CHEVR }
   | "case"                            { Parser.CASE }
   | "forall"                          { Parser.FOR_ALL }
   | "of"                              { Parser.OF }

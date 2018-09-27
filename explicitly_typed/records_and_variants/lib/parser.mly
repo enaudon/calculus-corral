@@ -25,15 +25,27 @@ module Type = struct
 
   let forall quant kn body = forall (Id.of_string quant) kn body
 
-  let rcrd fields =
-    rcrd @@ List.map (fun (id, tp) -> Id.of_string id, tp) fields
+  let rcrd (fields, rest) =
+    let fn (id, tp) = Id.of_string id, tp in
+    rcrd (List.map fn fields) (Option.map Id.of_string rest)
 
-  let vrnt fields =
+  let vrnt (cases, rest) =
     let fn (id, tp) = match tp with
-      | None -> Id.of_string id, rcrd []
+      | None -> Id.of_string id, rcrd ([], None)
       | Some tp -> Id.of_string id, tp
     in
-    vrnt @@ List.map fn fields
+    vrnt (List.map fn cases) (Option.map Id.of_string rest)
+
+  let rcrd_row (fields, rest) =
+    let fn (id, tp) = Id.of_string id, tp in
+    row (List.map fn fields) (Option.map Id.of_string rest)
+
+  let vrnt_row (cases, rest) =
+    let fn (id, tp) = match tp with
+      | None -> Id.of_string id, rcrd ([], None)
+      | Some tp -> Id.of_string id, tp
+    in
+    row (List.map fn cases) (Option.map Id.of_string rest)
 
 end
 
@@ -70,6 +82,7 @@ module Term = struct
     case ~loc:(get_loc ()) vrnt @@ List.map fn cases
 
 end
+
 %}
 
 /* Literals and identifiers */
@@ -84,6 +97,7 @@ end
 /* Symbols */
 %token ASTERIKS
 %token B_SLASH
+%token V_BAR
 %token S_ARROW D_ARROW
 %token PERIOD
 %token COLON COL_COL
@@ -92,6 +106,7 @@ end
 %token O_PAREN C_PAREN
 %token O_BRACK C_BRACK
 %token O_BRACE C_BRACE
+%token O_CHEVR C_CHEVR
 
 /* Other */
 %token EOF
@@ -119,12 +134,13 @@ kind :
 
 comp_kind :
   | atom_kind                     { $1 }
-  | atom_kind D_ARROW comp_kind   { Kind.func $1 $3 }
+  | atom_kind D_ARROW comp_kind   { Kind.oper $1 $3 }
 
 atom_kind :
   | O_PAREN kind C_PAREN          { $2 }
   | O_PAREN kind error            { error "unclosed parenthesis" }
-  | ASTERIKS                      { Kind.base }
+  | ASTERIKS                      { Kind.prop }
+  | O_CHEVR C_CHEVR               { Kind.row }
 
 typo :
   | arrow_typo                    { $1 }
@@ -142,16 +158,27 @@ app_typo :
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
   | O_PAREN typo error            { error "unclosed parenthesis" }
-  | O_BRACE field_list_typo C_BRACE   { Type.rcrd $2 }
-  | O_BRACE field_list_typo error   { error "unclosed brace" }
-  | O_BRACK case_list_typo C_BRACK  { Type.vrnt $2 }
-  | O_BRACK case_list_typo error  { error "unclosed bracket" }
+  | O_BRACE rcrd_typo C_BRACE     { Type.rcrd $2 }
+  | O_BRACE rcrd_typo error       { error "unclosed brace" }
+  | O_BRACK vrnt_typo C_BRACK     { Type.vrnt $2 }
+  | O_BRACK vrnt_typo error       { error "unclosed bracket" }
+  | O_CHEVR rcrd_typo C_CHEVR     { Type.rcrd_row $2 }
+  | O_CHEVR vrnt_typo C_CHEVR     { Type.vrnt_row $2 }
+  | O_CHEVR C_CHEVR               { Type.rcrd_row ([], None) }
   | UPPER_ID                      { Type.var $1 }
+
+rcrd_typo :
+  | field_list_typo               { ($1, None) }
+  | field_list_typo V_BAR UPPER_ID  { ($1, Some $3) }
 
 field_list_typo :
   | LOWER_ID COLON typo           { [($1, $3)] }
   | LOWER_ID COLON typo SEMICOLON   { [($1, $3)] }
   | LOWER_ID COLON typo SEMICOLON field_list_typo   { ($1, $3) :: $5 }
+
+vrnt_typo :
+  | case_list_typo                { ($1, None) }
+  | case_list_typo V_BAR UPPER_ID   { ($1, Some $3) }
 
 case_list_typo :
   | UPPER_ID COLON typo           { [($1, Some $3)] }

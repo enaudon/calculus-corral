@@ -71,8 +71,8 @@ let solve (c, k) =
       let state, tvs, tp = Type.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
-      let fn env id = Id.Map.add id tp env in
-      solve (Option.fold fn env id_opt) state rhs
+      let fn id env = Id.Map.add id tp env in
+      solve (Option.fold fn id_opt env) state rhs
     | Localized (loc, c) ->
       try solve env state c with
         | Type.Occurs (id, tp) ->
