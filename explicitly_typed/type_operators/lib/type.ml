@@ -12,7 +12,7 @@ type t =
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
-let func_id = "->"
+let func_id = Id.of_string "->"
 
 let var : Id.t -> t = fun id -> Variable id
 
@@ -27,10 +27,9 @@ let forall : Id.t -> Kind.t -> t -> t = fun quant kn body ->
 (* Kinding *)
 
 let default_env =
-  let base = Kind.base in
-  let func' = Kind.func' in
-  Id.Map.empty |>
-    Id.Map.add (Id.of_string func_id) (func' [base; base] base)
+  let prop = Kind.prop in
+  let oper' = Kind.oper' in
+  Id.Map.add func_id (oper' [prop; prop] prop) Id.Map.empty
 
 let rec to_kind env tp = match tp with
   | Variable id ->
@@ -41,27 +40,27 @@ let rec to_kind env tp = match tp with
     end
   | Abstraction (arg, arg_kn, body) ->
     let body_kn = to_kind (Id.Map.add arg arg_kn env) body in
-    Kind.func arg_kn body_kn
+    Kind.oper arg_kn body_kn
   | Application (fn, arg) ->
-    let fn' = to_kind env fn in
+    let fn_kn = to_kind env fn in
     let fml_arg_kn, res_kn =
       try
-        Kind.get_func fn'
+        Kind.get_oper fn_kn
       with Invalid_argument _ ->
         error "to_kind" @@
           Printf.sprintf
             "expected function kind; found '%s'"
-            (Kind.to_string fn')
+            (Kind.to_string fn_kn)
     in
     let act_arg_kn = to_kind env arg in
     if Kind.alpha_equivalent act_arg_kn fml_arg_kn then
       res_kn
     else
-        error "to_kind" @@
-          Printf.sprintf
-            "expected kind '%s'; found kind '%s'"
-              (Kind.to_string fml_arg_kn)
-              (Kind.to_string act_arg_kn)
+      error "to_kind" @@
+        Printf.sprintf
+          "expected kind '%s'; found kind '%s'"
+            (Kind.to_string fml_arg_kn)
+            (Kind.to_string act_arg_kn)
   | Universal (quant, kn, body) ->
     to_kind (Id.Map.add quant kn env) body
 
@@ -202,10 +201,10 @@ let rec to_string tp =
         (Kind.to_string kn)
         (to_string body)
     | Application (Application (Variable id, arg), res)
-        when Id.to_string id = func_id ->
+        when id = func_id ->
       Printf.sprintf "%s %s %s"
         (arg_to_string arg)
-        func_id
+        (Id.to_string func_id)
         (to_string res)
     | Application (fn, arg) ->
       let fn_to_string tp = match tp with
@@ -226,7 +225,7 @@ let abs' args body =
 
 let app' fn args = List.fold_left app fn args
 
-let func arg res = app' (var @@ Id.of_string func_id) [arg; res]
+let func arg res = app' (var func_id) [arg; res]
 
 let func' args res = List.fold_right func args res
 
@@ -238,7 +237,7 @@ let forall' quants body =
 
 let get_func tp = match tp with
   | Application (Application (Variable id, arg), res)
-      when Id.to_string id = func_id ->
+      when id = func_id ->
     arg, res
   | _ -> invalid_arg "Type.get_func: expected function"
 

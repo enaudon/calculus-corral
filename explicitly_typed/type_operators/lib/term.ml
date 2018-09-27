@@ -51,6 +51,12 @@ let rec to_type (kn_env, tp_env) tm =
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Term_abs (arg, arg_tp, body) ->
+      let arg_kn = Type.to_kind kn_env arg_tp in
+      if not (Kind.alpha_equivalent arg_kn Kind.prop) then
+        error tm.loc "to_type" @@
+          Printf.sprintf
+            "expected proper kind; found '%s'"
+            (Kind.to_string arg_kn);
       let tp_env' = Id.Map.add arg arg_tp tp_env in
       Type.func arg_tp @@ to_type kn_env tp_env' body
     | Term_app (fn, arg) ->
@@ -92,7 +98,7 @@ let rec to_type (kn_env, tp_env) tm =
       if not (Kind.alpha_equivalent arg_kn fn_kn) then
         error tm.loc "to_type" @@
           Printf.sprintf
-            "expected %s; found '%s'"
+            "expected '%s'; found '%s'"
             (Kind.to_string fn_kn)
             (Kind.to_string arg_kn);
       let ftvs = Id.Set.of_list @@ Id.Map.keys kn_env in

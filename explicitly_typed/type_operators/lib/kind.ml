@@ -1,6 +1,6 @@
 type t =
-  | Base
-  | Function of t * t
+  | Proper
+  | Operator of t * t
 
 (* Utilities *)
 
@@ -13,25 +13,25 @@ let alpha_equivalent = Pervasives.(=)
 let rec to_string kn =
   let to_paren_string kn = Printf.sprintf "(%s)" (to_string kn) in
   match kn with
-    | Base ->
+    | Proper ->
       "*"
-    | Function (arg, res) ->
+    | Operator (arg, res) ->
       let arg_to_string kn = match kn with
-        | Base -> to_string kn
-        | Function _ -> to_paren_string kn
+        | Proper -> to_string kn
+        | Operator _ -> to_paren_string kn
       in
       Printf.sprintf "%s => %s" (arg_to_string arg) (to_string res)
 
 (* Constructors *)
 
-let base = Base
+let prop = Proper
 
-let func arg res = Function (arg, res)
+let oper arg res = Operator (arg, res)
 
-let func' args res = List.fold_right func args res
+let oper' args res = List.fold_right oper args res
 
 (* Destructors *)
 
-let get_func kn = match kn with
-  | Function (arg, res) -> arg, res
-  | _ -> invalid_arg "Kind.get_func: expected function"
+let get_oper kn = match kn with
+  | Operator (arg, res) -> arg, res
+  | _ -> invalid_arg "Kind.get_oper: expected operator"

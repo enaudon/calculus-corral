@@ -88,12 +88,12 @@ kind :
 
 comp_kind :
   | atom_kind                     { $1 }
-  | atom_kind D_ARROW comp_kind   { Kind.func $1 $3 }
+  | atom_kind D_ARROW comp_kind   { Kind.oper $1 $3 }
 
 atom_kind :
   | O_PAREN kind C_PAREN          { $2 }
   | O_PAREN kind error            { error "unclosed parenthesis" }
-  | ASTERIKS                      { Kind.base }
+  | ASTERIKS                      { Kind.prop }
 
 typo :
   | arrow_typo                    { $1 }
