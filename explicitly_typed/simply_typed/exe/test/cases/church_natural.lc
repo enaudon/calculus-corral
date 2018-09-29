@@ -47,11 +47,11 @@ if_zero
 
 NatPair = (Nat -> Nat -> Nat) -> Nat ;
 
-pair = \m : Nat . \n : Nat . \p : Nat -> Nat -> Nat . p m n ;
+pair = \f : Nat . \s : Nat . \p : Nat -> Nat -> Nat . p f s ;
 
-fst = \p : NatPair .  p (\m : Nat . \n : Nat . m) ;
+fst = \p : NatPair .  p (\f : Nat . \s : Nat . f) ;
 
-snd = \p : NatPair .  p (\m : Nat . \n : Nat . n) ;
+snd = \p : NatPair .  p (\f : Nat . \s : Nat . s) ;
 
 pair zero one ;
 

@@ -8,6 +8,8 @@ compose = \A . \B . \C . \f : A -> B . \g : C -> A . \x : C . f (g x) ;
 
 arg_swap = \A . \B . \C . \f : A -> B -> C . \x : B . \y : A . f y x ;
 
+id' = \A . compose A A A (id A) (id A) ;
+
 rev_app' = \A . \B. arg_swap (A -> B) A B (app A B) ;
 
 id (forall A . A -> A) id ;
@@ -15,17 +17,18 @@ id (forall A . A -> A) id ;
 app
   (forall A . A -> A)
   (forall A . A -> A)
-  (id  (forall A . A -> A))
-  id ;
+  (id (forall A . A -> A))
+  id' ;
 
 rev_app
-  (forall A . A -> A)
-  (forall A . A -> A)
-  id
-  (id  (forall A . A -> A)) ;
+  (forall A . forall B . (A -> B) -> A -> B)
+  (forall A . forall B . (A -> B) -> A -> B)
+  app
+  (id (forall A . forall B . (A -> B) -> A -> B)) ;
 
 rev_app'
-  (forall A . A -> A)
-  (forall A . A -> A)
-  id
-  (id  (forall A . A -> A)) ;
+  (forall A . forall B . forall C . (A -> B) -> (C -> A) -> C -> B)
+  (forall A . forall B . forall C . (A -> B) -> (C -> A) -> C -> B)
+  compose
+  (id
+    (forall A . forall B . forall C . (A -> B) -> (C -> A) -> C -> B)) ;

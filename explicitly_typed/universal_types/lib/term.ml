@@ -145,7 +145,7 @@ let rec subst_tm fvs sub tm =
     | Term_app (fn, arg) ->
       app loc (subst_tm fvs sub fn) (subst_tm fvs sub arg)
     | Type_abs (arg, body) ->
-       tp_abs loc arg @@ subst_tm fvs sub body
+      tp_abs loc arg @@ subst_tm fvs sub body
     | Type_app (fn, arg) ->
       tp_app loc (subst_tm fvs sub fn) arg
 

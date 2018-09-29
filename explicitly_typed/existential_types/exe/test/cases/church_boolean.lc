@@ -1,18 +1,18 @@
 Bool = * -> * -> * ;
 
-fls = \x : * . \y : * . y ;
+fls = \t : * . \f : * . f ;
 
-tru = \x : * . \y : * . x ;
+tru = \t : * . \f : * . t ;
 
-if = \p : Bool . \x : * . \y : * . p x y ;
+if = \p : Bool . \t : * . \e : * . p t e ;
 
 BoolPair = (Bool -> Bool -> Bool) -> Bool ;
 
-pair = \x : Bool . \y : Bool . \p : Bool -> Bool -> Bool . p x y ;
+pair = \f : Bool . \s : Bool . \p : Bool -> Bool -> Bool . p f s ;
 
-fst = \p : BoolPair . p (\x : Bool . \y : Bool . x) ;
+fst = \p : BoolPair . p (\f : Bool . \s : Bool . f) ;
 
-snd = \p : BoolPair . p (\x : Bool . \y : Bool . y) ;
+snd = \p : BoolPair . p (\f : Bool . \s : Bool . s) ;
 
 pair fls tru ;
 
@@ -26,8 +26,8 @@ bool_lits' =
   unpack T, lits = bool_lits in
   pack
     T,
-    (\x : T . \y : T . \p : T -> T -> T . p x y)
-      ((\p : (T -> T -> T) -> T . p (\x : T . \y : T . y)) lits)
-      ((\p : (T -> T -> T) -> T . p (\x : T . \y : T . x)) lits)
+    (\f : T . \s : T . \p : T -> T -> T . p f s)
+      ((\p : (T -> T -> T) -> T . p (\f : T . \s : T . s)) lits)
+      ((\p : (T -> T -> T) -> T . p (\f : T . \s : T . f)) lits)
   as
   exists A . (A -> A -> A) -> A ;

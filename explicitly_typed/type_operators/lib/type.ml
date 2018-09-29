@@ -12,8 +12,6 @@ type t =
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
-let func_id = Id.of_string "->"
-
 let var : Id.t -> t = fun id -> Variable id
 
 let abs : Id.t -> Kind.t -> t -> t =
@@ -23,6 +21,8 @@ let app : t -> t -> t = fun fn arg -> Application (fn, arg)
 
 let forall : Id.t -> Kind.t -> t -> t = fun quant kn body ->
   Universal (quant, kn, body)
+
+let func_id = Id.of_string "->"
 
 (* Kinding *)
 

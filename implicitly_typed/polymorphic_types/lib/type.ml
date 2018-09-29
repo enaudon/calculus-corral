@@ -157,13 +157,11 @@ let unify state tp1 tp2 =
     let m1' = State.Sub.apply_mono m1 state in
     let m2' = State.Sub.apply_mono m2 state in
     match m1', m2' with
-      | Variable id, _
-          when not @@ State.Pools.is_mono state id ->
+      | Variable id, _ when not @@ State.Pools.is_mono state id ->
         expected_mono "unify"
-      | _, Variable id
-          when not @@ State.Pools.is_mono state id ->
+      | _, Variable id when not @@ State.Pools.is_mono state id ->
         expected_mono "unify"
-      | Variable id1, Variable id2 when id1 = id2->
+      | Variable id1, Variable id2 when id1 = id2 ->
         state
       | Variable id, _ ->
         if occurs id m2' then raise_occurs id (scheme tp2.quants m2');
@@ -287,7 +285,7 @@ let to_string ?no_simp ?show_quants tp =
     let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
     match tp with
       | Variable id ->
-          Id.to_string id
+        Id.to_string id
       | Function (arg, res) ->
         let arg_to_string tp = match tp with
           | Variable _ -> to_string tp
@@ -301,7 +299,7 @@ let to_string ?no_simp ?show_quants tp =
     to_string body
   else
     Printf.sprintf "forall %s . %s"
-      (String.concat " " @@ List.map Id.to_string quants)
+      (String.concat " . forall " @@ List.map Id.to_string quants)
       (to_string body)
 
 (* External functions *)

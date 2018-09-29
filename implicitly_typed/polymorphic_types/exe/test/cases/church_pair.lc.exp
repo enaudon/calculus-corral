@@ -1,9 +1,18 @@
 pair
   : A -> B -> (A -> B -> C) -> C
-  = \A . \B . \C . \x : A . \y : B . \p : A -> B -> C . p x y ;
+  = \A . \B . \C . \f : A . \s : B . \p : A -> B -> C . p f s ;
 fst
   : ((A -> B -> A) -> C) -> C
-  = \A . \B . \C . \p : (A -> B -> A) -> C . p (\x : A . \y : B . x) ;
+  = \A . \B . \C . \p : (A -> B -> A) -> C . p (\f : A . \s : B . f) ;
 snd
   : ((A -> B -> B) -> C) -> C
-  = \A . \B . \C . \p : (A -> B -> B) -> C . p (\x : A . \y : B . y) ;
+  = \A . \B . \C . \p : (A -> B -> B) -> C . p (\f : A . \s : B . s) ;
+p
+  : ((A -> A) -> (B -> C -> B) -> D) -> D
+  = \A . \B . \C . \D . \p : (A -> A) -> (B -> C -> B) -> D . p (\x : A . x) (\x : B . \y : C . x) ;
+fst p
+  : A -> A
+  = \A . \x : A . x ;
+snd p
+  : A -> B -> A
+  = \A . \B . \x : A . \y : B . x ;

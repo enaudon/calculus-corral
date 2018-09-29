@@ -1,14 +1,14 @@
-fls = \x . \y . y ;
+fls = \t . \f . f ;
 
-tru = \x . \y . x ;
+tru = \t . \f . t ;
 
 not = \p . p fls tru ;
 
 and = \p . \q . p q fls ;
 
-or = \p . \q . p  tru q ;
+or = \p . \q . p tru q ;
 
-if = \p . \x . \y . p x y ;
+if = \p . \t . \e . p t e ;
 
 not fls ;
 

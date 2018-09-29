@@ -4,6 +4,15 @@ fls
 tru
   : A -> B -> A
   = <value> ;
+not
+  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
+  = <value> ;
+and
+  : (A -> (B -> C -> C) -> D) -> A -> D
+  = <value> ;
+or
+  : ((A -> B -> A) -> C -> D) -> C -> D
+  = <value> ;
 if
   : (A -> B -> C) -> A -> B -> C
   = <value> ;

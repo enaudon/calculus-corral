@@ -14,12 +14,6 @@ type t =
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
-let func_id = Id.of_string "->"
-
-let rcrd_id = Id.of_string "rcrd"
-
-let vrnt_id = Id.of_string "vrnt"
-
 let var : Id.t -> t = fun id -> Variable id
 
 let abs : Id.t -> Kind.t -> t -> t =
@@ -52,6 +46,12 @@ let row_to_list row =
   in
   let fields, rest = to_list [] row in
   List.rev fields, rest
+
+let func_id = Id.of_string "->"
+
+let rcrd_id = Id.of_string "rcrd"
+
+let vrnt_id = Id.of_string "vrnt"
 
 (* Kinding *)
 
@@ -356,7 +356,7 @@ let forall' quants body =
 
 let rcrd fields rest = app (var rcrd_id) (row_of_list fields rest)
 
-let vrnt cases rest = app (var vrnt_id)  (row_of_list cases rest)
+let vrnt cases rest = app (var vrnt_id) (row_of_list cases rest)
 
 let row = row_of_list
 

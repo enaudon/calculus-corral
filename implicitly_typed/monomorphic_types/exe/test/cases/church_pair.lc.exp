@@ -7,3 +7,12 @@ fst
 snd
   : ((A -> B -> B) -> C) -> C
   = <value> ;
+p
+  : ((A -> A) -> (B -> C -> B) -> D) -> D
+  = <value> ;
+fst p
+  : A -> A
+  = <value> ;
+snd p
+  : A -> B -> A
+  = <value> ;
