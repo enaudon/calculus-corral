@@ -45,6 +45,7 @@ or tru fls ;
 or tru tru ;
 
 if Bool fls fls tru ; 
+
 if Bool tru fls tru ;
 
 if

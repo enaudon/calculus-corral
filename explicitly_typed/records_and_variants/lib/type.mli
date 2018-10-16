@@ -38,13 +38,13 @@ val forall : Identifier.t -> Kind.t -> t -> t
 val forall' : (Identifier.t * Kind.t) list -> t -> t
 
 (** [rcrd fields] constructs a record type. *)
-val rcrd : (Identifier.t * t) list -> Identifier.t option -> t
+val rcrd : (Identifier.t * t) list -> t option -> t
 
 (** [vnrt cases] constructs a variant type. *)
-val vrnt : (Identifier.t * t) list -> Identifier.t option -> t
+val vrnt : (Identifier.t * t) list -> t option -> t
 
 (** [row fields] constructs a row. *)
-val row : (Identifier.t * t) list -> Identifier.t option -> t
+val row : (Identifier.t * t) list -> t option -> t
 
 (**
   [get_func tp] computes the argument and result type of [tp], if [tp]
@@ -69,13 +69,13 @@ val get_forall' : t -> (Identifier.t * Kind.t) list * t
   [get_rcrd tp] computes the fields of [tp], if [tp] is a record type.
   Otherwise [get_rcrd] raises [Invalid_argument].
  *)
-val get_rcrd : t -> (Identifier.t * t) list * Identifier.t option
+val get_rcrd : t -> (Identifier.t * t) list * t option
 
 (**
   [get_vrnt tp] computes the cases of [tp], if [tp] is a variant type.
   Otherwise [get_vrnt] raises [Invalid_argument].
  *)
-val get_vrnt : t -> (Identifier.t * t) list * Identifier.t option
+val get_vrnt : t -> (Identifier.t * t) list * t option
 
 (** {1 Kinding} *)
 

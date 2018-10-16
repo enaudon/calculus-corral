@@ -30,8 +30,8 @@ get_foo_bar (foo <Bar : forall A :: * . A -> A>) ;
 get_bar_foo =
   \x : [Bar : forall A :: * . A -> A; Foo : forall A :: * . A -> A] .
     case x of [
-      Foo x -> x ;
       Bar x -> x ;
+      Foo x -> x ;
     ] ;
 
 get_bar_foo (foo <Bar : forall A :: * . A -> A>) ;

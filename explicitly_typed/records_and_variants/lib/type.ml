@@ -29,20 +29,17 @@ let row_nil : t = Row_nil
 let row_cons : Id.t -> t -> t -> t = fun id tp rest ->
   Row_cons (id, tp, rest)
 
-let row_of_list fields rest_opt =
+let row_of_list : (Id.t * t) list -> t option -> t =
+    fun fields rest_opt ->
   let cons (id, tp) rest = row_cons id tp rest in
-  let nil = match rest_opt with
-    | None -> row_nil
-    | Some id -> var id
-  in
+  let nil = Option.default row_nil rest_opt in
   List.fold_right cons fields nil
 
-let row_to_list row =
+let row_to_list : t -> (Id.t * t) list * t option = fun row ->
   let rec to_list acc tp = match tp with
-    | Variable id -> acc, Some id
     | Row_nil -> acc, None
     | Row_cons (id, tp, rest) -> to_list ((id, tp) :: acc) rest
-    | _ -> error "row_to_list" "found mal-formed row"
+    | _ -> acc, Some tp
   in
   let fields, rest = to_list [] row in
   List.rev fields, rest
@@ -205,13 +202,11 @@ let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env = []) tp1 tp2 =
     | Universal (quant1, kn1, body1), Universal (quant2, kn2, body2) ->
       Kind.alpha_equivalent kn1 kn2 &&
         alpha_equiv ((quant1, quant2) :: env) body1 body2
-    | Row_nil, Row_nil ->
-      true
-    | Row_cons _, Row_cons _ ->
+    | Row_nil, Row_nil | Row_cons _, Row_cons _ ->
       let alpha_equiv_rest env rest1 rest2 = match rest1, rest2 with
         | None, None -> true
         | None, _ | _, None -> false
-        | Some r1, Some r2 -> Id.alpha_equivalent env r1 r2
+        | Some r1, Some r2 -> alpha_equiv env r1 r2
       in
       let alpha_equiv_row env row1 row2 =
         let alpha_equiv_field env (id1, tp1) (id2, tp2) =
@@ -298,8 +293,13 @@ let rec to_string tp =
       String.concat "; " @@ List.map field_to_string fields
     in
     match rest with
-      | None -> fields_str
-      | Some id -> Printf.sprintf "%s | %s" fields_str (Id.to_string id)
+      | None ->
+        fields_str
+      | Some tp ->
+        if String.length fields_str > 0 then
+          Printf.sprintf "%s | %s" fields_str (to_string tp)
+        else
+          Printf.sprintf "%s" (to_string tp)
   in
 
   match tp with
@@ -333,11 +333,8 @@ let rec to_string tp =
         (Id.to_string quant)
         (Kind.to_string kn)
         (to_string body)
-    | Row_nil ->
-      "<>"
-    | Row_cons _ ->
+    | Row_nil | Row_cons _ ->
       Printf.sprintf "<%s>" (row_to_string tp)
-
 
 (* Constructors *)
 
@@ -379,7 +376,8 @@ let get_forall' tp =
     | _ ->
       acc, tp
   in
-  get_forall [] tp
+  let quants, tp = get_forall [] tp in
+  List.rev quants, tp
 
 let get_rcrd tp = match tp with
   | Application (Variable id, row) when id = rcrd_id ->

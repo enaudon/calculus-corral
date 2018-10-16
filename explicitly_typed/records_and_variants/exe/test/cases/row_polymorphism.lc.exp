@@ -24,7 +24,7 @@ get_foo_bar (foo <Bar : forall A :: * . A -> A>)
   = \A :: * . \x : A . x ;
 get_bar_foo
   : [Bar : forall A :: * . A -> A; Foo : forall A :: * . A -> A] -> forall A :: * . A -> A
-  = \x : [Bar : forall A :: * . A -> A; Foo : forall B :: * . B -> B] . case x [Foo x -> x; Bar x -> x] ;
+  = \x : [Bar : forall A :: * . A -> A; Foo : forall B :: * . B -> B] . case x [Bar x -> x; Foo x -> x] ;
 get_bar_foo (foo <Bar : forall A :: * . A -> A>)
   : forall A :: * . A -> A
   = \A :: * . \x : A . x ;

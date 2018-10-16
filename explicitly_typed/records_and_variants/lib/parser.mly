@@ -27,25 +27,25 @@ module Type = struct
 
   let rcrd (fields, rest) =
     let fn (id, tp) = Id.of_string id, tp in
-    rcrd (List.map fn fields) (Option.map Id.of_string rest)
+    rcrd (List.map fn fields) rest
 
   let vrnt (cases, rest) =
     let fn (id, tp) = match tp with
       | None -> Id.of_string id, rcrd ([], None)
       | Some tp -> Id.of_string id, tp
     in
-    vrnt (List.map fn cases) (Option.map Id.of_string rest)
+    vrnt (List.map fn cases) rest
 
   let rcrd_row (fields, rest) =
     let fn (id, tp) = Id.of_string id, tp in
-    row (List.map fn fields) (Option.map Id.of_string rest)
+    row (List.map fn fields) rest
 
   let vrnt_row (cases, rest) =
     let fn (id, tp) = match tp with
       | None -> Id.of_string id, rcrd ([], None)
       | Some tp -> Id.of_string id, tp
     in
-    row (List.map fn cases) (Option.map Id.of_string rest)
+    row (List.map fn cases) rest
 
 end
 
@@ -77,7 +77,7 @@ module Term = struct
   let case vrnt cases =
     let fn (case, id, tm) = match id with
       | None -> Id.of_string case, Id.of_string "_", tm
-      | Some id ->  Id.of_string case, Id.of_string id, tm
+      | Some id -> Id.of_string case, Id.of_string id, tm
     in
     case ~loc:(get_loc ()) vrnt @@ List.map fn cases
 
@@ -169,7 +169,7 @@ atom_typo :
 
 rcrd_typo :
   | field_list_typo               { ($1, None) }
-  | field_list_typo V_BAR UPPER_ID  { ($1, Some $3) }
+  | field_list_typo V_BAR typo    { ($1, Some $3) }
 
 field_list_typo :
   | LOWER_ID COLON typo           { [($1, $3)] }
@@ -178,7 +178,7 @@ field_list_typo :
 
 vrnt_typo :
   | case_list_typo                { ($1, None) }
-  | case_list_typo V_BAR UPPER_ID   { ($1, Some $3) }
+  | case_list_typo V_BAR typo     { ($1, Some $3) }
 
 case_list_typo :
   | UPPER_ID COLON typo           { [($1, Some $3)] }
