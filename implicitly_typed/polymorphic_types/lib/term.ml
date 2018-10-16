@@ -46,6 +46,7 @@ let coerce tvs qs ir_tm =
   let bot = IR.Type.forall id @@ IR.Type.var id in
   let sub = Id.Map.of_list @@ List.map (fun id -> id, bot) unused in
 
+  (* Apply the substitution *)
   IR.Term.subst_tp diff sub ir_tm
 
 (*

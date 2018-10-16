@@ -30,18 +30,19 @@ let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
 
 let pure = True, fun _ -> ()
 
-let let_impl
+let let_
     : Loc.t option ->
       Id.t option ->
       (Type.t -> 'a t) ->
       ('b t) ->
-      (Type.t * Identifier.Set.t * 'a * 'b) t
-    = fun loc id_opt fn (rhs_c, rhs_k) ->
+      (Type.t * Id.Set.t * 'a * 'b) t
+    = fun loc_opt id_opt fn (rhs_c, rhs_k) ->
   let tv = Type.var @@ Option.default (Id.fresh_upper ()) id_opt in
   let lhs_c, lhs_k = fn tv in
   let tvs_ref = ref Id.Set.empty in
   let tp_ref = ref tv in
-  ( loc_wrap loc @@ Let_binding (id_opt, tp_ref, lhs_c, rhs_c, tvs_ref),
+  ( loc_wrap loc_opt @@
+    Let_binding (id_opt, tp_ref, lhs_c, rhs_c, tvs_ref),
     fun state ->
       let tp = State.apply_solution !tp_ref state in
       tp, !tvs_ref, lhs_k state, rhs_k state )
@@ -170,12 +171,12 @@ let exists ?loc fn =
 let def ?loc id tp (c, k) =
   ( loc_wrap loc @@ Def_binding (id, tp, c), k )
 
-let let_ ?loc id fn rhs = let_impl loc (Some id) fn rhs
-
 let top ?loc fn =
   map
     (fun (tp, tvs, rhs_v, ()) -> tp, tvs, rhs_v)
-    (let_impl loc None fn pure)
+    (let_ loc None fn pure)
+
+let let_ ?loc id fn rhs = let_ loc (Some id) fn rhs
 
 module Operators = struct
 

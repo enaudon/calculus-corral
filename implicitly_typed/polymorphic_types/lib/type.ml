@@ -121,7 +121,7 @@ end = struct
   end
 
   let initial = {
-    sub = Sub.identity;
+    sub = Sub.identity ;
     pools = Rank.Pools.empty ;
   }
 
@@ -216,11 +216,13 @@ let gen_exit state tp =
 
 let inst state tp =
 
+  let register tv state = register state tv in
+
   let tp = State.Sub.apply tp state in
 
   let quants = tp.quants in
   let vars = List.map (fun _ -> var @@ Id.fresh_upper ()) quants in
-  let state' = List.fold_left register state vars in
+  let state' = List.fold_right register vars state in
   let env = Id.Map.of_list @@ List.combine quants vars in
 
   let rec inst m = match m with

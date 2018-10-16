@@ -31,33 +31,26 @@ module Pools = struct
   let pop ps =
     {ps with top = ps.top - 1; pools = Map.remove ps.top ps.pools}
 
+  let find_pool : p -> t -> Id.Set.t = fun ps rank ->
+    try
+      Map.find rank ps.pools
+    with Not_found ->
+      failwith @@ Printf.sprintf
+        "Rank.Pools.find_pool: No pool at rank %d.  Top rank is %d."
+        rank
+        ps.top
+
   let insert : p -> t -> Identifier.t -> p = fun ps rank id ->
-    let {top; pools; ranks} = ps in
-    let pools' =
-      try
-        Map.add rank (Id.Set.add id @@ Map.find rank pools) pools
-      with Not_found ->
-        failwith @@ Printf.sprintf
-          "Rank.Pools.insert: Not_found %s.%d.  Current rank is %d."
-          (Id.to_string id)
-          rank
-          top
-    in
-    {ps with pools = pools'; ranks = Id.Map.add id rank ranks}
+    let pool = find_pool ps rank in
+    { ps with
+      pools = Map.add rank (Id.Set.add id pool) ps.pools;
+      ranks = Id.Map.add id rank ps.ranks; }
 
   let remove : p -> t -> Identifier.t -> p = fun ps rank id ->
-    let {top; pools; ranks} = ps in
-    let pools' =
-      try
-        Map.add rank (Id.Set.del id @@ Map.find rank pools) pools
-      with Not_found ->
-        failwith @@ Printf.sprintf
-          "Rank.Pools.remove: Not_found %s.%d.  Current rank is %d."
-          (Id.to_string id)
-          rank
-          top
-    in
-    {ps with pools = pools'; ranks = Id.Map.del id ranks}
+    let pool = find_pool ps rank in
+    { ps with
+      pools = Map.add rank (Id.Set.del id pool) ps.pools;
+      ranks = Id.Map.del id ps.ranks; }
 
     let register ps id = insert ps ps.top id
 
