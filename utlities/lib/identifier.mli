@@ -87,6 +87,9 @@ module Map : sig
    *)
   val find_default : 'a -> key -> 'a t -> 'a
 
+  (** [mem id m] determines whether [id] is a member of [m]. *)
+  val mem : key -> 'a t -> bool
+
   (** [bindings m] computes a list of the bindings in [m]. *)
   val bindings : 'a t -> (key * 'a) list
 

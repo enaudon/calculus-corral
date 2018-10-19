@@ -1,0 +1,18 @@
+pair
+  : A -> B -> {fst : A; snd : B}
+  = \A :: * . \B :: * . \f : A . \s : B . {fst : f; snd : s} ;
+fst
+  : {fst : A | B} -> A
+  = \A :: * . \B :: <> . \p : {fst : A | B} . p.fst ;
+snd
+  : {snd : A | B} -> A
+  = \A :: * . \B :: <> . \p : {snd : A | B} . p.snd ;
+p
+  : {fst : A -> A; snd : B -> C -> B}
+  = \A :: * . \B :: * . \C :: * . {fst : \x : A . x; snd : \x : B . \y : C . x} ;
+fst p
+  : A -> A
+  = \A :: * . \x : A . x ;
+snd p
+  : A -> B -> A
+  = \A :: * . \B :: * . \x : A . \y : B . x ;

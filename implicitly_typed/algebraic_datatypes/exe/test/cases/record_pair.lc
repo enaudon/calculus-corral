@@ -1,0 +1,11 @@
+pair = \f . \s . {fst = f; snd = s} ;
+
+fst = \p . p.fst ;
+
+snd = \p . p.snd ;
+
+p = pair (\x . x) (\x . \y . x) ;
+
+fst p ;
+
+snd p ;

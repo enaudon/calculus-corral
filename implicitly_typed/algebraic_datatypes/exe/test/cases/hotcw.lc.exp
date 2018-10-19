@@ -1,0 +1,51 @@
+id
+  : A -> A
+  = \A :: * . \x : A . x ;
+app
+  : (A -> B) -> A -> B
+  = \A :: * . \B :: * . \x : A -> B . \y : A . x y ;
+id
+  : A -> A
+  = \A :: * . \x : A . x ;
+app
+  : (A -> B) -> A -> B
+  = \A :: * . \B :: * . \x : A -> B . \y : A . x y ;
+let x = app in x
+  : (A -> B) -> A -> B
+  = \A :: * . \B :: * . \x : A -> B . \y : A . x y ;
+let y = \z . z in y
+  : A -> A
+  = \A :: * . \z : A . z ;
+\x . let y = \z . z in y
+  : A -> B -> B
+  = \A :: * . \B :: * . \x : A . \z : B . z ;
+\x . let y = \z . z in y x
+  : A -> A
+  = \A :: * . \x : A . x ;
+id id
+  : A -> A
+  = \A :: * . \x : A . x ;
+let x = app in let y = let z = x id in z in y
+  : A -> A
+  = \A :: * . \y : A . y ;
+\x . \y . let x = x y in \x . y x
+  : ((A -> B) -> C) -> (A -> B) -> A -> B
+  = \A :: * . \B :: * . \C :: * . \x : (A -> B) -> C . \y : A -> B . \A : A . y A ;
+\x . let y = x in y
+  : A -> A
+  = \A :: * . \x : A . x ;
+\x . let y = \z . x in y
+  : A -> B -> A
+  = \A :: * . \B :: * . \x : A . \z : B . x ;
+\x . let y = \z . x z in y
+  : (A -> B) -> A -> B
+  = \A :: * . \B :: * . \x : A -> B . \z : A . x z ;
+\x . \y . let x = x y in x y
+  : (A -> A -> B) -> A -> B
+  = \A :: * . \B :: * . \x : A -> A -> B . \y : A . x y y ;
+\x . let y = let z = x (\x . x) in z in y
+  : ((A -> A) -> B) -> B
+  = \A :: * . \B :: * . \x : (A -> A) -> B . x (\x : A . x) ;
+let id = \x . x in id id
+  : A -> A
+  = \A :: * . \x : A . x ;

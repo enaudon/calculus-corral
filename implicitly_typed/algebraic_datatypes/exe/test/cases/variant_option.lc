@@ -1,0 +1,18 @@
+none = None ;
+
+some = \x . Some x ;
+
+default = \x . \opt . case opt of [
+  None -> x;
+  Some x -> x;
+] ;
+
+map = \fn . \opt . case opt of [
+  None -> none;
+  Some x -> some (fn x);
+] ;
+
+fold = \fn . \init . \opt . case opt of [
+  None -> none;
+  Some x -> some (fn init x);
+] ;

@@ -1,0 +1,75 @@
+fls
+  : [False : {} | A]
+  = \A :: <> . [False {} of [False : {} | A]] ;
+tru
+  : [True : {} | A]
+  = \A :: <> . [True {} of [True : {} | A]] ;
+not
+  : [False : A; True : B] -> [True : {}; False : {} | C]
+  = \A :: * . \B :: * . \C :: <> . \p : [False : A; True : B] . case p [False _ -> [True {} of [True : {}; False : {} | C]]; True _ -> [False {} of [False : {}; True : {} | C]]] ;
+and
+  : [False : A; True : B] -> [False : {} | C] -> [False : {} | C]
+  = \A :: * . \B :: * . \C :: <> . \p : [False : A; True : B] . \q : [False : {} | C] . case p [False _ -> [False {} of [False : {} | C]]; True _ -> q] ;
+or
+  : [True : A; False : B] -> [True : {} | C] -> [True : {} | C]
+  = \A :: * . \B :: * . \C :: <> . \p : [True : A; False : B] . \q : [True : {} | C] . case p [True _ -> [True {} of [True : {} | C]]; False _ -> q] ;
+if
+  : [True : A; False : B] -> C -> C -> C
+  = \A :: * . \B :: * . \C :: * . \p : [True : A; False : B] . \t : C . \e : C . case p [True _ -> t; False _ -> e] ;
+not fls
+  : [True : {}; False : {} | A]
+  = \A :: <> . [True {} of [True : {}; False : {} | A]] ;
+not tru
+  : [True : {}; False : {} | A]
+  = \A :: <> . [False {} of [False : {}; True : {} | A]] ;
+and fls fls
+  : [False : {} | A]
+  = \A :: <> . [False {} of [False : {} | A]] ;
+and fls tru
+  : [False : {}; True : {} | A]
+  = \A :: <> . [False {} of [False : {}; True : {} | A]] ;
+and tru fls
+  : [False : {} | A]
+  = \A :: <> . [False {} of [False : {} | A]] ;
+and tru tru
+  : [False : {}; True : {} | A]
+  = \A :: <> . [True {} of [True : {}; False : {} | A]] ;
+or fls fls
+  : [True : {}; False : {} | A]
+  = \A :: <> . [False {} of [False : {}; True : {} | A]] ;
+or fls tru
+  : [True : {} | A]
+  = \A :: <> . [True {} of [True : {} | A]] ;
+or tru fls
+  : [True : {}; False : {} | A]
+  = \A :: <> . [True {} of [True : {}; False : {} | A]] ;
+or tru tru
+  : [True : {} | A]
+  = \A :: <> . [True {} of [True : {} | A]] ;
+if fls fls tru
+  : [False : {}; True : {} | A]
+  = \A :: <> . [True {} of [True : {}; False : {} | A]] ;
+if tru fls tru
+  : [False : {}; True : {} | A]
+  = \A :: <> . [False {} of [False : {}; True : {} | A]] ;
+if fls (\x . x) (\y . y)
+  : A -> A
+  = \A :: * . \y : A . y ;
+pair fls tru
+  : {fst : [False : {} | A]; snd : [True : {} | B]}
+  = \A :: <> . \B :: <> . {fst : [False {} of [False : {} | A]]; snd : [True {} of [True : {} | B]]} ;
+fst (pair fls tru)
+  : [False : {} | A]
+  = \A :: <> . [False {} of [False : {} | A]] ;
+snd (pair fls tru)
+  : [True : {} | A]
+  = \A :: <> . [True {} of [True : {} | A]] ;
+pair fls (\x . x)
+  : {fst : [False : {} | A]; snd : B -> B}
+  = \A :: <> . \B :: * . {fst : [False {} of [False : {} | A]]; snd : \x : B . x} ;
+fst (pair fls (\x . x))
+  : [False : {} | A]
+  = \A :: <> . [False {} of [False : {} | A]] ;
+snd (pair fls (\x . x))
+  : A -> A
+  = \A :: * . \x : A . x ;

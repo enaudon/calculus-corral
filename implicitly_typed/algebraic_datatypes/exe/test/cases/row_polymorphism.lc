@@ -1,0 +1,23 @@
+get_x = \r . r.x ;
+
+get_x {x = \x . x} ;
+
+get_x {x = \x . x; y = \y . y} ;
+
+get_x {y = \y . y; x = \x . x} ;
+
+get_foo_bar =
+  \x . case x of [
+    Foo x -> x ;
+    Bar x -> x ;
+  ] ;
+
+get_foo_bar (Foo (\x . x)) ;
+
+get_bar_foo =
+  \x . case x of [
+    Bar x -> x ;
+    Foo x -> x ;
+  ] ;
+
+get_foo_bar (Foo (\x . x)) ;

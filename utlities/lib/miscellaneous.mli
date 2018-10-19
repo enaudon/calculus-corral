@@ -44,3 +44,6 @@ val int_to_lower : int -> string
   beginning with a uppercase letter.
  *)
 val int_to_upper : int -> string
+
+(** [list_init n fn] evaluates to [fn 0...; fn (n - 1)]. *)
+val list_init : int -> (int -> 'a) -> 'a list

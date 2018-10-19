@@ -1,0 +1,11 @@
+pair = \f . \s . \p . p f s ;
+
+fst = \p . p (\f . \s . f) ;
+
+snd = \p . p (\f . \s . s) ;
+
+p = pair (\x . x) (\x . \y . x) ;
+
+fst p ;
+
+snd p ;
