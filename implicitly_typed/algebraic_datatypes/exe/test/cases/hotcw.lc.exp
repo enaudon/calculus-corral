@@ -30,7 +30,7 @@ let x = app in let y = let z = x id in z in y
   = \A :: * . \y : A . y ;
 \x . \y . let x = x y in \x . y x
   : ((A -> B) -> C) -> (A -> B) -> A -> B
-  = \A :: * . \B :: * . \C :: * . \x : (A -> B) -> C . \y : A -> B . \A : A . y A ;
+  = \A :: * . \B :: * . \C :: * . \x : (A -> B) -> C . \y : A -> B . \a : A . y a ;
 \x . let y = x in y
   : A -> A
   = \A :: * . \x : A . x ;

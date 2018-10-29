@@ -42,7 +42,7 @@ let int_to_string a z i =
   else
     Printf.sprintf "%c%n"  (Char.chr @@ a + i mod n) (i / n)
 
-let int_to_lower = int_to_string (Char.code 'A') (Char.code 'Z')
+let int_to_lower = int_to_string (Char.code 'a') (Char.code 'z')
 
 let int_to_upper = int_to_string (Char.code 'A') (Char.code 'Z')
 
