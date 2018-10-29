@@ -29,13 +29,16 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
       fn_name
       msg
 
-let var loc id = { desc = Variable id; loc }
+let var : Loc.t -> Id.t -> t = fun loc id -> { desc = Variable id; loc }
 
-let abs loc arg body = { desc = Abstraction (arg, body); loc }
+let abs : Loc.t -> Id.t -> t -> t = fun loc arg body ->
+  { desc = Abstraction (arg, body); loc }
 
-let app loc fn arg = { desc = Application (fn, arg); loc }
+let app : Loc.t -> t -> t -> t = fun loc fn arg ->
+  { desc = Application (fn, arg); loc }
 
-let bind loc id value body = { desc = Binding (id, value, body); loc }
+let bind : Loc.t -> Id.t -> t -> t -> t = fun loc id value body ->
+  { desc = Binding (id, value, body); loc }
 
 let rcrd : Loc.t -> (Id.t * t) list -> t = fun loc fields ->
   { desc = Record fields; loc }
@@ -428,9 +431,9 @@ let rec to_string tm =
 
 (* Constructors *)
 
-let var ?(loc = Loc.dummy) id = var loc (Id.of_string id)
+let var ?(loc = Loc.dummy) id = var loc id
 
-let abs ?(loc = Loc.dummy) arg body = abs loc (Id.of_string arg) body
+let abs ?(loc = Loc.dummy) arg body = abs loc arg body
 
 let abs' ?(loc = Loc.dummy) args body =
   List.fold_right (abs ~loc) args body
@@ -439,18 +442,12 @@ let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 
 let app' ?(loc = Loc.dummy) fn args = List.fold_left (app ~loc) fn args
 
-let bind ?(loc = Loc.dummy) id value body =
-  bind loc (Id.of_string id) value body
+let bind ?(loc = Loc.dummy) id value body = bind loc id value body
 
-let rcrd ?(loc = Loc.dummy) fields =
-  rcrd loc @@ List.map (fun (id, tm) -> Id.of_string id, tm) fields
+let rcrd ?(loc = Loc.dummy) fields = rcrd loc fields
 
-let proj ?(loc = Loc.dummy) rcrd field =
-  proj loc rcrd @@ Id.of_string field
+let proj ?(loc = Loc.dummy) rcrd field = proj loc rcrd field
 
-let vrnt ?(loc = Loc.dummy) case data =
-  vrnt loc (Id.of_string case) data
+let vrnt ?(loc = Loc.dummy) case data = vrnt loc case data
 
-let case ?(loc = Loc.dummy) vrnt cases =
-  let fn (case, id, tm) = Id.of_string case, Id.of_string id, tm in
-  case loc vrnt @@ List.map fn cases
+let case ?(loc = Loc.dummy) vrnt cases = case loc vrnt cases

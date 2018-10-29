@@ -6,15 +6,15 @@ type t
 (** {1 Constructors} *)
 
 (** [var id] constructs a variable with the identifier [id]. *)
-val var : ?loc : Location.t -> string -> t
+val var : ?loc : Location.t -> Identifier.t -> t
 
 (** [abs args body] constructs the abstraction of [arg] from [body]. *)
-val abs : ?loc : Location.t -> string -> t -> t
+val abs : ?loc : Location.t -> Identifier.t -> t -> t
 
 (**
   [abs' args body] constructs the abstraction of [args] from [body].
  *)
-val abs' : ?loc : Location.t -> string list -> t -> t
+val abs' : ?loc : Location.t -> Identifier.t list -> t -> t
 
 (** [app fn arg] constructs the application of [fn] to [arg]. *)
 val app : ?loc : Location.t -> t -> t -> t
@@ -26,19 +26,20 @@ val app' : ?loc : Location.t -> t -> t list -> t
   [bind id value body] constructs the binding of [id] to [value] within
   [body].  Note that [value] is not generalized--it is monomorphic!
  *)
-val bind : ?loc : Location.t -> string -> t -> t -> t
+val bind : ?loc : Location.t -> Identifier.t -> t -> t -> t
 
 (** [rcrd fields] constructs a record term. *)
-val rcrd : ?loc : Location.t -> (string * t) list -> t
+val rcrd : ?loc : Location.t -> (Identifier.t * t) list -> t
 
 (** [proj rcrd field] constructs a projection term. *)
-val proj : ?loc : Location.t -> t -> string -> t
+val proj : ?loc : Location.t -> t -> Identifier.t -> t
 
 (** [vnrt case data] constructs a variant term. *)
-val vrnt : ?loc : Location.t -> string -> t -> t
+val vrnt : ?loc : Location.t -> Identifier.t -> t -> t
 
 (** [case vrnt cases] constructs a case term. *)
-val case : ?loc : Location.t -> t -> (string * string * t) list -> t
+val case :
+  ?loc : Location.t -> t -> (Identifier.t * Identifier.t * t) list -> t
 
 (** {1 Typing and Elaboration} *)
 

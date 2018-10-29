@@ -22,11 +22,13 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
       fn_name
       msg
 
-let var loc id = { desc = Variable id; loc }
+let var : Loc.t -> Id.t -> t = fun loc id -> { desc = Variable id; loc }
 
-let abs loc arg body = { desc = Abstraction (arg, body); loc }
+let abs : Loc.t -> Id.t -> t -> t = fun loc arg body ->
+  { desc = Abstraction (arg, body); loc }
 
-let app loc fn arg = { desc = Application (fn, arg); loc }
+let app : Loc.t -> t -> t -> t = fun loc fn arg ->
+  { desc = Application (fn, arg); loc }
 
 (* Typing *)
 
@@ -138,9 +140,9 @@ let rec to_string tm =
 
 (* Constructors *)
 
-let var ?(loc = Loc.dummy) id = var loc (Id.of_string id)
+let var ?(loc = Loc.dummy) id = var loc id
 
-let abs ?(loc = Loc.dummy) arg body = abs loc (Id.of_string arg) body
+let abs ?(loc = Loc.dummy) arg body = abs loc arg body
 
 let abs' ?(loc = Loc.dummy) args body =
   List.fold_right (abs ~loc) args body

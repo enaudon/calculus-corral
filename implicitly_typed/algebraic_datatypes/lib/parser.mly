@@ -1,5 +1,6 @@
 %{
 
+module Id = Identifier
 module Loc = Location
 
 let get_loc () =
@@ -14,28 +15,38 @@ let error msg =
       __MODULE__
       msg
 
-let var id = Term.var ~loc:(get_loc ()) id
+module Term = struct
 
-let abs id arg = Term.abs ~loc:(get_loc ()) id arg
+  include Term
 
-let app fn arg = Term.app ~loc:(get_loc ()) fn arg
+  let var id = var ~loc:(get_loc ()) @@ Id.of_string id
 
-let bind id value body = Term.bind ~loc:(get_loc ()) id value body
+  let abs arg body = abs ~loc:(get_loc ()) (Id.of_string arg) body
 
-let rcrd fields = Term.rcrd ~loc:(get_loc ()) fields
+  let app fn arg = app ~loc:(get_loc ()) fn arg
 
-let proj rcrd field = Term.proj ~loc:(get_loc ()) rcrd field
+  let bind id value body =
+    bind ~loc:(get_loc ()) (Id.of_string id) value body
 
-let vrnt case data = match data with
-  | None -> Term.vrnt ~loc:(get_loc ()) case (Term.rcrd [])
-  | Some data -> Term.vrnt ~loc:(get_loc ()) case data
+  let rcrd fields =
+    rcrd ~loc:(get_loc ()) @@
+      List.map (fun (id, tm) -> Id.of_string id, tm) fields
 
-let case vrnt cases =
-  let fn (case, id, tm) = match id with
-    | None -> case, "_", tm
-    | Some id -> case, id, tm
-  in
-  Term.case ~loc:(get_loc ()) vrnt @@ List.map fn cases
+  let proj rcrd field =
+    proj ~loc:(get_loc ()) rcrd @@ Id.of_string field
+
+  let vrnt case data = match data with
+    | None -> vrnt ~loc:(get_loc ()) (Id.of_string case) (rcrd [])
+    | Some data -> vrnt ~loc:(get_loc ()) (Id.of_string case) data
+
+  let case vrnt cases =
+    let fn (case, id, tm) = match id with
+      | None -> Id.of_string case, Id.of_string "_", tm
+      | Some id -> Id.of_string case, Id.of_string id, tm
+    in
+    case ~loc:(get_loc ()) vrnt @@ List.map fn cases
+
+end
 
 %}
 
@@ -78,23 +89,23 @@ command :
 
 term :
   | comp_term                     { $1 }
-  | B_SLASH LOWER_ID PERIOD term  { abs $2 $4 }
-  | LET LOWER_ID EQ term IN term  { bind $2 $4 $6 }
-  | UPPER_ID term                 { vrnt $1 (Some $2) }
-  | UPPER_ID                      { vrnt $1 None }
-  | CASE term OF O_BRACK case_list_term C_BRACK   { case $2 $5 }
+  | B_SLASH LOWER_ID PERIOD term  { Term.abs $2 $4 }
+  | LET LOWER_ID EQ term IN term  { Term.bind $2 $4 $6 }
+  | UPPER_ID term                 { Term.vrnt $1 (Some $2) }
+  | UPPER_ID                      { Term.vrnt $1 None }
+  | CASE term OF O_BRACK case_list_term C_BRACK   { Term.case $2 $5 }
 
 comp_term :
   | atom_term                     { $1 }
-  | comp_term atom_term           { app $1 $2 }
+  | comp_term atom_term           { Term.app $1 $2 }
 
 atom_term :
   | O_PAREN term C_PAREN          { $2 }
   | O_PAREN term error            { error "unclosed parenthesis" }
-  | O_BRACE field_list_term C_BRACE   { rcrd $2 }
+  | O_BRACE field_list_term C_BRACE   { Term.rcrd $2 }
   | O_BRACE field_list_term error   { error "unclosed brace" }
-  | atom_term PERIOD LOWER_ID     { proj $1 $3 }
-  | LOWER_ID                      { var $1 }
+  | atom_term PERIOD LOWER_ID     { Term.proj $1 $3 }
+  | LOWER_ID                      { Term.var $1 }
 
 field_list_term :
   | LOWER_ID EQ term              { [($1, $3)] }

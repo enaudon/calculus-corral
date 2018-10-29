@@ -1,5 +1,6 @@
 %{
 
+module Id = Identifier
 module Loc = Location
 
 let get_loc () =
@@ -14,13 +15,20 @@ let error msg =
       __MODULE__
       msg
 
-let var id = Term.var ~loc:(get_loc ()) id
+module Term = struct
 
-let abs id arg = Term.abs ~loc:(get_loc ()) id arg
+  include Term
 
-let app fn arg = Term.app ~loc:(get_loc ()) fn arg
+  let var id = var ~loc:(get_loc ()) @@ Id.of_string id
 
-let bind id value body = Term.bind ~loc:(get_loc ()) id value body
+  let abs arg body = abs ~loc:(get_loc ()) (Id.of_string arg) body
+
+  let app fn arg = app ~loc:(get_loc ()) fn arg
+
+  let bind id value body =
+    bind ~loc:(get_loc ()) (Id.of_string id) value body
+
+end
 
 %}
 
@@ -58,14 +66,14 @@ command :
 
 term :
   | comp_term                     { $1 }
-  | B_SLASH LOWER_ID PERIOD term  { abs $2 $4 }
-  | LET LOWER_ID EQ term IN term  { bind $2 $4 $6 }
+  | B_SLASH LOWER_ID PERIOD term  { Term.abs $2 $4 }
+  | LET LOWER_ID EQ term IN term  { Term.bind $2 $4 $6 }
 
 comp_term :
   | atom_term                     { $1 }
-  | comp_term atom_term           { app $1 $2 }
+  | comp_term atom_term           { Term.app $1 $2 }
 
 atom_term :
   | O_PAREN term C_PAREN          { $2 }
   | O_PAREN term error            { error "unclosed parenthesis" }
-  | LOWER_ID                      { var $1 }
+  | LOWER_ID                      { Term.var $1 }
