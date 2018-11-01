@@ -19,9 +19,9 @@ module Type = struct
 
   include Type
 
-  let var id = var @@ Id.of_string id
+  let var id = var @@ Id.define id
 
-  let exists quant body = exists (Id.of_string quant) body
+  let exists quant body = exists (Id.define quant) body
 
 end
 
@@ -29,17 +29,17 @@ module Term = struct
 
   include Term
 
-  let var id = var ~loc:(get_loc ()) @@ Id.of_string id
+  let var id = var ~loc:(get_loc ()) @@ Id.define id
 
-  let abs arg tp body = abs ~loc:(get_loc ()) (Id.of_string arg) tp body
+  let abs arg tp body = abs ~loc:(get_loc ()) (Id.define arg) tp body
 
   let app fn arg = app ~loc:(get_loc ()) fn arg
 
   let pack tp1 tm tp2 = pack ~loc:(get_loc ()) tp1 tm tp2
 
   let unpack tp_id tm_id pack body =
-    let tp_id' = Id.of_string tp_id in
-    let tm_id' = Id.of_string tm_id in
+    let tp_id' = Id.define tp_id in
+    let tm_id' = Id.define tm_id in
     unpack ~loc:(get_loc ()) tp_id' tm_id' pack body
 
 end

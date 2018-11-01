@@ -258,7 +258,7 @@ let rec subst_tp fvs sub tm =
     | Term_app (fn, arg) ->
       app loc (subst_tp fvs sub fn) (subst_tp fvs sub arg)
     | Type_abs (arg, kn, body) when Id.Set.mem arg fvs ->
-      let arg' = Id.fresh_upper () in
+      let arg' = Id.gen_upper () in
       let sub' = Id.Map.add arg (Type.var arg') sub in
       tp_abs loc arg' kn @@ subst_tp (Id.Set.add arg' fvs) sub' body
     | Type_abs (arg, kn, body) ->
@@ -293,7 +293,7 @@ let rec subst_tm fvs sub tm =
     | Variable id ->
       Id.Map.find_default tm id sub
     | Term_abs (arg, tp, body) when Id.Set.mem arg fvs ->
-      let arg' = Id.fresh_lower () in
+      let arg' = Id.gen_lower () in
       let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
       abs loc arg' tp @@ subst_tm (Id.Set.add arg' fvs) sub' body
     | Term_abs (arg, tp, body) ->
@@ -315,7 +315,7 @@ let rec subst_tm fvs sub tm =
     | Case (vrnt, cases) ->
       let subst_case (case, id, tm) =
         if Id.Set.mem id fvs then
-          let id' = Id.fresh_lower () in
+          let id' = Id.gen_lower () in
           let sub' = Id.Map.add id (var Loc.dummy id') sub in
           case, id', subst_tm (Id.Set.add id' fvs) sub' tm
         else
@@ -464,7 +464,7 @@ let simplify tm =
     let cntr = ref (-1) in
     fun () ->
       incr cntr;
-      Id.of_string @@ Misc.int_to_upper !cntr
+      Id.define @@ Misc.int_to_upper !cntr
   in
 
   let rec simplify env tm =

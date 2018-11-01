@@ -19,31 +19,31 @@ module Type = struct
 
   include Type
 
-  let var id = var @@ Id.of_string id
+  let var id = var @@ Id.define id
 
-  let abs arg kn body = abs (Id.of_string arg) kn body
+  let abs arg kn body = abs (Id.define arg) kn body
 
-  let forall quant kn body = forall (Id.of_string quant) kn body
+  let forall quant kn body = forall (Id.define quant) kn body
 
   let rcrd (fields, rest) =
-    let fn (id, tp) = Id.of_string id, tp in
+    let fn (id, tp) = Id.define id, tp in
     rcrd (List.map fn fields) rest
 
   let vrnt (cases, rest) =
     let fn (id, tp) = match tp with
-      | None -> Id.of_string id, rcrd ([], None)
-      | Some tp -> Id.of_string id, tp
+      | None -> Id.define id, rcrd ([], None)
+      | Some tp -> Id.define id, tp
     in
     vrnt (List.map fn cases) rest
 
   let rcrd_row (fields, rest) =
-    let fn (id, tp) = Id.of_string id, tp in
+    let fn (id, tp) = Id.define id, tp in
     row (List.map fn fields) rest
 
   let vrnt_row (cases, rest) =
     let fn (id, tp) = match tp with
-      | None -> Id.of_string id, rcrd ([], None)
-      | Some tp -> Id.of_string id, tp
+      | None -> Id.define id, rcrd ([], None)
+      | Some tp -> Id.define id, tp
     in
     row (List.map fn cases) rest
 
@@ -53,31 +53,31 @@ module Term = struct
 
   include Term
 
-  let var id = var ~loc:(get_loc ()) @@ Id.of_string id
+  let var id = var ~loc:(get_loc ()) @@ Id.define id
 
-  let abs arg tp body = abs ~loc:(get_loc ()) (Id.of_string arg) tp body
+  let abs arg tp body = abs ~loc:(get_loc ()) (Id.define arg) tp body
 
   let app fn arg = app ~loc:(get_loc ()) fn arg
 
-  let tp_abs arg body = tp_abs ~loc:(get_loc ()) (Id.of_string arg) body
+  let tp_abs arg body = tp_abs ~loc:(get_loc ()) (Id.define arg) body
 
   let tp_app fn arg = tp_app ~loc:(get_loc ()) fn arg
 
   let rcrd fields =
     rcrd ~loc:(get_loc ()) @@
-      List.map (fun (id, tm) -> Id.of_string id, tm) fields
+      List.map (fun (id, tm) -> Id.define id, tm) fields
 
   let proj rcrd field =
-    proj ~loc:(get_loc ()) rcrd @@ Id.of_string field
+    proj ~loc:(get_loc ()) rcrd @@ Id.define field
 
   let vrnt (case, data, tp) = match data with
-    | None -> vrnt ~loc:(get_loc ()) (Id.of_string case) (rcrd []) tp
-    | Some data -> vrnt ~loc:(get_loc ()) (Id.of_string case) data tp
+    | None -> vrnt ~loc:(get_loc ()) (Id.define case) (rcrd []) tp
+    | Some data -> vrnt ~loc:(get_loc ()) (Id.define case) data tp
 
   let case vrnt cases =
     let fn (case, id, tm) = match id with
-      | None -> Id.of_string case, Id.of_string "_", tm
-      | Some id -> Id.of_string case, Id.of_string id, tm
+      | None -> Id.define case, Id.define "_", tm
+      | Some id -> Id.define case, Id.define id, tm
     in
     case ~loc:(get_loc ()) vrnt @@ List.map fn cases
 

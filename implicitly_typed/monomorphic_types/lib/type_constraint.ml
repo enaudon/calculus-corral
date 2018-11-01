@@ -96,7 +96,7 @@ let type_eq ?loc lhs rhs = loc_wrap loc @@ Type_equality (lhs, rhs)
 let conj ?loc lhs rhs = loc_wrap loc @@ Conjunction (lhs, rhs)
 
 let exists ?loc fn =
-  let id = Id.fresh_upper () in
+  let id = Id.gen_upper () in
   loc_wrap loc @@ Existential (id, fn id)
 
 let def ?loc id tp c = loc_wrap loc @@ Definition (id, tp, c)

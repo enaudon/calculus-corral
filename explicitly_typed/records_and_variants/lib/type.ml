@@ -44,11 +44,11 @@ let row_to_list : t -> (Id.t * t) list * t option = fun row ->
   let fields, rest = to_list [] row in
   List.rev fields, rest
 
-let func_id = Id.of_string "->"
+let func_id = Id.define "->"
 
-let rcrd_id = Id.of_string "rcrd"
+let rcrd_id = Id.define "rcrd"
 
-let vrnt_id = Id.of_string "vrnt"
+let vrnt_id = Id.define "vrnt"
 
 (* Kinding *)
 
@@ -138,7 +138,7 @@ let rec subst fvs sub tp = match tp with
   | Variable id ->
     Id.Map.find_default tp id sub
   | Abstraction (arg, kn, body) when Id.Set.mem arg fvs ->
-    let arg' = Id.fresh_upper () in
+    let arg' = Id.gen_upper () in
     let sub' = Id.Map.add arg (var arg') sub in
     abs arg' kn @@ subst (Id.Set.add arg' fvs) sub' body
   | Abstraction (arg, kn, body) ->
@@ -147,7 +147,7 @@ let rec subst fvs sub tp = match tp with
   | Application (fn, arg) ->
     app (subst fvs sub fn) (subst fvs sub arg)
   | Universal (quant, kn, body) when Id.Set.mem quant fvs ->
-    let quant' = Id.fresh_upper () in
+    let quant' = Id.gen_upper () in
     let sub' = Id.Map.add quant (var quant') sub in
     forall quant' kn @@ subst (Id.Set.add quant' fvs) sub' body
   | Universal (quant, kn, body) ->
@@ -240,7 +240,7 @@ let simplify ?ctx:ctx_opt tp =
       let cntr = ref (-1) in
       let fresh () =
         incr cntr;
-        Id.of_string @@ Misc.int_to_upper !cntr
+        Id.define @@ Misc.int_to_upper !cntr
       in
       fresh, Id.Map.empty
     | Some ctx_opt ->

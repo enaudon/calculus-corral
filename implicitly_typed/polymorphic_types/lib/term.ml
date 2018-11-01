@@ -45,7 +45,7 @@ let coerce tvs qs ir_tm =
   let unused = Id.Set.elements diff in
 
   (* Create a substitution *)
-  let id = Id.of_string "_" in
+  let id = Id.define "_" in
   let bot = IR.Type.forall id @@ IR.Type.var id in
   let sub = Id.Map.of_list @@ List.map (fun id -> id, bot) unused in
 
@@ -67,7 +67,7 @@ let infer_hm
   in
 
   let fresh_type_var state =
-    let tv = Type.var @@ Id.fresh_upper () in
+    let tv = Type.var @@ Id.gen_upper () in
     Type.register state tv, tv
   in
 

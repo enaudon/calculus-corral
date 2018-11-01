@@ -17,7 +17,7 @@ let var id = Variable id
 
 let base_id = "*"
 
-let base = var (Id.of_string base_id)
+let base = var (Id.define base_id)
 
 let func arg res = Function (arg, res)
 
@@ -56,7 +56,7 @@ let rec beta_reduce ?deep env tp =
 
 let rec check env tp = match tp with
   | Variable id ->
-    if not @@ Id.Set.mem id env && id <> Id.of_string base_id then
+    if not @@ Id.Set.mem id env && id <> Id.define base_id then
       error "check" @@
         Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
   | Function (arg, res) ->
@@ -95,7 +95,7 @@ let rec subst fvs sub tp = match tp with
   | Function (arg, res) ->
     func (subst fvs sub arg) (subst fvs sub res)
   | Existential (quant, body) when Id.Set.mem quant fvs ->
-    let quant' = Id.fresh_upper () in
+    let quant' = Id.gen_upper () in
     let sub' = Id.Map.add quant (var quant') sub in
     exists quant' @@ subst (Id.Set.add quant' fvs) sub' body
   | Existential (quant, body) ->
@@ -109,7 +109,7 @@ let simplify ?ctx:ctx_opt tp =
       let cntr = ref (-1) in
       let fresh () =
         incr cntr;
-        Id.of_string @@ Misc.int_to_upper !cntr
+        Id.define @@ Misc.int_to_upper !cntr
       in
       fresh, Id.Map.empty
     | Some ctx_opt ->

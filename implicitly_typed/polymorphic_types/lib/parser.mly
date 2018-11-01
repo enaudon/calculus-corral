@@ -19,14 +19,14 @@ module Term = struct
 
   include Term
 
-  let var id = var ~loc:(get_loc ()) @@ Id.of_string id
+  let var id = var ~loc:(get_loc ()) @@ Id.define id
 
-  let abs arg body = abs ~loc:(get_loc ()) (Id.of_string arg) body
+  let abs arg body = abs ~loc:(get_loc ()) (Id.define arg) body
 
   let app fn arg = app ~loc:(get_loc ()) fn arg
 
   let bind id value body =
-    bind ~loc:(get_loc ()) (Id.of_string id) value body
+    bind ~loc:(get_loc ()) (Id.define id) value body
 
 end
 

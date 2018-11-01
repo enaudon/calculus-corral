@@ -19,11 +19,11 @@ module Type = struct
 
   include Type
 
-  let var id = var @@ Id.of_string id
+  let var id = var @@ Id.define id
 
-  let abs arg kn body = abs (Id.of_string arg) kn body
+  let abs arg kn body = abs (Id.define arg) kn body
 
-  let forall quant kn body = forall (Id.of_string quant) kn body
+  let forall quant kn body = forall (Id.define quant) kn body
 
 end
 
@@ -31,13 +31,13 @@ module Term = struct
 
   include Term
 
-  let var id = var ~loc:(get_loc ()) @@ Id.of_string id
+  let var id = var ~loc:(get_loc ()) @@ Id.define id
 
-  let abs arg tp body = abs ~loc:(get_loc ()) (Id.of_string arg) tp body
+  let abs arg tp body = abs ~loc:(get_loc ()) (Id.define arg) tp body
 
   let app fn arg = app ~loc:(get_loc ()) fn arg
 
-  let tp_abs arg body = tp_abs ~loc:(get_loc ()) (Id.of_string arg) body
+  let tp_abs arg body = tp_abs ~loc:(get_loc ()) (Id.define arg) body
 
   let tp_app fn arg = tp_app ~loc:(get_loc ()) fn arg
 

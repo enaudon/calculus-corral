@@ -63,7 +63,7 @@ let coerce tvs qs ir_tm =
   let unused = List.fold_left diff_fn tvs qs in
 
   (* Create a substitution *)
-  let id = Id.of_string "_" in
+  let id = Id.define "_" in
   let bot kn = IR.Type.forall id kn @@ IR.Type.var id in
   let sub = Id.Map.map (fun kn -> bot @@ Kind.to_intl_repr kn) unused in
 
@@ -88,12 +88,12 @@ let infer_hm
   let quant_to_ir (q, kn) = q, Kind.to_intl_repr kn in
 
   let fresh_type_var state kn =
-    let tv = Type.var @@ Id.fresh_upper () in
+    let tv = Type.var @@ Id.gen_upper () in
     Type.register state tv kn, tv
   in
 
   let fresh_type_var_list state n kn =
-    let init_fn _ = Type.var @@ Id.fresh_upper () in
+    let init_fn _ = Type.var @@ Id.gen_upper () in
     let tvs = Misc.list_init n init_fn in
     let fold_fn tv state = Type.register state tv kn in
     let state = List.fold_right fold_fn tvs state in

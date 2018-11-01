@@ -116,20 +116,29 @@ end
 
 (** {1 Functions} *)
 
-(** [fresh_lower ()] produces a fresh lowercase identifier. *)
-val fresh_lower : unit -> t
+(**
+  [define str] constructs a user-defined identifier with the specified
+  string [str].
+ *)
+val define : string -> t
 
-(** [fresh_upper ()] produces a fresh uppercase identifier. *)
-val fresh_upper : unit -> t
+(**
+  [gen_lower str] constructs a generated identifier with a fresh
+  lowercase string.
+ *)
+val gen_lower : unit -> t
+
+(**
+  [gen_upper str] constructs a generated identifier with a fresh
+  upper string.
+ *)
+val gen_upper : unit -> t
 
 (**
   [reset ()] resets the internal data structures for generating fresh
   identifiers.
  *)
 val reset : unit -> unit
-
-(** [of_string str] creates an identifier from the string [str]. *)
-val of_string : string -> t
 
 (** [to_string id] computes a string representation of [id]. *)
 val to_string : t -> string

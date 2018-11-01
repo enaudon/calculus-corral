@@ -19,7 +19,7 @@ module Type = struct
 
   include Type
 
-  let var id = var @@ Id.of_string id
+  let var id = var @@ Id.define id
 
 end
 
@@ -27,9 +27,9 @@ module Term = struct
 
   include Term
 
-  let var id = var ~loc:(get_loc ()) @@ Id.of_string id
+  let var id = var ~loc:(get_loc ()) @@ Id.define id
 
-  let abs arg tp body = abs ~loc:(get_loc ()) (Id.of_string arg) tp body
+  let abs arg tp body = abs ~loc:(get_loc ()) (Id.define arg) tp body
 
   let app fn arg = app ~loc:(get_loc ()) fn arg
 

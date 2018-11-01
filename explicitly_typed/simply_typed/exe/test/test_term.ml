@@ -8,9 +8,9 @@ module Term = struct
 
   include Simply_typed.Term
 
-  let var id = var (Id.of_string id)
+  let var id = var (Id.define id)
 
-  let abs arg tp body = abs (Id.of_string arg) tp body
+  let abs arg tp body = abs (Id.define arg) tp body
 
   let app fn arg = app fn arg
 

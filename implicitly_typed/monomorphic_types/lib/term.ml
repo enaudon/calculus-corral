@@ -61,19 +61,19 @@ let infer_hm : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
         in
         unify loc sub exp_tp tp
       | Abstraction (arg, body) ->
-        let arg_tp = Type.var @@ Id.fresh_upper () in
-        let body_tp = Type.var @@ Id.fresh_upper () in
+        let arg_tp = Type.var @@ Id.gen_upper () in
+        let body_tp = Type.var @@ Id.gen_upper () in
         let sub' = infer (Id.Map.add arg arg_tp env) sub body_tp body in
         unify loc sub' exp_tp @@ Type.func arg_tp body_tp
       | Application (fn, arg) ->
-        let tp = Type.var @@ Id.fresh_upper () in
+        let tp = Type.var @@ Id.gen_upper () in
         infer env (infer env sub (Type.func tp exp_tp) fn) tp arg
   in
 
   infer env Sub.identity exp_tp tm
 
 let to_type_hm env tm =
-  let tp = Type.var @@ Id.fresh_upper () in
+  let tp = Type.var @@ Id.gen_upper () in
   let sub = infer_hm env tp tm in
   Sub.apply tp sub
 
@@ -112,7 +112,7 @@ let infer_pr : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
     Id.Map.fold (fun id -> TC.def id) env (constrain exp_tp tm)
 
 let to_type_pr env tm =
-  let tp = Type.var @@ Id.fresh_upper () in
+  let tp = Type.var @@ Id.gen_upper () in
   let sub = infer_pr env tp tm in
   Sub.apply tp sub
 

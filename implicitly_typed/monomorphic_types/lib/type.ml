@@ -91,7 +91,7 @@ let simplify tp =
     let cntr = ref (-1) in
     fun () ->
       incr cntr;
-      Id.of_string @@ Misc.int_to_upper !cntr
+      Id.define @@ Misc.int_to_upper !cntr
   in
 
   let simplify_id =

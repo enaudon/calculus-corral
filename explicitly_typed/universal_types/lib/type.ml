@@ -99,7 +99,7 @@ let rec subst fvs sub tp = match tp with
   | Function (arg, res) ->
     func (subst fvs sub arg) (subst fvs sub res)
   | Universal (quant, body) when Id.Set.mem quant fvs ->
-    let quant' = Id.fresh_upper () in
+    let quant' = Id.gen_upper () in
     let sub' = Id.Map.add quant (var quant') sub in
     forall quant' @@ subst (Id.Set.add quant' fvs) sub' body
   | Universal (quant, body) ->
@@ -113,7 +113,7 @@ let simplify ?ctx:ctx_opt tp =
       let cntr = ref (-1) in
       let fresh () =
         incr cntr;
-        Id.of_string @@ Misc.int_to_upper !cntr
+        Id.define @@ Misc.int_to_upper !cntr
       in
       fresh, Id.Map.empty
     | Some ctx_opt ->

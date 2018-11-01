@@ -221,7 +221,7 @@ let inst state tp =
   let tp = State.Sub.apply tp state in
 
   let quants = tp.quants in
-  let vars = List.map (fun _ -> var @@ Id.fresh_upper ()) quants in
+  let vars = List.map (fun _ -> var @@ Id.gen_upper ()) quants in
   let state' = List.fold_right register vars state in
   let env = Id.Map.of_list @@ List.combine quants vars in
 
@@ -255,7 +255,7 @@ let simplify { quants; body } =
     let cntr = ref (-1) in
     fun () ->
       incr cntr;
-      Id.of_string @@ Misc.int_to_upper !cntr
+      Id.define @@ Misc.int_to_upper !cntr
   in
 
   let simplify_id =

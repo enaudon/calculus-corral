@@ -71,11 +71,11 @@ let scheme_to_mono : t -> mono = fun tp ->
   else
     tp.body
 
-let func_id = Id.of_string "->"
+let func_id = Id.define "->"
 
-let rcrd_id = Id.of_string "rcrd"
+let rcrd_id = Id.define "rcrd"
 
-let vrnt_id = Id.of_string "vrnt"
+let vrnt_id = Id.define "vrnt"
 
 (* Kinding *)
 
@@ -294,7 +294,7 @@ let unify state tp1 tp2 =
         if id1 = id2 then
           unify (unify state m1 m2) rest1 rest2
         else
-          let tv = Id.fresh_upper () in
+          let tv = Id.gen_upper () in
           let state = State.Pools.register state tv Kind.row in
           let rest = var tv in
           let state = unify state rest1 @@ row_cons id2 m2 rest in
@@ -357,7 +357,7 @@ let gen_exit state tp =
 let inst state tp =
 
   let fresh_var kn (state, tvs) =
-    let tv = var @@ Id.fresh_upper () in
+    let tv = var @@ Id.gen_upper () in
     let state = register state tv kn in
     state, tv :: tvs
   in
@@ -410,7 +410,7 @@ let simplify { quants; body } =
     let cntr = ref (-1) in
     fun () ->
       incr cntr;
-      Id.of_string @@ Misc.int_to_upper !cntr
+      Id.define @@ Misc.int_to_upper !cntr
   in
 
   let simplify_id =

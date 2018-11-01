@@ -15,7 +15,7 @@ let var id = Variable id
 
 let base_id = "*"
 
-let base = var (Id.of_string base_id)
+let base = var (Id.define base_id)
 
 let func arg res = Function (arg, res)
 
@@ -41,7 +41,7 @@ let rec beta_reduce ?deep env tp =
 
 let rec check env tp = match tp with
   | Variable id ->
-    if not @@ Id.Set.mem id env && id <> Id.of_string base_id then
+    if not @@ Id.Set.mem id env && id <> Id.define base_id then
       error "check" @@
         Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
   | Function (arg, res) ->

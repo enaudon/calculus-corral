@@ -1,4 +1,6 @@
-type t = string
+type t =
+  | Generated of string
+  | Defined of string
 
 exception Unbound of t
 
@@ -38,34 +40,37 @@ module Map = struct
 
 end
 
-let fresh_lower, reset_lower =
-  let cntr = ref (-1) in
-  let fresh () =
-    incr cntr;
-    Miscellaneous.int_to_lower !cntr
-  in
-  let reset () = cntr := -1 in
-  fresh, reset
+let define str = Defined str
 
-let fresh_upper, reset_upper =
+let gen_lower, reset_lower =
   let cntr = ref (-1) in
-  let fresh () =
+  let gen () =
     incr cntr;
-    Miscellaneous.int_to_upper !cntr
+    Generated (Miscellaneous.int_to_lower !cntr)
   in
   let reset () = cntr := -1 in
-  fresh, reset
+  gen, reset
+
+let gen_upper, reset_upper =
+  let cntr = ref (-1) in
+  let gen () =
+    incr cntr;
+    Generated (Miscellaneous.int_to_upper !cntr)
+  in
+  let reset () = cntr := -1 in
+  gen, reset
 
 let reset () =
   reset_lower ();
   reset_upper ()
 
-let of_string str = str
-
-let to_string id = id
+let to_string id = match id with
+  | Generated str -> str
+  | Defined str -> str
 
 let rec alpha_equivalent env id1 id2 = match env with
-  | [] -> id1 = id2
+  | [] ->
+    id1 = id2
   | (id1', id2') :: env' ->
     (id1 = id1' && id2 = id2') ||
       (id1 <> id1' && id2 <> id2' && alpha_equivalent env' id1 id2)
