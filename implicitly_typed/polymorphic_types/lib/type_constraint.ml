@@ -37,7 +37,7 @@ let let_
       ('b t) ->
       (Type.t * Id.Set.t * 'a * 'b) t
     = fun loc_opt id_opt fn (rhs_c, rhs_k) ->
-  let tv = Type.var @@ Option.default (Id.gen_upper ()) id_opt in
+  let tv = Type.var @@ Id.gen_upper () in
   let lhs_c, lhs_k = fn tv in
   let tvs_ref = ref Id.Set.empty in
   let tp_ref = ref tv in
