@@ -117,15 +117,19 @@ let simplify ?ctx:ctx_opt tp =
   in
 
   let rec simplify env tp = match tp with
-    | Variable id ->
+    | Variable id when Id.is_generated id ->
       Id.Map.find_default tp id env
+    | Variable _ ->
+      tp
     | Function (arg, res) ->
       let arg' = simplify env arg in
       let res' = simplify env res in
       func arg' res'
-    | Existential (quant, body) ->
+    | Existential (quant, body) when Id.is_generated quant ->
       let quant' = fresh () in
       exists quant' @@ simplify (Id.Map.add quant (var quant') env) body
+    | Existential (quant, body) ->
+      exists quant @@ simplify env body
   in
 
   simplify env tp

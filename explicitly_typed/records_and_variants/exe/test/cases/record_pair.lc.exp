@@ -12,7 +12,7 @@ snd
   = \A :: * . \B :: * . \p : Pair A B . p.snd ;
 p
   : {fst : forall A :: * . A -> A; snd : forall A :: * . A -> A -> A}
-  = {fst : \A :: * . \x : A . x; snd : \B :: * . \x : B . \y : B . x} ;
+  = {fst : \A :: * . \x : A . x; snd : \A :: * . \x : A . \y : A . x} ;
 fst forall A :: * . A -> A forall A :: * . A -> A -> A p
   : forall A :: * . A -> A
   = \A :: * . \x : A . x ;

@@ -135,6 +135,18 @@ val gen_lower : unit -> t
 val gen_upper : unit -> t
 
 (**
+  [is_defined id] returns [true] if [id] was user-defined, or [false]
+  otherwise.
+ *)
+val is_defined : t -> bool
+
+(**
+  [is_generated id] returns [true] if [id] was generated, or [false]
+  otherwise.
+ *)
+val is_generated : t -> bool
+
+(**
   [reset ()] resets the internal data structures for generating fresh
   identifiers.
  *)

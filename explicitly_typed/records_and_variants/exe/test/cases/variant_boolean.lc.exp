@@ -57,7 +57,7 @@ if Bool tru fls tru
   = [False {} of Bool] ;
 if forall A :: * . A -> A fls (\A :: * . \x : A . x) (\B :: * . \y : B . y)
   : forall A :: * . A -> A
-  = \A :: * . \y : A . y ;
+  = \B :: * . \y : B . y ;
 pair Bool Bool fls tru
   : {fst : [False : {}; True : {}]; snd : [False : {}; True : {}]}
   = {fst : [False {} of Bool]; snd : [True {} of Bool]} ;

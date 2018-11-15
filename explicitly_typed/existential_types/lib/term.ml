@@ -313,12 +313,16 @@ let simplify tm =
         let tm' = simplify env tm in
         let tp2' = Type.simplify ~ctx:(fresh, env) tp2 in
         pack loc tp1' tm' tp2'
-      | Unpack (tp_id, tm_id, pack, body) ->
+      | Unpack (tp_id, tm_id, pack, body) when Id.is_generated tp_id ->
         let tp_id' = fresh () in
         let env' = Id.Map.add tp_id (Type.var tp_id') env in
         let pack' = simplify env' pack in
         let body' = simplify env' body in
         unpack loc tp_id' tm_id pack' body'
+      | Unpack (tp_id, tm_id, pack, body) ->
+        let pack = simplify env pack in
+        let body = simplify env body in
+        unpack loc tp_id tm_id pack body
   in
 
   simplify Id.Map.empty tm

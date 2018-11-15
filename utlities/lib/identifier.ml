@@ -60,6 +60,14 @@ let gen_upper, reset_upper =
   let reset () = cntr := -1 in
   gen, reset
 
+let is_defined id = match id with
+  | Generated _ -> false
+  | Defined _ -> true
+
+let is_generated id = match id with
+  | Generated _ -> true
+  | Defined _ -> false
+
 let reset () =
   reset_lower ();
   reset_upper ()

@@ -248,19 +248,25 @@ let simplify ?ctx:ctx_opt tp =
   in
 
   let rec simplify env tp = match tp with
-    | Variable id ->
+    | Variable id when Id.is_generated id ->
       Id.Map.find_default tp id env
-    | Abstraction (arg, kn, body) ->
+    | Variable _ ->
+      tp
+    | Abstraction (arg, kn, body) when Id.is_generated arg ->
       let arg' = fresh () in
       abs arg' kn @@ simplify (Id.Map.add arg (var arg') env) body
+    | Abstraction (arg, kn, body) ->
+      abs arg kn @@ simplify env body
     | Application (fn, arg) ->
       let fn' = simplify env fn in
       let arg' = simplify env arg in
       app fn' arg'
-    | Universal (quant, kn, body) ->
+    | Universal (quant, kn, body) when Id.is_generated quant ->
       let quant' = fresh () in
       forall quant' kn @@
         simplify (Id.Map.add quant (var quant') env) body
+    | Universal (quant, kn, body) ->
+      forall quant kn @@ simplify env body
     | Row_nil ->
       row_nil
     | Row_cons (id, tp, rest) ->

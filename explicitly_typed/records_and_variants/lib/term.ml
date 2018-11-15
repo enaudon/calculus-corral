@@ -480,11 +480,12 @@ let simplify tm =
         let fn' = simplify env fn in
         let arg' = simplify env arg in
         app loc fn' arg'
-      | Type_abs (arg, kn, body) ->
+      | Type_abs (arg, kn, body) when Id.is_generated arg ->
         let arg' = fresh () in
         let env' = Id.Map.add arg (Type.var arg') env in
-        let body' = simplify env' body in
-        tp_abs loc arg' kn body'
+        tp_abs loc arg' kn @@ simplify env' body
+      | Type_abs (arg, kn, body) ->
+        tp_abs loc arg kn @@ simplify env body
       | Type_app (fn, arg) ->
         let fn' = simplify env fn in
         let arg' = Type.simplify ~ctx:(fresh, env) arg in
@@ -495,9 +496,9 @@ let simplify tm =
       | Projection (rcrd, field) ->
         proj loc (simplify env rcrd) field
       | Variant (case, data, tp) ->
-        vrnt loc case
-          (simplify env data)
-          (Type.simplify ~ctx:(fresh, env) tp)
+        let data' = simplify env data in
+        let tp' = Type.simplify ~ctx:(fresh, env) tp in
+        vrnt loc case data' tp'
       | Case (vrnt, cases) ->
         let simplify_case (case, id, tm) = case, id, simplify env tm in
         let vrnt' = simplify env vrnt in
