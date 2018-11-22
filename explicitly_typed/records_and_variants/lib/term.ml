@@ -278,12 +278,6 @@ let rec subst_tp fvs sub tm =
       case loc (subst_tp fvs sub vrnt) (List.map subst_case cases)
 
 (**
-  [subst_tm tm id tm'] replaces occurences of [id] in [tm] with [tm'].
-
-  As with [subst_tp], [subst_tm] avoids name capture by following the
-  Barendregt convention.
- *)
-(*
   As with [subst_tp], [subst_tm] avoids name capture by following the
   Barendregt convention.
  *)

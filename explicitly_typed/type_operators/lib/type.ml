@@ -107,30 +107,32 @@ let rec subst fvs sub tp = match tp with
     forall quant kn @@
       subst (Id.Set.add quant fvs) (Id.Map.del quant sub) body
 
-let rec beta_reduce ?deep env tp = match tp with
-  | Variable id ->
-    Id.Map.find_default tp id env
-  | Abstraction (arg, kn, body) ->
-    if deep <> None then
-      abs arg kn @@ beta_reduce env body
-    else
-      tp
-  | Application (fn, act_arg) ->
-    let fn' = beta_reduce env fn in
-    let act_arg' = beta_reduce env act_arg in
-    begin match fn' with
-      | Abstraction (fml_arg, _, body) ->
-        let sub = Id.Map.singleton fml_arg act_arg' in
-        let body' = subst (free_vars act_arg') sub body in
-        beta_reduce env body'
-      | _ ->
-        app fn' act_arg'
-    end
-  | Universal (quant, kn, body) ->
-    if deep <> None then
-      forall quant kn @@ beta_reduce (Id.Map.del quant env) body
-    else
-      tp
+let rec beta_reduce ?deep env tp =
+  let beta_reduce = beta_reduce ?deep in
+  match tp with
+    | Variable id ->
+      Id.Map.find_default tp id env
+    | Abstraction (arg, kn, body) ->
+      if deep <> None then
+        abs arg kn @@ beta_reduce env body
+      else
+        tp
+    | Application (fn, act_arg) ->
+      let fn' = beta_reduce env fn in
+      let act_arg' = beta_reduce env act_arg in
+      begin match fn' with
+        | Abstraction (fml_arg, _, body) ->
+          let sub = Id.Map.singleton fml_arg act_arg' in
+          let body' = subst (free_vars act_arg') sub body in
+          beta_reduce env body'
+        | _ ->
+          app fn' act_arg'
+      end
+    | Universal (quant, kn, body) ->
+      if deep <> None then
+        forall quant kn @@ beta_reduce (Id.Map.del quant env) body
+      else
+        tp
 
 (* Utilities *)
 

@@ -109,7 +109,7 @@ let rec to_kind env tp = match tp with
 
 (* Transformations *)
 
-(* TODO: Think, is [default_env] safe here? *)
+(* TODO: Think, would [default_env] be safe here? *)
 let free_vars : t -> Id.Set.t =
   let rec free_vars fvs tp = match tp with
     | Variable id ->
@@ -128,8 +128,6 @@ let free_vars : t -> Id.Set.t =
   free_vars Id.Set.empty
 
 (**
-  [subst tp id tp'] replaces occurences of [id] in [tp] with [tp'].
-
   [subst] avoids name capture by renaming binders in [tp] to follow the
   Barendregt convention--i.e. the names of bound variable are chosen
   distinct from those of free variables.
@@ -158,34 +156,36 @@ let rec subst fvs sub tp = match tp with
   | Row_cons (id, tp, rest) ->
     row_cons id (subst fvs sub tp) (subst fvs sub rest)
 
-let rec beta_reduce ?deep env tp = match tp with
-  | Variable id ->
-    Id.Map.find_default tp id env
-  | Abstraction (arg, kn, body) ->
-    if deep <> None then
-      abs arg kn @@ beta_reduce env body
-    else
-      tp
-  | Application (fn, act_arg) ->
-    let fn' = beta_reduce env fn in
-    let act_arg' = beta_reduce env act_arg in
-    begin match fn' with
-      | Abstraction (fml_arg, _, body) ->
-        let sub = Id.Map.singleton fml_arg act_arg' in
-        let body' = subst (free_vars act_arg') sub body in
-        beta_reduce env body'
-      | _ ->
-        app fn' act_arg'
-    end
-  | Universal (quant, kn, body) ->
-    if deep <> None then
-      forall quant kn @@ beta_reduce (Id.Map.del quant env) body
-    else
-      tp
-  | Row_nil ->
-    row_nil
-  | Row_cons (id, tp, rest) ->
-    row_cons id (beta_reduce env tp) (beta_reduce env rest)
+let rec beta_reduce ?deep env tp =
+  let beta_reduce = beta_reduce ?deep in
+  match tp with
+    | Variable id ->
+      Id.Map.find_default tp id env
+    | Abstraction (arg, kn, body) ->
+      if deep <> None then
+        abs arg kn @@ beta_reduce env body
+      else
+        tp
+    | Application (fn, act_arg) ->
+      let fn' = beta_reduce env fn in
+      let act_arg' = beta_reduce env act_arg in
+      begin match fn' with
+        | Abstraction (fml_arg, _, body) ->
+          let sub = Id.Map.singleton fml_arg act_arg' in
+          let body' = subst (free_vars act_arg') sub body in
+          beta_reduce env body'
+        | _ ->
+          app fn' act_arg'
+      end
+    | Universal (quant, kn, body) ->
+      if deep <> None then
+        forall quant kn @@ beta_reduce (Id.Map.del quant env) body
+      else
+        tp
+    | Row_nil ->
+      row_nil
+    | Row_cons (id, tp, rest) ->
+      row_cons id (beta_reduce env tp) (beta_reduce env rest)
 
 (* Utilities *)
 

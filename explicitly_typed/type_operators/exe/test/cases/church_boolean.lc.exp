@@ -59,7 +59,7 @@ if forall A :: * . A -> A fls (\A :: * . \x : A . x) (\B :: * . \y : B . y)
   : forall A :: * . A -> A
   = \B :: * . \y : B . y ;
 pair Bool Bool fls tru
-  : forall C :: * . (Bool -> Bool -> C) -> C
+  : forall C :: * . ((forall A :: * . A -> A -> A) -> (forall A :: * . A -> A -> A) -> C) -> C
   = \C :: * . \p : Bool -> Bool -> C . p (\A :: * . \t : A . \f : A . f) (\A :: * . \t : A . \f : A . t) ;
 fst Bool Bool (pair Bool Bool fls tru)
   : forall A :: * . A -> A -> A
@@ -68,7 +68,7 @@ snd Bool Bool (pair Bool Bool fls tru)
   : forall A :: * . A -> A -> A
   = \A :: * . \t : A . \f : A . t ;
 pair Bool forall A :: * . A -> A fls (\A :: * . \x : A . x)
-  : forall C :: * . (Bool -> (forall A :: * . A -> A) -> C) -> C
+  : forall C :: * . ((forall A :: * . A -> A -> A) -> (forall A :: * . A -> A) -> C) -> C
   = \C :: * . \p : Bool -> (forall A :: * . A -> A) -> C . p (\A :: * . \t : A . \f : A . f) (\A :: * . \x : A . x) ;
 fst Bool forall A :: * . A -> A (pair Bool forall A :: * . A -> A fls (\A :: * . \x : A . x))
   : forall A :: * . A -> A -> A

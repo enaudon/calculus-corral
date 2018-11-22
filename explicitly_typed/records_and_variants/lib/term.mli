@@ -32,7 +32,8 @@ val app' : ?loc : Location.t -> t -> t list -> t
 val tp_abs : ?loc : Location.t -> Identifier.t -> Kind.t -> t -> t
 
 (**
-  [tp_abs' args kn body] constructs the abstraction of [args] from [body].
+  [tp_abs' args kn body] constructs the abstraction of [args] from
+  [body].
  *)
 val tp_abs' :
   ?loc : Location.t -> (Identifier.t * Kind.t) list -> t -> t
