@@ -1,0 +1,26 @@
+List = \A :: * . mu List :: * . [Tail; Link : {value : A; next : List}] ;
+
+tail = \A :: * .
+  roll (List A) [Tail of [Tail; Link : {value : A; next : List A}]] ;
+
+link = \A :: * . \v : A . \n : List A .
+  roll
+    (List A)
+    [ Link {value = v; next = n} of
+      [Tail; Link : {value : A; next : List A}] ] ;
+
+map =
+  \A :: * . \B :: * . \fn : A -> B .
+    fix (\map : List A -> List B . \list : List A .
+    case unroll list of [
+      Tail -> tail B;
+      Link l -> link B (fn l.value) (map l.next)
+    ]) ;
+
+fold =
+  \A :: * . \B :: * . \fn : A -> B -> A .
+    fix (\fold : A -> List B -> A . \init : A . \list : List B .
+      case unroll list of [
+        Tail -> init;
+        Link l -> fold (fn init l.value) l.next
+      ]) ;

@@ -1,0 +1,15 @@
+List
+  : * => *
+  = \A :: * . mu List :: * . [Tail : {}; Link : {value : A; next : List}] ;
+tail
+  : forall A :: * . List A
+  = \A :: * . roll List A [Tail {} of [Tail : {}; Link : {value : A; next : List A}]] ;
+link
+  : forall A :: * . A -> (List A) -> List A
+  = \A :: * . \v : A . \n : List A . roll List A [Link {value : v; next : n} of [Tail : {}; Link : {value : A; next : List A}]] ;
+map
+  : forall A :: * . forall B :: * . (A -> B) -> (mu List :: * . [Tail : {}; Link : {value : A; next : List}]) -> mu B :: * . [Tail : {}; Link : {value : B; next : B}]
+  = \A :: * . \B :: * . \fn : A -> B . fix (\map : (List A) -> List B . \list : List A . case unroll list of [Tail _ -> roll List B [Tail {} of [Tail : {}; Link : {value : B; next : List B}]]; Link l -> roll List B [Link {value : fn l.value; next : map l.next} of [Tail : {}; Link : {value : B; next : List B}]]]) ;
+fold
+  : forall A :: * . forall B :: * . (A -> B -> A) -> A -> (mu List :: * . [Tail : {}; Link : {value : B; next : List}]) -> A
+  = \A :: * . \B :: * . \fn : A -> B -> A . fix (\fold : A -> (List B) -> A . \init : A . \list : List B . case unroll list of [Tail _ -> init; Link l -> fold (fn init l.value) l.next]) ;

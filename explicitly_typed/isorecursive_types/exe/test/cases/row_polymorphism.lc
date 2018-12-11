@@ -1,0 +1,37 @@
+get_x = \A :: * . \B :: <> . \r : {x : A | B} . r.x ;
+
+get_x (forall A :: * . A -> A) <> {x = \A :: * . \x : A . x} ;
+
+get_x
+  (forall A :: * . A -> A)
+  <y : forall B :: * . B -> B>
+  {x = \A :: * . \x : A . x; y = \B :: * . \y : B . y} ;
+
+get_x
+  (forall A :: * . A -> A)
+  <y : forall B :: * . B -> B>
+  {y = \B :: * . \y : B . y; x = \A :: * . \x : A . x} ;
+
+foo =
+  \A :: <> .
+    [Foo (\B :: * . \x : B . x) of [Foo : forall B :: * . B -> B | A]] ;
+
+foo <Bar : forall A :: * . A -> A> ;
+
+get_foo_bar =
+  \x : [Foo : forall A :: * . A -> A; Bar : forall A :: * . A -> A] .
+    case x of [
+      Foo x -> x ;
+      Bar x -> x ;
+    ] ;
+
+get_foo_bar (foo <Bar : forall A :: * . A -> A>) ;
+
+get_bar_foo =
+  \x : [Bar : forall A :: * . A -> A; Foo : forall A :: * . A -> A] .
+    case x of [
+      Bar x -> x ;
+      Foo x -> x ;
+    ] ;
+
+get_bar_foo (foo <Bar : forall A :: * . A -> A>) ;

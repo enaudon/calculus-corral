@@ -1,0 +1,67 @@
+Nat = forall A :: * . (A -> A) -> A -> A ;
+
+zero = \A :: * . \s : A -> A . \z : A . z ;
+
+one = \A :: * . \s : A -> A . \z : A . s z ;
+
+two = \A :: * . \s : A -> A . \z : A . s (s z) ;
+
+three = \A :: * . \s : A -> A . \z : A . s (s (s z)) ;
+
+four = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;
+
+eight =
+  \A :: * . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
+
+succ = \n : Nat . \A :: * . \s : A -> A . \z : A . s (n A s z) ;
+
+add =
+  \m : Nat . \n : Nat . \A :: * . \s : A -> A . \z : A .
+    m A s (n A s z) ;
+
+mul = \m : Nat . \n : Nat . \A :: * . \s : A -> A . m A (n A s) ;
+
+if_zero =
+  \m : Nat . \n : Nat . \o : Nat . \A :: * . \s : A -> A . \z : A .
+    m A (\x : A . o A s z) (n A s z) ;
+
+succ one ;
+
+add one zero ;
+
+add one two ;
+
+mul two two ;
+
+mul two zero ;
+
+mul two (mul two two) ;
+
+if_zero zero one two ;
+
+if_zero one one two ;
+
+if_zero two one two ;
+
+if_zero
+  (add (mul four four) one)
+  (mul eight two)
+  (add one (add two one)) ;
+
+pair Nat Nat zero one ;
+
+fst Nat Nat (pair Nat Nat zero one) ;
+
+snd Nat Nat (pair Nat Nat zero one) ;
+
+pair Nat (forall A :: * . A -> A) zero (\A :: * . \x : A . x) ;
+
+fst
+  Nat
+  (forall A :: * . A -> A)
+  (pair Nat (forall A :: * . A -> A) zero (\A :: * . \x : A . x)) ;
+
+snd
+  Nat
+  (forall A :: * . A -> A)
+  (pair Nat (forall A :: * . A -> A) zero (\A :: * . \x : A . x)) ;

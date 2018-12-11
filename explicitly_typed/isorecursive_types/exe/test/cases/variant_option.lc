@@ -1,0 +1,26 @@
+Option = \A :: * . [None; Some : A] ;
+
+none = \A :: * . [None of Option A] ;
+
+some = \A :: * . \x : A . [Some x of Option A] ;
+
+default =
+  \A :: * . \x : A . \opt : Option A . case opt of [
+    None -> x;
+    Some x -> x
+  ] ;
+
+map =
+  \A :: * . \B :: * . \fn : A -> B . \opt : Option A .
+    case opt of [
+      None -> none B;
+      Some x -> some B (fn x)
+    ] ;
+
+fold =
+  \A :: * . \B :: * .
+    \fn : A -> B -> A . \init : A . \opt : Option B .
+      case opt of [
+        None -> init;
+        Some x -> fn init x;
+      ] ;

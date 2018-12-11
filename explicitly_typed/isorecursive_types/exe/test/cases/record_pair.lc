@@ -1,0 +1,24 @@
+Pair = \A :: * . \B :: * . {fst : A; snd : B} ;
+
+pair = \A :: * . \B :: * . \f : A . \s : B . {fst = f; snd = s} ;
+
+fst = \A :: * . \B :: * . \p : Pair A B . p.fst ;
+
+snd = \A :: * . \B :: * . \p : Pair A B . p.snd ;
+
+p =
+  pair
+    (forall A :: * . A -> A)
+    (forall A :: * . A -> A -> A)
+    (\A :: * . \x : A . x)
+    (\A :: * . \x : A . \y : A . x) ;
+
+fst
+  (forall A :: * . A -> A)
+  (forall A :: * . A -> A -> A)
+  p ;
+
+snd
+  (forall A :: * . A -> A)
+  (forall A :: * . A -> A -> A)
+  p ;

@@ -1,0 +1,69 @@
+Nat
+  : *
+  = mu A :: * . [Zero : {}; Succ : A] ;
+zero
+  : Nat
+  = roll Nat [Zero {} of [Zero : {}; Succ : Nat]] ;
+succ
+  : Nat -> Nat
+  = \n : Nat . roll Nat [Succ n of [Zero : {}; Succ : Nat]] ;
+one
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+three
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+four
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+eight
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+add
+  : (mu A :: * . [Zero : {}; Succ : A]) -> (mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A]
+  = \m : Nat . \n : Nat . case unroll n of [Zero _ -> m; Succ a -> fix (\add : Nat -> Nat -> Nat . \m : Nat . \n : Nat . case unroll n of [Zero _ -> m; Succ o -> add (succ m) o]) (roll Nat [Succ m of [Zero : {}; Succ : Nat]]) a] ;
+until_zero
+  : ((mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A]) -> (mu A :: * . [Zero : {}; Succ : A]) -> (mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A]
+  = \fn : Nat -> Nat . \m : Nat . \n : Nat . case unroll n of [Zero _ -> m; Succ b -> fix (\add : (Nat -> Nat) -> Nat -> Nat -> Nat . \fn : Nat -> Nat . \m : Nat . \n : Nat . case unroll n of [Zero _ -> m; Succ o -> add fn (fn m) o]) fn (fn m) b] ;
+if_zero
+  : Nat -> Nat -> Nat -> Nat
+  = \m : Nat . \n : Nat . \o : Nat . case unroll m of [Zero _ -> n; Succ p -> o] ;
+succ one
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+add one zero
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+add one two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+if_zero zero one two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+if_zero one one two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+if_zero two one two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+pair Nat Nat zero one
+  : {fst : mu A :: * . [Zero : {}; Succ : A]; snd : mu A :: * . [Zero : {}; Succ : A]}
+  = {fst : roll Nat [Zero {} of [Zero : {}; Succ : Nat]]; snd : roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]} ;
+fst Nat Nat (pair Nat Nat zero one)
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Zero {} of [Zero : {}; Succ : Nat]] ;
+snd Nat Nat (pair Nat Nat zero one)
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
+pair Nat forall A :: * . A -> A zero (\A :: * . \x : A . x)
+  : {fst : mu A :: * . [Zero : {}; Succ : A]; snd : forall A :: * . A -> A}
+  = {fst : roll Nat [Zero {} of [Zero : {}; Succ : Nat]]; snd : \A :: * . \x : A . x} ;
+fst Nat forall A :: * . A -> A (pair Nat forall A :: * . A -> A zero (\A :: * . \x : A . x))
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll Nat [Zero {} of [Zero : {}; Succ : Nat]] ;
+snd Nat forall A :: * . A -> A (pair Nat forall A :: * . A -> A zero (\A :: * . \x : A . x))
+  : forall A :: * . A -> A
+  = \A :: * . \x : A . x ;
