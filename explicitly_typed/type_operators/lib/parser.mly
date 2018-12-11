@@ -74,6 +74,8 @@ end
 
 %%
 
+/* Commands */
+
 commands :
   | /* empty */                   { [] }
   | command SEMICOLON commands    { $1 :: $3 }
@@ -82,6 +84,8 @@ command :
   | UPPER_ID EQ typo              { Command.bind_type $1 $3 }
   | LOWER_ID EQ term              { Command.bind_term $1 $3 }
   | term                          { Command.eval_term $1 }
+
+/* Kinds */
 
 kind :
   | comp_kind                     { $1 }
@@ -95,6 +99,8 @@ atom_kind :
   | O_PAREN kind error            { error "unclosed parenthesis" }
   | ASTERIKS                      { Kind.prop }
 
+/* Types */
+
 typo :
   | arrow_typo                    { $1 }
   | B_SLASH UPPER_ID COL_COL kind PERIOD typo   { Type.abs $2 $4 $6 }
@@ -102,7 +108,7 @@ typo :
 
 arrow_typo :
   | app_typo                      { $1 }
-  | atom_typo S_ARROW arrow_typo  { Type.func $1 $3 }
+  | app_typo S_ARROW arrow_typo   { Type.func $1 $3 }
 
 app_typo :
   | atom_typo                     { $1 }
@@ -112,6 +118,8 @@ atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
   | O_PAREN typo error            { error "unclosed parenthesis" }
   | UPPER_ID                      { Type.var $1 }
+
+/* Terms */
 
 term :
   | comp_term                     { $1 }

@@ -12,13 +12,13 @@ get_x {y = \y . y; x = \x . x}
   = \A :: * . \x : A . x ;
 get_foo_bar
   : [Foo : A; Bar : A] -> A
-  = \A :: * . \x : [Foo : A; Bar : A] . case x [Foo x -> x; Bar x -> x] ;
+  = \A :: * . \x : [Foo : A; Bar : A] . case x of [Foo x -> x; Bar x -> x] ;
 get_foo_bar (Foo (\x . x))
   : A -> A
   = \A :: * . \x : A . x ;
 get_bar_foo
   : [Bar : A; Foo : A] -> A
-  = \A :: * . \x : [Bar : A; Foo : A] . case x [Bar x -> x; Foo x -> x] ;
+  = \A :: * . \x : [Bar : A; Foo : A] . case x of [Bar x -> x; Foo x -> x] ;
 get_foo_bar (Foo (\x . x))
   : A -> A
   = \A :: * . \x : A . x ;

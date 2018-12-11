@@ -9,16 +9,16 @@ tru
   = [True {} of Bool] ;
 not
   : Bool -> Bool
-  = \p : Bool . case p [False _ -> [True {} of Bool]; True _ -> [False {} of Bool]] ;
+  = \p : Bool . case p of [False _ -> [True {} of Bool]; True _ -> [False {} of Bool]] ;
 and
   : Bool -> Bool -> Bool
-  = \p : Bool . \q : Bool . case p [False _ -> [False {} of Bool]; True _ -> q] ;
+  = \p : Bool . \q : Bool . case p of [False _ -> [False {} of Bool]; True _ -> q] ;
 or
   : Bool -> Bool -> Bool
-  = \p : Bool . \q : Bool . case p [True _ -> [True {} of Bool]; False _ -> q] ;
+  = \p : Bool . \q : Bool . case p of [True _ -> [True {} of Bool]; False _ -> q] ;
 if
   : forall A :: * . Bool -> A -> A -> A
-  = \A :: * . \p : Bool . \t : A . \e : A . case p [True _ -> t; False _ -> e] ;
+  = \A :: * . \p : Bool . \t : A . \e : A . case p of [True _ -> t; False _ -> e] ;
 not fls
   : [False : {}; True : {}]
   = [True {} of Bool] ;

@@ -391,7 +391,6 @@ let rec beta_reduce ?deep env tm =
         case, id, if deep <> None then beta_reduce env tm else tm 
       in
       let vrnt' = beta_reduce env vrnt in
-      let cases' = List.map beta_reduce_case cases in
       match vrnt'.desc with
         | Variant (case, data, _) ->
           let _, id, tm =
@@ -405,7 +404,7 @@ let rec beta_reduce ?deep env tm =
           in
           beta_reduce (Id.Map.del id env) (subst_tm tm id data)
         | _ ->
-          case loc vrnt' cases'
+          case loc vrnt' @@ List.map beta_reduce_case cases
 
 (* Utilities *)
 
@@ -560,7 +559,7 @@ let rec to_string tm =
           (Id.to_string id)
           (to_string tm)
       in
-      Printf.sprintf "case %s [%s]"
+      Printf.sprintf "case %s of [%s]"
         (to_string vrnt)
         (String.concat "; " @@ List.map case_to_string cases)
 

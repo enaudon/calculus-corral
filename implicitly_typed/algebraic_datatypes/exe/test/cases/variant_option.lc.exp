@@ -6,10 +6,10 @@ some
   = \A :: * . \B :: <> . \x : A . [Some x of [Some : A | B]] ;
 default
   : A -> [None : B; Some : A] -> A
-  = \A :: * . \B :: * . \x : A . \opt : [None : B; Some : A] . case opt [None _ -> x; Some x -> x] ;
+  = \A :: * . \B :: * . \x : A . \opt : [None : B; Some : A] . case opt of [None _ -> x; Some x -> x] ;
 map
   : (A -> B) -> [None : C; Some : A] -> [None : {}; Some : B | D]
-  = \A :: * . \B :: * . \C :: * . \D :: <> . \fn : A -> B . \opt : [None : C; Some : A] . case opt [None _ -> [None {} of [None : {}; Some : B | D]]; Some x -> [Some (fn x) of [Some : B; None : {} | D]]] ;
+  = \A :: * . \B :: * . \C :: * . \D :: <> . \fn : A -> B . \opt : [None : C; Some : A] . case opt of [None _ -> [None {} of [None : {}; Some : B | D]]; Some x -> [Some (fn x) of [Some : B; None : {} | D]]] ;
 fold
-  : (A -> B -> C) -> A -> [None : D; Some : B] -> [None : {}; Some : C | E]
-  = \A :: * . \B :: * . \C :: * . \D :: * . \E :: <> . \fn : A -> B -> C . \init : A . \opt : [None : D; Some : B] . case opt [None _ -> [None {} of [None : {}; Some : C | E]]; Some x -> [Some (fn init x) of [Some : C; None : {} | E]]] ;
+  : (A -> B -> A) -> A -> [None : C; Some : B] -> A
+  = \A :: * . \B :: * . \C :: * . \fn : A -> B -> A . \init : A . \opt : [None : C; Some : B] . case opt of [None _ -> init; Some x -> fn init x] ;

@@ -79,6 +79,8 @@ end
 
 %%
 
+/* Commands */
+
 commands :
   | /* empty */                   { [] }
   | command SEMICOLON commands    { $1 :: $3 }
@@ -86,6 +88,8 @@ commands :
 command :
   | LOWER_ID EQ term              { Command.bind_term $1 $3 }
   | term                          { Command.eval_term $1 }
+
+/* Terms */
 
 term :
   | comp_term                     { $1 }

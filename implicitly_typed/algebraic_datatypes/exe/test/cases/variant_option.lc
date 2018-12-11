@@ -13,6 +13,6 @@ map = \fn . \opt . case opt of [
 ] ;
 
 fold = \fn . \init . \opt . case opt of [
-  None -> none;
-  Some x -> some (fn init x);
+  None -> init;
+  Some x -> fn init x;
 ] ;

@@ -425,7 +425,7 @@ let rec to_string tm =
           (Id.to_string id)
           (to_string tm)
       in
-      Printf.sprintf "case %s [%s]"
+      Printf.sprintf "case %s of [%s]"
         (to_string vrnt)
         (String.concat "; " @@ List.map case_to_string cases)
 

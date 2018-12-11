@@ -79,6 +79,8 @@ end
 
 %%
 
+/* Commands */
+
 commands :
   | /* empty */                   { [] }
   | command SEMICOLON commands    { $1 :: $3 }
@@ -87,6 +89,8 @@ command :
   | UPPER_ID EQ typo              { Command.bind_type $1 $3 }
   | LOWER_ID EQ term              { Command.bind_term $1 $3 }
   | term                          { Command.eval_term $1 }
+
+/* Types */
 
 typo :
   | comp_typo                     { $1 }
@@ -101,6 +105,8 @@ atom_typo :
   | O_PAREN typo error            { error "unclosed parenthesis" }
   | ASTERIKS                      { Type.base }
   | UPPER_ID                      { Type.var $1 }
+
+/* Terms */
 
 term :
   | comp_term                     { $1 }

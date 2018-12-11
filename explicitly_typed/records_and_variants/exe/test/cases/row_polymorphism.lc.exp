@@ -18,13 +18,13 @@ foo <Bar : forall A :: * . A -> A>
   = [Foo (\B :: * . \x : B . x) of [Foo : forall B :: * . B -> B; Bar : forall A :: * . A -> A]] ;
 get_foo_bar
   : [Foo : forall A :: * . A -> A; Bar : forall A :: * . A -> A] -> forall A :: * . A -> A
-  = \x : [Foo : forall A :: * . A -> A; Bar : forall A :: * . A -> A] . case x [Foo x -> x; Bar x -> x] ;
+  = \x : [Foo : forall A :: * . A -> A; Bar : forall A :: * . A -> A] . case x of [Foo x -> x; Bar x -> x] ;
 get_foo_bar (foo <Bar : forall A :: * . A -> A>)
   : forall A :: * . A -> A
   = \B :: * . \x : B . x ;
 get_bar_foo
   : [Bar : forall A :: * . A -> A; Foo : forall A :: * . A -> A] -> forall A :: * . A -> A
-  = \x : [Bar : forall A :: * . A -> A; Foo : forall A :: * . A -> A] . case x [Bar x -> x; Foo x -> x] ;
+  = \x : [Bar : forall A :: * . A -> A; Foo : forall A :: * . A -> A] . case x of [Bar x -> x; Foo x -> x] ;
 get_bar_foo (foo <Bar : forall A :: * . A -> A>)
   : forall A :: * . A -> A
   = \B :: * . \x : B . x ;

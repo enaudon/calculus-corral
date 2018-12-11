@@ -120,6 +120,8 @@ end
 
 %%
 
+/* Commands */
+
 commands :
   | /* empty */                   { [] }
   | command SEMICOLON commands    { $1 :: $3 }
@@ -128,6 +130,8 @@ command :
   | UPPER_ID EQ typo              { Command.bind_type $1 $3 }
   | LOWER_ID EQ term              { Command.bind_term $1 $3 }
   | term                          { Command.eval_term $1 }
+
+/* Kinds */
 
 kind :
   | comp_kind                     { $1 }
@@ -141,6 +145,8 @@ atom_kind :
   | O_PAREN kind error            { error "unclosed parenthesis" }
   | ASTERIKS                      { Kind.prop }
   | O_CHEVR C_CHEVR               { Kind.row }
+
+/* Types */
 
 typo :
   | arrow_typo                    { $1 }
@@ -188,6 +194,8 @@ case_list_typo :
   | UPPER_ID                      { [($1, None)] }
   | UPPER_ID SEMICOLON            { [($1, None)] }
   | UPPER_ID SEMICOLON case_list_typo   { ($1, None) :: $3 }
+
+/* Terms */
 
 term :
   | comp_term                     { $1 }
