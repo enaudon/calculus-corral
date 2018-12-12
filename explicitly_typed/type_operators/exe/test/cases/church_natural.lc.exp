@@ -61,21 +61,3 @@ if_zero two one two
 if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
   : forall A :: * . (A -> A) -> A -> A
   = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;
-pair Nat Nat zero one
-  : forall C :: * . ((forall A :: * . (A -> A) -> A -> A) -> (forall A :: * . (A -> A) -> A -> A) -> C) -> C
-  = \C :: * . \p : Nat -> Nat -> C . p (\A :: * . \s : A -> A . \z : A . z) (\A :: * . \s : A -> A . \z : A . s z) ;
-fst Nat Nat (pair Nat Nat zero one)
-  : forall A :: * . (A -> A) -> A -> A
-  = \A :: * . \s : A -> A . \z : A . z ;
-snd Nat Nat (pair Nat Nat zero one)
-  : forall A :: * . (A -> A) -> A -> A
-  = \A :: * . \s : A -> A . \z : A . s z ;
-pair Nat forall A :: * . A -> A zero (\A :: * . \x : A . x)
-  : forall C :: * . ((forall A :: * . (A -> A) -> A -> A) -> (forall A :: * . A -> A) -> C) -> C
-  = \C :: * . \p : Nat -> (forall A :: * . A -> A) -> C . p (\A :: * . \s : A -> A . \z : A . z) (\A :: * . \x : A . x) ;
-fst Nat forall A :: * . A -> A (pair Nat forall A :: * . A -> A zero (\A :: * . \x : A . x))
-  : forall A :: * . (A -> A) -> A -> A
-  = \A :: * . \s : A -> A . \z : A . z ;
-snd Nat forall A :: * . A -> A (pair Nat forall A :: * . A -> A zero (\A :: * . \x : A . x))
-  : forall A :: * . A -> A
-  = \A :: * . \x : A . x ;

@@ -41,21 +41,3 @@ if
   fls
   (\A :: * . \x : A . x)
   (\B :: * . \y : B . y) ;
-
-pair Bool Bool fls tru ;
-
-fst Bool Bool (pair Bool Bool fls tru) ;
-
-snd Bool Bool (pair Bool Bool fls tru) ;
-
-pair Bool (forall A :: * . A -> A) fls (\A :: * . \x : A . x) ;
-
-fst
-  Bool
-  (forall A :: * . A -> A)
-  (pair Bool (forall A :: * . A -> A) fls (\A :: * . \x : A . x)) ;
-
-snd
-  Bool
-  (forall A :: * . A -> A)
-  (pair Bool (forall A :: * . A -> A) fls (\A :: * . \x : A . x)) ;

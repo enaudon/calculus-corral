@@ -22,7 +22,7 @@ if_zero =
   \m : Nat . \n : Nat . \o : Nat . \s : * -> * . \z : * .
     m (\x : * . o s z) (n s z) ;
 
-succ one;
+succ one ;
 
 add one zero ;
 

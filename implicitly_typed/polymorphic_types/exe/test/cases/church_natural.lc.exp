@@ -58,12 +58,3 @@ if_zero two one two
 if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
   : (A -> A) -> A -> A
   = \A . \s : A -> A . \z : A . s (s (s (s z))) ;
-pair zero (\x . x)
-  : ((A -> B -> B) -> (C -> C) -> D) -> D
-  = \A . \B . \C . \D . \p : (A -> B -> B) -> (C -> C) -> D . p (\s : A . \z : B . z) (\x : C . x) ;
-fst (pair zero (\x . x))
-  : A -> B -> B
-  = \A . \B . \s : A . \z : B . z ;
-snd (pair zero (\x . x))
-  : A -> A
-  = \A . \x : A . x ;

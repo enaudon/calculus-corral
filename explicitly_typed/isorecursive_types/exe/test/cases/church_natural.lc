@@ -47,21 +47,3 @@ if_zero
   (add (mul four four) one)
   (mul eight two)
   (add one (add two one)) ;
-
-pair Nat Nat zero one ;
-
-fst Nat Nat (pair Nat Nat zero one) ;
-
-snd Nat Nat (pair Nat Nat zero one) ;
-
-pair Nat (forall A :: * . A -> A) zero (\A :: * . \x : A . x) ;
-
-fst
-  Nat
-  (forall A :: * . A -> A)
-  (pair Nat (forall A :: * . A -> A) zero (\A :: * . \x : A . x)) ;
-
-snd
-  Nat
-  (forall A :: * . A -> A)
-  (pair Nat (forall A :: * . A -> A) zero (\A :: * . \x : A . x)) ;

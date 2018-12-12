@@ -35,9 +35,9 @@ let _ =
   let repl_cases = [
     ("hotcw.lc", []) ;
     ("function.lc", []) ;
-    ("church_pair.lc", []) ;
-    ("church_boolean.lc", ["church_pair.lc"]) ;
-    ("church_natural.lc", ["church_pair.lc"]) ;
+    ("church_boolean.lc", []) ;
+    ("church_natural.lc", []) ;
+    ("church_pair.lc", ["church_boolean.lc"; "church_natural.lc"]) ;
     ("record_pair.lc", []) ;
     ("variant_boolean.lc", ["record_pair.lc"]) ;
     ("variant_option.lc", []) ;

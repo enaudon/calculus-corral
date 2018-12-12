@@ -18,7 +18,7 @@ mul = \m . \n . \s . m (n s) ;
 
 if_zero = \m . \n . \o . \s . \z .  m (\x . o s z) (n s z) ;
 
-succ one;
+succ one ;
 
 add one zero ;
 
@@ -40,9 +40,3 @@ if_zero
   (add (mul four four) one)
   (mul eight two)
   (add one (add two one)) ;
-
-pair zero (\x . x) ;
-
-fst (pair zero (\x . x)) ;
-
-snd (pair zero (\x . x)) ;

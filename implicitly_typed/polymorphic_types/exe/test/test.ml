@@ -35,9 +35,9 @@ let _ =
   let repl_cases = [
     ("hotcw.lc", []) ;
     ("function.lc", []) ;
-    ("church_pair.lc", []) ;
-    ("church_boolean.lc", ["church_pair.lc"]) ;
-    ("church_natural.lc", ["church_pair.lc"]) ;
+    ("church_boolean.lc", []) ;
+    ("church_natural.lc", []) ;
+    ("church_pair.lc", ["church_boolean.lc"; "church_natural.lc"]) ;
   ] in
 
   let test_suite = "polymorphic_types" >::: [

@@ -55,21 +55,3 @@ if tru fls tru
 if fls (\x . x) (\y . y)
   : A -> A
   = \A . \y : A . y ;
-pair fls tru
-  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
-  = \A . \B . \C . \D . \E . \p : (A -> B -> B) -> (C -> D -> C) -> E . p (\t : A . \f : B . f) (\t : C . \f : D . t) ;
-fst (pair fls tru)
-  : A -> B -> B
-  = \A . \B . \t : A . \f : B . f ;
-snd (pair fls tru)
-  : A -> B -> A
-  = \A . \B . \t : A . \f : B . t ;
-pair fls (\x . x)
-  : ((A -> B -> B) -> (C -> C) -> D) -> D
-  = \A . \B . \C . \D . \p : (A -> B -> B) -> (C -> C) -> D . p (\t : A . \f : B . f) (\x : C . x) ;
-fst (pair fls (\x . x))
-  : A -> B -> B
-  = \A . \B . \t : A . \f : B . f ;
-snd (pair fls (\x . x))
-  : A -> A
-  = \A . \x : A . x ;
