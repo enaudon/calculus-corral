@@ -1,4 +1,11 @@
 (**
+  [parse_argv argv] parses the command-line flags in [argv], and returns
+  a pair containing the path to the specified REPL executable, and the
+  path to the directory of test cases.
+ *)
+val parse_argv : string array -> string * string
+
+(**
   [make_implicit repl_exe case_dir cases] creates a test suite for an
   implicitly-typed REPL.
  *)
