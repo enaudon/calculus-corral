@@ -47,15 +47,3 @@ if fls fls tru ;
 if tru fls tru ;
 
 if fls (\x . x) (\y . y) ;
-
-pair fls tru ;
-
-fst (pair fls tru) ;
-
-snd (pair fls tru) ;
-
-pair fls (\x . x) ;
-
-fst (pair fls (\x . x)) ;
-
-snd (pair fls (\x . x)) ;

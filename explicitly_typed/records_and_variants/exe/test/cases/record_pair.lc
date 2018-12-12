@@ -6,19 +6,14 @@ fst = \A :: * . \B :: * . \p : Pair A B . p.fst ;
 
 snd = \A :: * . \B :: * . \p : Pair A B . p.snd ;
 
-p =
-  pair
-    (forall A :: * . A -> A)
-    (forall A :: * . A -> A -> A)
-    (\A :: * . \x : A . x)
-    (\A :: * . \x : A . \y : A . x) ;
+p = pair Bool Bool fls tru ;
 
-fst
-  (forall A :: * . A -> A)
-  (forall A :: * . A -> A -> A)
-  p ;
+fst Bool Bool p ;
 
-snd
-  (forall A :: * . A -> A)
-  (forall A :: * . A -> A -> A)
-  p ;
+snd Bool Bool p ;
+
+p = pair Bool (forall A :: * . A -> A) fls (\A :: * . \x : A . x) ;
+
+fst Bool (forall A :: * . A -> A) p ;
+
+snd Bool (forall A :: * . A -> A) p ;

@@ -8,11 +8,20 @@ snd
   : {snd : A | B} -> A
   = \A :: * . \B :: <> . \p : {snd : A | B} . p.snd ;
 p
-  : {fst : A -> A; snd : B -> C -> B}
-  = \A :: * . \B :: * . \C :: * . {fst : \x : A . x; snd : \x : B . \y : C . x} ;
+  : {fst : [False : {} | A]; snd : [True : {} | B]}
+  = \A :: <> . \B :: <> . {fst : [False {} of [False : {} | A]]; snd : [True {} of [True : {} | B]]} ;
 fst p
+  : [False : {} | A]
+  = \A :: <> . [False {} of [False : {} | A]] ;
+snd p
+  : [True : {} | A]
+  = \A :: <> . [True {} of [True : {} | A]] ;
+p
+  : {fst : [False : {} | A]; snd : B -> B}
+  = \A :: <> . \B :: * . {fst : [False {} of [False : {} | A]]; snd : \x : B . x} ;
+fst p
+  : [False : {} | A]
+  = \A :: <> . [False {} of [False : {} | A]] ;
+snd p
   : A -> A
   = \A :: * . \x : A . x ;
-snd p
-  : A -> B -> A
-  = \A :: * . \B :: * . \x : A . \y : B . x ;

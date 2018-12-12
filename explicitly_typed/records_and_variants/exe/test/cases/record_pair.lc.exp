@@ -11,11 +11,20 @@ snd
   : forall A :: * . forall B :: * . (Pair A B) -> B
   = \A :: * . \B :: * . \p : Pair A B . p.snd ;
 p
-  : {fst : forall A :: * . A -> A; snd : forall A :: * . A -> A -> A}
-  = {fst : \A :: * . \x : A . x; snd : \A :: * . \x : A . \y : A . x} ;
-fst forall A :: * . A -> A forall A :: * . A -> A -> A p
+  : {fst : [False : {}; True : {}]; snd : [False : {}; True : {}]}
+  = {fst : [False {} of Bool]; snd : [True {} of Bool]} ;
+fst Bool Bool p
+  : [False : {}; True : {}]
+  = [False {} of Bool] ;
+snd Bool Bool p
+  : [False : {}; True : {}]
+  = [True {} of Bool] ;
+p
+  : {fst : [False : {}; True : {}]; snd : forall A :: * . A -> A}
+  = {fst : [False {} of Bool]; snd : \A :: * . \x : A . x} ;
+fst Bool forall A :: * . A -> A p
+  : [False : {}; True : {}]
+  = [False {} of Bool] ;
+snd Bool forall A :: * . A -> A p
   : forall A :: * . A -> A
   = \A :: * . \x : A . x ;
-snd forall A :: * . A -> A forall A :: * . A -> A -> A p
-  : forall A :: * . A -> A -> A
-  = \A :: * . \x : A . \y : A . x ;

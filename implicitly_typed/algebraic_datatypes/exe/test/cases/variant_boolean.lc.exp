@@ -55,21 +55,3 @@ if tru fls tru
 if fls (\x . x) (\y . y)
   : A -> A
   = \A :: * . \y : A . y ;
-pair fls tru
-  : {fst : [False : {} | A]; snd : [True : {} | B]}
-  = \A :: <> . \B :: <> . {fst : [False {} of [False : {} | A]]; snd : [True {} of [True : {} | B]]} ;
-fst (pair fls tru)
-  : [False : {} | A]
-  = \A :: <> . [False {} of [False : {} | A]] ;
-snd (pair fls tru)
-  : [True : {} | A]
-  = \A :: <> . [True {} of [True : {} | A]] ;
-pair fls (\x . x)
-  : {fst : [False : {} | A]; snd : B -> B}
-  = \A :: <> . \B :: * . {fst : [False {} of [False : {} | A]]; snd : \x : B . x} ;
-fst (pair fls (\x . x))
-  : [False : {} | A]
-  = \A :: <> . [False {} of [False : {} | A]] ;
-snd (pair fls (\x . x))
-  : A -> A
-  = \A :: * . \x : A . x ;

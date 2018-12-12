@@ -33,13 +33,14 @@ let _ =
 
   let repl_exe, case_dir = parse_cmd_args () in
   let repl_cases = [
+    ("row_polymorphism.lc", []) ;
     ("function.lc", []) ;
     ("church_boolean.lc", []) ;
     ("church_natural.lc", []) ;
     ("church_pair.lc", ["church_boolean.lc"; "church_natural.lc"]) ;
-    ("record_pair.lc", []) ;
-    ("variant_boolean.lc", ["record_pair.lc"]) ;
-    ("row_polymorphism.lc", []) ;
+    ("variant_boolean.lc", []) ;
+    ("record_pair.lc", ["variant_boolean.lc"]) ;
+    ("variant_option.lc", []) ;
   ] in
 
   let test_suite = "records_and_variants" >::: [

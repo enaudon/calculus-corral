@@ -49,21 +49,3 @@ if_zero one one two
 if_zero two one two
   : mu A :: * . [Zero : {}; Succ : A]
   = roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
-pair Nat Nat zero one
-  : {fst : mu A :: * . [Zero : {}; Succ : A]; snd : mu A :: * . [Zero : {}; Succ : A]}
-  = {fst : roll Nat [Zero {} of [Zero : {}; Succ : Nat]]; snd : roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]} ;
-fst Nat Nat (pair Nat Nat zero one)
-  : mu A :: * . [Zero : {}; Succ : A]
-  = roll Nat [Zero {} of [Zero : {}; Succ : Nat]] ;
-snd Nat Nat (pair Nat Nat zero one)
-  : mu A :: * . [Zero : {}; Succ : A]
-  = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
-pair Nat forall A :: * . A -> A zero (\A :: * . \x : A . x)
-  : {fst : mu A :: * . [Zero : {}; Succ : A]; snd : forall A :: * . A -> A}
-  = {fst : roll Nat [Zero {} of [Zero : {}; Succ : Nat]]; snd : \A :: * . \x : A . x} ;
-fst Nat forall A :: * . A -> A (pair Nat forall A :: * . A -> A zero (\A :: * . \x : A . x))
-  : mu A :: * . [Zero : {}; Succ : A]
-  = roll Nat [Zero {} of [Zero : {}; Succ : Nat]] ;
-snd Nat forall A :: * . A -> A (pair Nat forall A :: * . A -> A zero (\A :: * . \x : A . x))
-  : forall A :: * . A -> A
-  = \A :: * . \x : A . x ;
