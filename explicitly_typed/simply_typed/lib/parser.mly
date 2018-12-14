@@ -66,7 +66,7 @@ end
 /* Commands */
 
 commands :
-  | /* empty */                   { [] }
+  | EOF                           { [] }
   | command SEMICOLON commands    { $1 :: $3 }
 
 command :

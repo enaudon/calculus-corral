@@ -26,7 +26,6 @@ let whitespace = [' ' '\009' '\012']
 let newline = "\r" ? "\n"
 let id_char =  ['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']
 let lower_id = ['a'-'z'] id_char*
-let upper_id = ['A'-'Z'] id_char*
 
 rule prog = parse
   | whitespace                        { skip_char lexbuf; prog lexbuf }
@@ -40,7 +39,6 @@ rule prog = parse
   | "let"                             { Parser.LET }
   | "in"                              { Parser.IN }
   | lower_id as id                    { Parser.LOWER_ID id }
-  | upper_id as id                    { Parser.UPPER_ID id }
   | eof                               { Parser.EOF }
   | _ as c                            { error lexbuf @@
                                           Printf.sprintf

@@ -31,7 +31,6 @@ end
 
 /* Literals and identifiers */
 %token <string> LOWER_ID
-%token <string> UPPER_ID
 
 /* Symbols */
 %token B_SLASH
@@ -53,7 +52,7 @@ end
 /* Commands */
 
 commands :
-  | /* empty */                   { [] }
+  | EOF                           { [] }
   | command SEMICOLON commands    { $1 :: $3 }
 
 command :
