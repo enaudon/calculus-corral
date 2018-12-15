@@ -58,7 +58,9 @@ end
 
 (**
   [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
-  [tp2].
+  [tp2].  In cases where both [tp1] and [tp2] are variables, and either
+  identifier may be kept in the substitution, [tp1]'s identifier is
+  kept.
  *)
 val unify : Substitution.s -> t -> t -> Substitution.s
 

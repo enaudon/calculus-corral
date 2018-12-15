@@ -69,12 +69,12 @@ let unify sub tp1 tp2 =
     match tp1', tp2' with
       | Variable id1, Variable id2 when id1 = id2->
         sub
-      | Variable id, _ ->
-        if occurs id tp2' then raise_occurs id tp2';
-        Sub.extend id tp2' sub
       | _, Variable id ->
         if occurs id tp1' then raise_occurs id tp1';
         Sub.extend id tp1' sub
+      | Variable id, _ ->
+        if occurs id tp2' then raise_occurs id tp2';
+        Sub.extend id tp2' sub
       | Function (arg1, res1), Function (arg2, res2) ->
         unify (unify sub arg1 arg2) res1 res2
   in

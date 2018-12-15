@@ -157,18 +157,18 @@ let unify state tp1 tp2 =
     let m1' = State.Sub.apply_mono m1 state in
     let m2' = State.Sub.apply_mono m2 state in
     match m1', m2' with
-      | Variable id, _ when not @@ State.Pools.is_mono state id ->
-        expected_mono "unify"
       | _, Variable id when not @@ State.Pools.is_mono state id ->
+        expected_mono "unify"
+      | Variable id, _ when not @@ State.Pools.is_mono state id ->
         expected_mono "unify"
       | Variable id1, Variable id2 when id1 = id2 ->
         state
-      | Variable id, _ ->
-        if occurs id m2' then raise_occurs id (scheme tp2.quants m2');
-        merge state id m2'
       | _, Variable id ->
         if occurs id m1' then raise_occurs id (scheme tp2.quants m1');
         merge state id m1'
+      | Variable id, _ ->
+        if occurs id m2' then raise_occurs id (scheme tp2.quants m2');
+        merge state id m2'
       | Function (arg1, res1), Function (arg2, res2) ->
         unify (unify state arg1 arg2) res1 res2
   in
