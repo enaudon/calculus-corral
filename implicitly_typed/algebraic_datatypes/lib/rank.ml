@@ -63,36 +63,36 @@ module Pools = struct
         rank
         ps.top
 
-    let register ps id = insert ps ps.top id
+  let register ps id = insert ps ps.top id
 
-    let unregister ps id = remove ps ps.top id
+  let unregister ps id = remove ps ps.top id
 
-    let update ps id1 id2 =
-      let rank =
-        try
-          Id.Map.find id1 ps.ranks
-        with Id.Unbound _ ->
-          failwith @@ Printf.sprintf
-            "Rank.Pools.update: Unbound %s"
-            (Id.to_string id1)
-      in
-      let rank' =
-        try
-          min rank @@ Id.Map.find id2 ps.ranks
-        with Id.Unbound _ ->
-          failwith @@ Printf.sprintf
-            "Rank.Pools.update: Unbound %s"
-            (Id.to_string id2)
-      in
-      let kn = find ps rank id1 in
-      insert (remove ps rank id1) rank' id1 kn
-
-    let is_mono ps id =
+  let update ps id1 id2 =
+    let rank =
       try
-        Id.Map.find id ps.ranks >= mono
+        Id.Map.find id1 ps.ranks
       with Id.Unbound _ ->
         failwith @@ Printf.sprintf
-          "Rank.Pools.is_mono: Unbound %s"
-          (Id.to_string id)
+          "Rank.Pools.update: Unbound %s"
+          (Id.to_string id1)
+    in
+    let rank' =
+      try
+        min rank @@ Id.Map.find id2 ps.ranks
+      with Id.Unbound _ ->
+        failwith @@ Printf.sprintf
+          "Rank.Pools.update: Unbound %s"
+          (Id.to_string id2)
+    in
+    let kn = find ps rank id1 in
+    insert (remove ps rank id1) rank' id1 kn
+
+  let is_mono ps id =
+    try
+      Id.Map.find id ps.ranks >= mono
+    with Id.Unbound _ ->
+      failwith @@ Printf.sprintf
+        "Rank.Pools.is_mono: Unbound %s"
+        (Id.to_string id)
 
 end

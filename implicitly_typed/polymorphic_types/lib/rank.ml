@@ -52,15 +52,15 @@ module Pools = struct
       pools = Map.add rank (Id.Set.del id pool) ps.pools;
       ranks = Id.Map.del id ps.ranks; }
 
-    let register ps id = insert ps ps.top id
+  let register ps id = insert ps ps.top id
 
-    let unregister ps id = remove ps ps.top id
+  let unregister ps id = remove ps ps.top id
 
-    let update ps id1 id2 =
-      let rank = Id.Map.find id1 ps.ranks in
-      let rank' = min rank @@ Id.Map.find id2 ps.ranks in
-      insert (remove ps rank id1) rank' id1
+  let update ps id1 id2 =
+    let rank = Id.Map.find id1 ps.ranks in
+    let rank' = min rank @@ Id.Map.find id2 ps.ranks in
+    insert (remove ps rank id1) rank' id1
 
-    let is_mono ps id = Id.Map.find id ps.ranks >= mono
+  let is_mono ps id = Id.Map.find id ps.ranks >= mono
 
 end
