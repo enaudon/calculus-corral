@@ -40,6 +40,21 @@ module Map = struct
 
 end
 
+(*
+let define =
+  let ht = Hashtbl.create 1024 in
+  let get_num str =
+    try
+      let num = Hashtbl.find ht str in
+      Hashtbl.add ht str @@ num + 1;
+      num
+    with Not_found ->
+      Hashtbl.add ht str 1;
+      0
+  in
+  fun str -> Defined (str, get_num str)
+*)
+
 let define str = Defined str
 
 let gen_lower, reset_lower =
@@ -79,6 +94,11 @@ let to_string id = match id with
 let rec alpha_equivalent env id1 id2 = match env with
   | [] ->
     id1 = id2
+  (*
+    Note that, in this branch, [id1] and [id2] are not necessarily of
+    the same case.  That is, [id1] could be [Generated] while [id2] is
+    [Defined], or visa-versa.
+   *)
   | (id1', id2') :: env' ->
     (id1 = id1' && id2 = id2') ||
       (id1 <> id1' && id2 <> id2' && alpha_equivalent env' id1 id2)
