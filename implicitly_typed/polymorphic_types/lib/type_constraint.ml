@@ -1,6 +1,6 @@
 module Id = Identifier
+module Infer = Type.Inferencer
 module Loc = Location
-module State = Type.State
 
 type co =
   | True
@@ -12,7 +12,7 @@ type co =
   | Let_binding of Id.t option * Type.t ref * co * co * Id.Set.t ref
   | Localized of Loc.t * co
 
-type 'a t = co * (State.s -> 'a)
+type 'a t = co * (Infer.state -> 'a)
 
 (* Internal helpers *)
 
@@ -30,11 +30,10 @@ let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
 
 let pure = True, fun _ -> ()
 
-let exists
-    : Loc.t option -> Type.t -> 'a t -> (Type.t * 'a) t
-    = fun loc tv (c, k) ->
+let exists : Loc.t option -> Type.t -> 'a t -> (Type.t * 'a) t =
+    fun loc tv (c, k) ->
   ( loc_wrap loc @@ Existential (tv, c),
-    fun sub -> State.apply_solution tv sub, k sub )
+    fun sub -> Infer.apply sub tv, k sub )
 
 let let_
     : Loc.t option ->
@@ -50,8 +49,7 @@ let let_
   ( loc_wrap loc_opt @@
     Let_binding (id_opt, tp_ref, lhs_c, rhs_c, tvs_ref),
     fun state ->
-      let tp = State.apply_solution !tp_ref state in
-      tp, !tvs_ref, lhs_k state, rhs_k state )
+      Infer.apply state !tp_ref, !tvs_ref, lhs_k state, rhs_k state )
 
 (* Solving *)
 
@@ -61,21 +59,21 @@ let solve (c, k) =
     | True ->
       state
     | Instance (id, tp, tvs_ref) ->
-      let state, tvs, tp' = Type.inst state @@ Id.Map.find id env in
+      let state, tvs, tp' = Infer.inst state @@ Id.Map.find id env in
       tvs_ref := tvs;
-      Type.unify state tp tp'
+      Infer.unify state tp tp'
     | Equality (lhs, rhs) ->
-      Type.unify state lhs rhs
+      Infer.unify state lhs rhs
     | Conjunction (lhs, rhs) ->
       solve env (solve env state lhs) rhs
     | Existential (tv, c) ->
-      solve env (Type.register state tv) c
+      solve env (Infer.register state tv) c
     | Def_binding (id, tp, c) ->
       solve (Id.Map.add id tp env) state c
     | Let_binding (id_opt, tp_ref, lhs, rhs, tvs_ref) ->
-      let state = Type.gen_enter state in
-      let state = solve env (Type.register state !tp_ref) lhs in
-      let state, tvs, tp = Type.gen_exit state !tp_ref in
+      let state = Infer.gen_enter state in
+      let state = solve env (Infer.register state !tp_ref) lhs in
+      let state, tvs, tp = Infer.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
       let fn id env = Id.Map.add id tp env in
@@ -95,7 +93,7 @@ let solve (c, k) =
                 (Id.to_string id)
   in
 
-  k @@ solve Id.Map.empty State.initial c
+  k @@ solve Id.Map.empty Infer.initial c
 
 (* Utilities *)
 
@@ -154,8 +152,7 @@ let map f (c, k) = c, fun state -> f @@ k state
 let inst ?loc id tp =
   let tvs_ref = ref [] in
   ( loc_wrap loc @@ Instance (id, tp, tvs_ref),
-    fun state ->
-      List.map (fun tv -> State.apply_solution tv state) !tvs_ref )
+    fun state -> List.map (fun tv -> Infer.apply state tv) !tvs_ref )
 
 let equals ?loc lhs rhs =
   ( loc_wrap loc @@ Equality (lhs, rhs), fun _ -> () )

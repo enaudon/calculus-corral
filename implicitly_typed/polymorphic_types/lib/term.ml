@@ -1,7 +1,7 @@
 module Id = Identifier
+module Infer = Type.Inferencer
 module IR = Universal_types
 module Loc = Location
-module State = Type.State
 
 type desc =
   | Variable of Id.t
@@ -58,21 +58,20 @@ let coerce tvs qs ir_tm =
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)
-let infer_hm
-    : Type.t Id.Map.t -> t -> Type.t * IR.Term.t
-    = fun env tm ->
+let infer_hm : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
+    fun env tm ->
 
   let type_to_ir state tp =
-    Type.to_intl_repr @@ State.apply_solution tp state
+    Type.to_intl_repr @@ Infer.apply state tp
   in
 
   let fresh_type_var state =
     let tv = Type.var @@ Id.gen_upper () in
-    Type.register state tv, tv
+    Infer.register state tv, tv
   in
 
   let unify loc state tp1 tp2 =
-    try Type.unify state tp1 tp2 with
+    try Infer.unify state tp1 tp2 with
       | Type.Occurs (id, tp) ->
         error loc "infer_hm" @@
           Printf.sprintf
@@ -87,7 +86,7 @@ let infer_hm
       | Variable id ->
         let state, tvs, tp =
           try
-            Type.inst state @@ Id.Map.find id env
+            Infer.inst state @@ Id.Map.find id env
           with Id.Unbound id ->
             error tm.loc "infer_hm" @@
               Printf.sprintf
@@ -115,10 +114,10 @@ let infer_hm
         ( state,
           fun state -> IR.Term.app ~loc (fn_k state) (arg_k state) )
       | Binding (id, value, body) ->
-        let state = Type.gen_enter state in
+        let state = Infer.gen_enter state in
         let state, tp = fresh_type_var state in
         let state, value_k = infer env state tp value in
-        let state, tvs, tp' = Type.gen_exit state tp in
+        let state, tvs, tp' = Infer.gen_exit state tp in
         let qs = Type.get_quants tp' in
         let env' = Id.Map.add id tp' env in
         let state, body_k = infer env' state exp_tp body in
@@ -131,10 +130,10 @@ let infer_hm
                 IR.Term.tp_abs' ~loc qs @@ value_k state) )
   in
 
-  let state = Type.gen_enter State.initial in
+  let state = Infer.gen_enter Infer.initial in
   let state, tp = fresh_type_var state in
   let state, k = infer env state tp tm in
-  let state, tvs, tp' = Type.gen_exit state tp in
+  let state, tvs, tp' = Infer.gen_exit state tp in
   let qs = Type.get_quants tp' in
   let tm' =
     coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs @@ k state
@@ -152,9 +151,8 @@ let to_intl_repr_hm env tm = snd @@ infer_hm env tm
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)
-let infer_pr
-    : Type.t Id.Map.t -> t -> Type.t * IR.Term.t
-    = fun env tm ->
+let infer_pr : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
+    fun env tm ->
 
   let module TC = Type_constraint in
   let open TC.Operators in
