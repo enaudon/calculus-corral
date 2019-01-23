@@ -1,6 +1,6 @@
 module Id = Identifier
+module Infer = Type.Inferencer
 module Loc = Location
-module State = Type.State
 
 type co =
   | True
@@ -13,7 +13,7 @@ type co =
     Id.t option * Type.t ref * Kind.t * co * co * Kind.t Id.Map.t ref
   | Localized of Loc.t * co
 
-type 'a t = co * (State.s -> 'a)
+type 'a t = co * (Infer.state -> 'a)
 
 (* Internal helpers *)
 
@@ -35,7 +35,7 @@ let exists
     : Loc.t option -> Type.t -> Kind.t -> 'a t -> (Type.t * 'a) t
     = fun loc_opt tv kn (c, k) ->
   ( loc_wrap loc_opt @@ Existential (tv, kn, c),
-    fun state -> State.apply_solution tv state, k state )
+    fun state -> Infer.apply state tv, k state )
 
 let let_
     : Loc.t option ->
@@ -43,7 +43,7 @@ let let_
       Kind.t ->
       (Type.t -> 'a t) ->
       ('b t) ->
-      (Type.t * Kind.t Identifier.Map.t * 'a * 'b) t
+      (Type.t * Kind.t Id.Map.t * 'a * 'b) t
     = fun loc_opt id_opt kn fn (rhs_c, rhs_k) ->
   let tv = Type.var @@ Id.gen_upper () in
   let lhs_c, lhs_k = fn tv in
@@ -52,8 +52,7 @@ let let_
   ( loc_wrap loc_opt @@
     Let_binding (id_opt, tp_ref, kn, lhs_c, rhs_c, tvs_ref),
     fun state ->
-      let tp = State.apply_solution !tp_ref state in
-      tp, !tvs_ref, lhs_k state, rhs_k state )
+      Infer.apply state !tp_ref, !tvs_ref, lhs_k state, rhs_k state )
 
 (* Solving *)
 
@@ -63,21 +62,21 @@ let solve (c, k) =
     | True ->
       state
     | Instance (id, tp, tvs_ref) ->
-      let state, tvs, tp' = Type.inst state @@ Id.Map.find id env in
+      let state, tvs, tp' = Infer.inst state @@ Id.Map.find id env in
       tvs_ref := tvs;
-      Type.unify state tp tp'
+      Infer.unify state tp tp'
     | Equality (lhs, rhs) ->
-      Type.unify state lhs rhs
+      Infer.unify state lhs rhs
     | Conjunction (lhs, rhs) ->
       solve env (solve env state lhs) rhs
     | Existential (tv, kn, c) ->
-      solve env (Type.register state tv kn) c
+      solve env (Infer.register state tv kn) c
     | Def_binding (id, tp, c) ->
       solve (Id.Map.add id tp env) state c
     | Let_binding (id_opt, tp_ref, kn, lhs, rhs, tvs_ref) ->
-      let state = Type.gen_enter state in
-      let state = solve env (Type.register state !tp_ref kn) lhs in
-      let state, tvs, tp = Type.gen_exit state !tp_ref in
+      let state = Infer.gen_enter state in
+      let state = solve env (Infer.register state !tp_ref kn) lhs in
+      let state, tvs, tp = Infer.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
       let fn id env = Id.Map.add id tp env in
@@ -90,12 +89,6 @@ let solve (c, k) =
               "type variable '%s' occurs in '%s'"
               (Id.to_string id)
               (Type.to_string ~no_simp:() tp)
-        | Type.Cannot_unify (tp1, tp2) ->
-          error loc "solve" @@
-            Printf.sprintf
-              "cannot unify '%s' and '%s'"
-              (Type.to_string ~no_simp:() tp1)
-              (Type.to_string ~no_simp:() tp2)
         | Id.Unbound id ->
             error loc "solve" @@
               Printf.sprintf
@@ -103,7 +96,7 @@ let solve (c, k) =
                 (Id.to_string id)
   in
 
-  k @@ solve Id.Map.empty State.initial c
+  k @@ solve Id.Map.empty Infer.initial c
 
 (* Utilities *)
 
@@ -165,8 +158,7 @@ let map f (c, k) = c, fun state -> f @@ k state
 let inst ?loc id tp =
   let tvs_ref = ref [] in
   ( loc_wrap loc @@ Instance (id, tp, tvs_ref),
-    fun state ->
-      List.map (fun tv -> State.apply_solution tv state) !tvs_ref )
+    fun state -> List.map (fun tv -> Infer.apply state tv) !tvs_ref )
 
 let equals ?loc lhs rhs =
   ( loc_wrap loc @@ Equality (lhs, rhs), fun _ -> () )

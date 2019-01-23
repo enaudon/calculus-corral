@@ -54,72 +54,71 @@ val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
 
 (** {1 Inference} *)
 
-(** Inference State
+(** Inferencer
 
-  This module encapsulates the internal state of the inference engine.
-  The most significant piece of the state, from the user's perspective,
-  is a substitution, which represents the solution computed by type
-  inference.  After type inference this solution may be applied via the
-  [apply_solution] function.
+  This module contains type inference functionality, such as
+  unification, generalization and instantiation.  After inference is
+  complete, the [apply] function will apply the substitution computed by
+  type inference.
  *)
-module State : sig
+module Inferencer : sig
 
   (** The type of inference engine state. *)
-  type s
+  type state
 
   (** [initial] is the initial state. *)
-  val initial : s
+  val initial : state
 
   (**
-    [apply_solution tp state] applies the solution in [state] to [tp],
+    [register state tv kn] registers the type variable, [tv], of kind
+    [kn], with the inference engine so that it may be used in
+    type-checking.
+   *)
+  val register : state -> t -> Kind.t -> state
+
+  (**
+    [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
+    [tp2].  In cases where both [tp1] and [tp2] are variables, and either
+    identifier may be kept in the substitution, [tp1]'s identifier is
+    kept.
+   *)
+  val unify : state -> t -> t -> state
+
+  (**
+    [gen_enter state] updates the state before type-checking the left-hand
+    side of a let-expression.
+   *)
+  val gen_enter : state -> state
+
+  (**
+    [gen_exit state tp] updates the internal state and performs
+    generalization after type-checking the left-hand side of a
+    let-expression.  Here, generalization involves replacing all
+    monomorphic variables introduced within the let-expression with
+    polymorphic variables.  The result contains three things: a) the
+    updated state, b) a list of identifiers corresponding the newly
+    polymorphic variables and their kinds, and c) the newly-polymorphic
+    type.
+   *)
+  val gen_exit : state -> t -> state * Kind.t Identifier.Map.t * t
+
+  (**
+    [inst state tp] replaces all polymorphic variables in [tp] with fresh
+    monomorphic variables.  The result contains three things: a) the
+    updated state, b) a list of the fresh monomorphic variables, and c)
+    the newly-monomorphic type.
+   *)
+  val inst : state -> t -> state * t list * t
+
+  (**
+    [apply tp state] applies the substitution in [state] to [tp],
     replacing any variables in [tp] which occur in the domain of the
     substitution with their corresponding concrete types in the range of
     the substitution.
    *)
-  val apply_solution : t -> s -> t
+  val apply : state -> t -> t
 
 end
-
-(**
-  [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
-  [tp2].  In cases where both [tp1] and [tp2] are variables, and either
-  identifier may be kept in the substitution, [tp1]'s identifier is
-  kept.
- *)
-val unify : State.s -> t -> t -> State.s
-
-(**
-  [register state tv kn] registers the type variable, [tv], of kind
-  [kn], with the inference engine so that it may be used in
-  type-checking.
- *)
-val register : State.s -> t -> Kind.t -> State.s
-
-(**
-  [gen_enter state] updates the state before type-checking the left-hand
-  side of a let-expression.
- *)
-val gen_enter : State.s -> State.s
-
-(**
-  [gen_exit state tp] updates the internal state and performs
-  generalization after type-checking the left-hand side of a
-  let-expression.  Here, generalization involves replacing all
-  monomorphic variables introduced within the let-expression with
-  polymorphic variables.  The result contains three things: a) the
-  updated state, b) a list of identifiers corresponding the newly
-  polymorphic variables and their kinds, and c) the newly-polymorphic
-  type.
- *)
-val gen_exit : State.s -> t -> State.s * Kind.t Identifier.Map.t * t
-
-(**
-  [inst state tp] replaces all polymorphic variables in [tp] with fresh
-  monomorphic variables.  The result contains three things: a) the
-  updated state, b) a list of the fresh monomorphic variables, and c)
-  the newly-monomorphic type.
- *)
-val inst : State.s -> t -> State.s * t list * t
 
 (** {1 Utilities} *)
 

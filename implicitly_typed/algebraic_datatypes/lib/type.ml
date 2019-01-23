@@ -26,15 +26,12 @@ exception Cannot_unify of t * t
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
-let expected_mono : string -> 'a = fun fn_name ->
+let expected_mono_internal : string -> string -> 'a =
+    fun modl_name fn_name ->
   invalid_arg @@
-    Printf.sprintf "%s.%s: expected monomorphic type" __MODULE__ fn_name
+    Printf.sprintf "%s.%s: expected monomorphic type" modl_name fn_name
 
-let raise_occurs : Id.t -> t -> 'a = fun id tp ->
-  raise @@ Occurs (id, tp)
-
-let raise_unify : t -> t -> 'a = fun tp1 tp2 ->
-  raise @@ Cannot_unify (tp1, tp2)
+let expected_mono = expected_mono_internal __MODULE__
 
 let cst : Id.t -> mono = fun id -> Constant id
 
@@ -137,73 +134,70 @@ let to_kind env tp =
 
 (* Inference *)
 
-module State : sig
 
-  (* External interface *)
+module Inferencer : sig
 
-  type s
-  val initial : s
-  val apply_solution : t -> s -> t
-
-  (* Internal components *)
-
-  module Sub : sig
-    val extend_mono : Id.t -> mono -> s -> s
-    val apply : t -> s -> t
-    val apply_mono : mono -> s -> mono
-  end
-
-  module Pools : sig
-    val push : s -> s
-    val peek : s -> Kind.t Id.Map.t
-    val pop : s -> s
-    val register : s -> Id.t -> Kind.t -> s
-    val unregister : s -> Id.t -> s
-    val update : s -> Id.t -> Id.t -> s
-    val is_mono : s -> Id.t -> bool
-  end
+  type state
+  val initial : state
+  val register : state -> t -> Kind.t -> state
+  val unify : state -> t -> t -> state
+  val gen_enter : state -> state
+  val gen_exit : state -> t -> state * Kind.t Id.Map.t * t
+  val inst : state -> t -> state * t list * t
+  val apply : state -> t -> t
 
 end = struct
 
   type sub = mono Id.Map.t
 
-  type s = {
+  type state = {
     sub : sub ;
     pools : Rank.Pools.p ;
   }
 
-  module Sub = struct
+  module Sub : sig
+
+    val identity : sub
+    val extend : Id.t -> mono -> state -> state
+    val apply : mono -> state -> mono
+
+  end = struct
 
     let identity = Id.Map.empty
 
     let singleton : Id.t -> mono -> sub = Id.Map.singleton
 
-    let rec apply_mono m sub = match m with
+    let rec apply m sub = match m with
       | Constant _ ->
         m
       | Variable id ->
         Id.Map.find_default m id sub
       | Application (fn, arg) ->
-        app (apply_mono fn sub) (apply_mono arg sub)
+        app (apply fn sub) (apply arg sub)
       | Row_nil ->
         m
       | Row_cons (id, m, rest) ->
-        row_cons id (apply_mono m sub) (apply_mono rest sub)
+        row_cons id (apply m sub) (apply rest sub)
 
-    let extend_mono id m state =
-      let fn m' = apply_mono m' @@ singleton id m in
+    let extend id m state =
+      let fn m' = apply m' @@ singleton id m in
       { state with sub = Id.Map.add id m @@ Id.Map.map fn state.sub }
 
-    let apply tp { sub; _ } =
-      let body = apply_mono tp.body sub in
-      assert (body = apply_mono body sub);
-      scheme tp.quants body
-
-    let apply_mono m state = apply_mono m state.sub
+    let apply m state = apply m state.sub
 
   end
 
-  module Pools = struct
+  module Pools : sig
+
+    val push : state -> state
+    val peek : state -> Kind.t Id.Map.t
+    val pop : state -> state
+    val register : Id.t -> Kind.t -> state -> state
+    val unregister : Id.t -> state -> state
+    val update : Id.t -> Id.t -> state -> state
+    val is_mono : Id.t -> state -> bool
+
+  end = struct
 
     module Ps = Rank.Pools
 
@@ -213,169 +207,184 @@ end = struct
 
     let pop state = {state with pools = Ps.pop state.pools}
 
-    let register state id kn =
-      { state with pools = Ps.register state.pools id kn }
+    let register id kn state =
+      {state with pools = Ps.register state.pools id kn}
 
-    let unregister state id =
-      { state with pools = Ps.unregister state.pools id }
+    let unregister id state =
+      {state with pools = Ps.unregister state.pools id}
 
-    let update state id1 id2 =
+    let update id1 id2 state =
       {state with pools = Ps.update state.pools id1 id2}
 
-    let is_mono state id = Ps.is_mono state.pools id
+    let is_mono id state = Ps.is_mono state.pools id
 
   end
+
+  let raise_occurs : Id.t -> t -> 'a = fun id tp ->
+    raise @@ Occurs (id, tp)
+
+  let raise_unify : t -> t -> 'a = fun tp1 tp2 ->
+    raise @@ Cannot_unify (tp1, tp2)
+
+  let expected_mono = expected_mono_internal __MODULE__
 
   let initial = {
     sub = Sub.identity ;
     pools = Rank.Pools.empty ;
   }
 
-  let apply_solution = Sub.apply
+  let apply state tp =
+    let body = Sub.apply tp.body state in
+    assert (body = Sub.apply body state);
+    scheme tp.quants body
+
+  let register state tp kn = match tp.body with
+    | Variable id -> Pools.register id kn state
+    | _ -> error "register" "expected variable"
+
+  let unify state tp1 tp2 =
+
+    let rec occurs : Id.t -> mono -> bool = fun id tp -> match tp with
+      | Constant _ -> false
+      | Variable id' -> id = id'
+      | Application (fn, arg) -> occurs id fn || occurs id arg
+      | Row_nil -> false
+      | Row_cons (_, m, rest) -> occurs id m || occurs id rest
+    in
+
+    let rec update_ranks : state -> Id.t -> mono -> state =
+        fun state id tp ->
+      match tp with
+        | Constant _ ->
+          state
+        | Variable id' ->
+          Pools.update id' id state
+        | Application (fn, arg) ->
+          update_ranks (update_ranks state id fn) id arg
+        | Row_nil ->
+          state
+        | Row_cons (_, m, rest) ->
+          update_ranks (update_ranks state id m) id rest
+    in
+
+    let merge : state -> Id.t -> mono -> state =
+        fun state id m ->
+      let state' = update_ranks state id m in
+      Sub.extend id m @@ Pools.unregister id state'
+    in
+
+    let rec unify state m1 m2 =
+      let m1' = Sub.apply m1 state in
+      let m2' = Sub.apply m2 state in
+      match m1', m2' with
+
+        | _, Variable id when not @@ Pools.is_mono id state ->
+          expected_mono "unify"
+        | Variable id, _ when not @@ Pools.is_mono id state ->
+          expected_mono "unify"
+
+        | Constant id1, Constant id2
+        | Variable id1, Variable id2 when id1 = id2 ->
+          state
+
+        | _, Variable id ->
+          if occurs id m1' then raise_occurs id (scheme tp2.quants m1');
+          merge state id m1'
+        | Variable id, _ ->
+          if occurs id m2' then raise_occurs id (scheme tp2.quants m2');
+          merge state id m2'
+
+        | Application (fn1, arg1), Application (fn2, arg2) ->
+          unify (unify state fn1 fn2) arg1 arg2
+
+        | Row_nil, Row_nil ->
+          state
+        | Row_cons (id1, m1, rest1), Row_cons (id2, m2, rest2) ->
+          if id1 = id2 then
+            unify (unify state m1 m2) rest1 rest2
+          else
+            let tv = Id.gen_upper () in
+            let state = Pools.register tv Kind.row state in
+            let rest = var tv in
+            let state = unify state rest1 @@ row_cons id2 m2 rest in
+            let state = unify state rest2 @@ row_cons id1 m1 rest in
+            state
+
+        | _, _ ->
+          raise_unify (scheme tp1.quants m1') (scheme tp2.quants m2')
+
+    in
+
+    if tp1.quants <> [] || tp2.quants <> [] then
+          expected_mono "unify";
+
+    let state' = unify state tp1.body tp2.body in
+    (* TODO: Enable this assertion. *)
+    (* assert (apply state' tp1 = apply state' tp2); *)
+    state'
+
+  let gen_enter state = Pools.push state
+
+  let gen_exit state tp =
+
+    let free_vars tp =
+      let rec free_vars (seen, fvs) tp = match tp with
+        | Constant _ ->
+          seen, fvs
+        | Variable id ->
+          if Id.Set.mem id seen then
+            seen, fvs
+          else
+            Id.Set.add id seen, id :: fvs
+        | Application (fn, arg) ->
+          free_vars (free_vars (seen, fvs) fn) arg
+        | Row_nil ->
+          seen, fvs
+        | Row_cons (_, m, rest) ->
+          free_vars (free_vars (seen, fvs) m) rest
+      in
+      List.rev @@ snd @@ free_vars (Id.Set.empty, []) tp
+    in
+
+    let tp = apply state tp in
+
+    if tp.quants <> [] then
+      expected_mono "gen_exit";
+
+    let qv_kns = Pools.peek state in
+    let state' = Pools.pop state in
+    let pred id = Id.Map.mem id qv_kns in
+    let incl, _ = List.partition pred @@ free_vars tp.body in
+    let tp' = {
+      quants = List.map (fun q -> q, Id.Map.find q qv_kns) incl;
+      body = tp.body
+    } in
+
+    state', qv_kns, tp'
+
+  let inst state tp =
+
+    let make_var kn (state, tvs) =
+      let tv = Id.gen_upper () in
+      Pools.register tv kn state, var tv :: tvs
+    in
+
+    let tp = apply state tp in
+    let quant_ids, quant_kns = List.split tp.quants in
+    let state', vars = List.fold_right make_var quant_kns (state, []) in
+    let env = Id.Map.of_list @@ List.combine quant_ids vars in
+
+    let rec inst m = match m with
+      | Constant _ -> m
+      | Variable id -> Id.Map.find_default m id env
+      | Application (fn, arg) -> app (inst fn) (inst arg)
+      | Row_nil -> row_nil
+      | Row_cons (id, m, rest) -> row_cons id (inst m) (inst rest)
+    in
+
+    state', List.map (scheme []) vars, scheme [] @@ inst tp.body
 
 end
-
-let unify state tp1 tp2 =
-
-  let rec occurs : Id.t -> mono -> bool = fun id tp -> match tp with
-    | Constant _ -> false
-    | Variable id' -> id = id'
-    | Application (fn, arg) -> occurs id fn || occurs id arg
-    | Row_nil -> false
-    | Row_cons (_, m, rest) -> occurs id m || occurs id rest
-  in
-
-  let rec update_ranks
-      : State.s -> Id.t -> mono -> State.s
-      = fun state id tp ->
-    match tp with
-      | Constant _ ->
-        state
-      | Variable id' ->
-        State.Pools.update state id' id
-      | Application (fn, arg) ->
-        update_ranks (update_ranks state id fn) id arg
-      | Row_nil ->
-        state
-      | Row_cons (_, m, rest) ->
-        update_ranks (update_ranks state id m) id rest
-  in
-
-  let merge
-      : State.s -> Id.t -> mono -> State.s
-      = fun state id m ->
-    let state' = update_ranks state id m in
-    State.Sub.extend_mono id m @@ State.Pools.unregister state' id
-  in
-
-  let rec unify state m1 m2 =
-    let m1' = State.Sub.apply_mono m1 state in
-    let m2' = State.Sub.apply_mono m2 state in
-    match m1', m2' with
-      | _, Variable id when not @@ State.Pools.is_mono state id ->
-        expected_mono "unify"
-      | Variable id, _ when not @@ State.Pools.is_mono state id ->
-        expected_mono "unify"
-      | Constant id1, Constant id2
-      | Variable id1, Variable id2 when id1 = id2 ->
-        state
-      | _, Variable id ->
-        if occurs id m1' then raise_occurs id (scheme tp2.quants m1');
-        merge state id m1'
-      | Variable id, _ ->
-        if occurs id m2' then raise_occurs id (scheme tp2.quants m2');
-        merge state id m2'
-      | Application (fn1, arg1), Application (fn2, arg2) ->
-        unify (unify state fn1 fn2) arg1 arg2
-      | Row_nil, Row_nil ->
-        state
-      | Row_cons (id1, m1, rest1), Row_cons (id2, m2, rest2) ->
-        if id1 = id2 then
-          unify (unify state m1 m2) rest1 rest2
-        else
-          let tv = Id.gen_upper () in
-          let state = State.Pools.register state tv Kind.row in
-          let rest = var tv in
-          let state = unify state rest1 @@ row_cons id2 m2 rest in
-          let state = unify state rest2 @@ row_cons id1 m1 rest in
-          state
-      | _, _ ->
-        raise_unify (scheme tp1.quants m1') (scheme tp2.quants m2')
-  in
-
-  if tp1.quants <> [] || tp2.quants <> [] then
-        expected_mono "unify";
-
-  let state' = unify state tp1.body tp2.body in
-  state'
-
-let register state m = match m with
-  | Variable id ->
-    State.Pools.register state id
-  | _ -> error "register" "expected variable"
-
-let gen_enter state = State.Pools.push state
-
-let gen_exit state tp =
-
-  let free_vars tp =
-    let rec free_vars (seen, fvs) tp = match tp with
-      | Constant _ ->
-        seen, fvs 
-      | Variable id ->
-        if Id.Set.mem id seen then
-          seen, fvs
-        else
-          Id.Set.add id seen, id :: fvs
-      | Application (fn, arg) ->
-        free_vars (free_vars (seen, fvs) fn) arg
-      | Row_nil ->
-        seen, fvs
-      | Row_cons (_, m, rest) ->
-        free_vars (free_vars (seen, fvs) m) rest
-    in
-    List.rev @@ snd @@ free_vars (Id.Set.empty, []) tp
-  in
-
-  let tp = State.Sub.apply tp state in
-
-  if tp.quants <> [] then
-    expected_mono "gen_exit";
-
-  let qv_kns = State.Pools.peek state in
-  let state' = State.Pools.pop state in
-  let pred id = Id.Map.mem id qv_kns in
-  let incl, _ = List.partition pred @@ free_vars tp.body in
-  let tp' = {
-    quants = List.map (fun q -> q, Id.Map.find q qv_kns) incl;
-    body = tp.body
-  } in
-
-  state', qv_kns, tp'
-
-let inst state tp =
-
-  let fresh_var kn (state, tvs) =
-    let tv = var @@ Id.gen_upper () in
-    let state = register state tv kn in
-    state, tv :: tvs
-  in
-
-  let tp = State.Sub.apply tp state in
-
-  let quant_ids, quant_kns = List.split tp.quants in
-  let state', vars = List.fold_right fresh_var quant_kns (state, []) in
-  let env = Id.Map.of_list @@ List.combine quant_ids vars in
-
-  let rec inst m = match m with
-    | Constant _ -> m
-    | Variable id -> Id.Map.find_default m id env
-    | Application (fn, arg) -> app (inst fn) (inst arg)
-    | Row_nil -> row_nil
-    | Row_cons (id, m, rest) -> row_cons id (inst m) (inst rest)
-  in
-
-  state', List.map (scheme []) vars, scheme [] @@ inst tp.body
 
 (* Utilities *)
 
@@ -532,5 +541,3 @@ let vrnt cases rest =
 let var id = scheme [] @@ var id
 
 let get_quants { quants; _ } = quants
-
-let register state tp kn = register state tp.body kn
