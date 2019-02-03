@@ -30,11 +30,6 @@ let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
 
 let pure = True, fun _ -> ()
 
-let exists : Loc.t option -> Type.t -> 'a t -> (Type.t * 'a) t =
-    fun loc tv (c, k) ->
-  ( loc_wrap loc @@ Existential (tv, c),
-    fun sub -> Infer.apply sub tv, k sub )
-
 let let_
     : Loc.t option ->
       Id.t option ->
@@ -165,15 +160,12 @@ let conj_left ?loc lhs rhs = map fst @@ conj ?loc lhs rhs
 
 let conj_right ?loc lhs rhs = map snd @@ conj ?loc lhs rhs
 
-let exists' ?loc ids co =
-  List.fold_right
-    (fun id co -> map snd @@ exists loc (Type.var id) co)
-    ids
-    co
-
 let exists ?loc fn =
   let tv = Type.var @@ Id.gen_upper () in
-  exists loc tv @@ fn tv
+  let c, k = fn tv in
+  ( loc_wrap loc @@ Existential (tv, c),
+    fun state -> Infer.apply state tv, k state )
+
 
 let def ?loc id tp (c, k) =
   ( loc_wrap loc @@ Def_binding (id, tp, c), k )

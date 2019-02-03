@@ -53,8 +53,8 @@ let coerce tvs qs ir_tm =
   IR.Term.subst_tp diff sub ir_tm
 
 (*
-  [infer_hm r env tp tm] performs two tasks: (a) it infers the type of
-  [tm], via Algorithm W-style Hindley-Milner type inference; and (b) it
+  [infer_hm env tm] performs two tasks: (a) it infers the type of [tm],
+  via Algorithm W-style Hindley-Milner type inference; and (b) it
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)

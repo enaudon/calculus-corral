@@ -364,6 +364,14 @@ end = struct
 
   let inst state tp =
 
+    let rec inst env m = match m with
+      | Constant _ -> m
+      | Variable id -> Id.Map.find_default m id env
+      | Application (fn, arg) -> app (inst env fn) (inst env arg)
+      | Row_nil -> row_nil
+      | Row_cons (id, m, m') -> row_cons id (inst env m) (inst env m')
+    in
+
     let make_var kn (state, tvs) =
       let tv = Id.gen_upper () in
       Pools.register tv kn state, var tv :: tvs
@@ -374,15 +382,7 @@ end = struct
     let state', vars = List.fold_right make_var quant_kns (state, []) in
     let env = Id.Map.of_list @@ List.combine quant_ids vars in
 
-    let rec inst m = match m with
-      | Constant _ -> m
-      | Variable id -> Id.Map.find_default m id env
-      | Application (fn, arg) -> app (inst fn) (inst arg)
-      | Row_nil -> row_nil
-      | Row_cons (id, m, rest) -> row_cons id (inst m) (inst rest)
-    in
-
-    state', List.map (scheme []) vars, scheme [] @@ inst tp.body
+    state', List.map (scheme []) vars, scheme [] @@ inst env tp.body
 
 end
 

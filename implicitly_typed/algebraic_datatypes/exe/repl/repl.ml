@@ -42,14 +42,7 @@ module Repl = Language.Repl (struct
       let vl = to_intl_repr tp_env tm in
       let kn_env' = Id.Map.map Kind.to_intl_repr kn_env in
       let tp_env' = Id.Map.map Type.to_intl_repr tp_env in
-      begin try
-        ignore @@ Value.to_type (kn_env', tp_env') vl;
-      with
-        | exn ->
-          Printf.printf "  = %s ;\n%!"
-            (Value.to_string vl);
-          raise exn
-      end;
+      ignore @@ Value.to_type (kn_env', tp_env') vl;
       Value.simplify @@ Value.beta_reduce ?deep vl_env vl
 
   end

@@ -221,6 +221,11 @@ end = struct
 
   let inst state tp =
 
+    let rec inst env m = match m with
+      | Variable id -> Id.Map.find_default m id env
+      | Function (arg, res) -> func (inst env arg) (inst env res)
+    in
+
     let make_var _ (state, tvs) =
       let tv = Id.gen_upper () in
       Pools.register tv state, var tv :: tvs
@@ -230,12 +235,7 @@ end = struct
     let state', vars = List.fold_right make_var tp.quants (state, []) in
     let env = Id.Map.of_list @@ List.combine tp.quants vars in
 
-    let rec inst m = match m with
-      | Variable id -> Id.Map.find_default m id env
-      | Function (arg, res) -> func (inst arg) (inst res)
-    in
-
-    state', List.map (scheme []) vars, scheme [] @@ inst tp.body
+    state', List.map (scheme []) vars, scheme [] @@ inst env tp.body
 
 end
 

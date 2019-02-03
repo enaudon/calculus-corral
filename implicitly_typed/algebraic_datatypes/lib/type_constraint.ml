@@ -89,6 +89,12 @@ let solve (c, k) =
               "type variable '%s' occurs in '%s'"
               (Id.to_string id)
               (Type.to_string ~no_simp:() tp)
+        | Type.Cannot_unify (tp1, tp2) ->
+          error loc "solve" @@
+            Printf.sprintf
+              "cannot unify '%s' and '%s'"
+              (Type.to_string ~no_simp:() tp1)
+              (Type.to_string ~no_simp:() tp2)
         | Id.Unbound id ->
             error loc "solve" @@
               Printf.sprintf

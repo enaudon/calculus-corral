@@ -33,7 +33,7 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 (* Typing *)
 
 (*
-  [infer_hm env tp tm] ensures that [tm] has type [tp], via Algorithm
+  [infer_hm env tm] ensures that [tm] has type [tp], via Algorithm
   W-style Hindley-Milner type inference.  [tm] is assumed to be closed
   under [env].
  *)

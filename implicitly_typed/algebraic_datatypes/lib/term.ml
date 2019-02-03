@@ -72,8 +72,8 @@ let coerce tvs qs ir_tm =
   IR.Term.subst_tp fvs sub ir_tm
 
 (*
-  [infer_hm r env tp tm] performs two tasks: (a) it infers the type of
-  [tm], via Algorithm W-style Hindley-Milner type inference; and (b) it
+  [infer_hm env tm] performs two tasks: (a) it infers the type of [tm],
+  via Algorithm W-style Hindley-Milner type inference; and (b) it
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)
@@ -173,6 +173,7 @@ let infer_hm : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
           fresh_type_var_list state (List.length fields) Kind.prop
         in
         let state, field_ks =
+          (* TODO: Use `fold_right2` here. *)
           let s, ks =
             List.fold_left2 infer_field (state, []) tps fields
           in
@@ -221,6 +222,7 @@ let infer_hm : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
           infer env state (Type.vrnt case_tps None) vrnt
         in
         let state, case_ks =
+          (* TODO: Use `fold_right2` here. *)
           let s, ks =
             List.fold_left2 (infer_case res_tp) (state, []) tps cases
           in

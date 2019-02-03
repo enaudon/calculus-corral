@@ -32,12 +32,6 @@ val conj_right : ?loc : Location.t -> 'a t -> 'b t -> 'b t
 (** [exists (fun tp -> c)] existentially quantifies [tp] in [c]. *)
 val exists : ?loc : Location.t -> (Type.t -> 'a t) -> (Type.t * 'a) t
 
-(**
-  [exists' id c] behaves as [exists], but it allows the caller to
-  specify a list of existentially quantified type variables.
- *)
-val exists' : ?loc : Location.t -> Identifier.t list -> 'a t -> 'a t
-
 (** [def id tp c] binds [id] to [tp] within [c]. *)
 val def : ?loc : Location.t -> Identifier.t -> Type.t -> 'a t -> 'a t
 
