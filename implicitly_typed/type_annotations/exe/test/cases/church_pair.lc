@@ -1,0 +1,23 @@
+pair = \f . \s . \p . p f s ;
+
+fst = \p . p (\f . \s . f) ;
+
+snd = \p . p (\f . \s . s) ;
+
+p = pair fls tru ;
+
+fst p ;
+
+snd p ;
+
+p = pair zero one ;
+
+fst p ;
+
+snd p ;
+
+p = pair fls zero ;
+
+fst p ;
+
+snd p ;

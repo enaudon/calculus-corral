@@ -1,0 +1,36 @@
+pair
+  : A -> B -> (A -> B -> C) -> C
+  = \A . \B . \C . \f : A . \s : B . \p : A -> B -> C . p f s ;
+fst
+  : ((A -> B -> A) -> C) -> C
+  = \A . \B . \C . \p : (A -> B -> A) -> C . p (\f : A . \s : B . f) ;
+snd
+  : ((A -> B -> B) -> C) -> C
+  = \A . \B . \C . \p : (A -> B -> B) -> C . p (\f : A . \s : B . s) ;
+p
+  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
+  = \A . \B . \C . \D . \E . \p : (A -> B -> B) -> (C -> D -> C) -> E . p (\t : A . \f : B . f) (\t : C . \f : D . t) ;
+fst p
+  : A -> B -> B
+  = \A . \B . \t : A . \f : B . f ;
+snd p
+  : A -> B -> A
+  = \A . \B . \t : A . \f : B . t ;
+p
+  : (((A -> A) -> A -> A) -> ((B -> B) -> B -> B) -> C) -> C
+  = \A . \B . \C . \p : ((A -> A) -> A -> A) -> ((B -> B) -> B -> B) -> C . p (\s : A -> A . \z : A . z) (\s : B -> B . \z : B . s z) ;
+fst p
+  : (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . z ;
+snd p
+  : (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . s z ;
+p
+  : ((A -> B -> B) -> ((C -> C) -> C -> C) -> D) -> D
+  = \A . \B . \C . \D . \p : (A -> B -> B) -> ((C -> C) -> C -> C) -> D . p (\t : A . \f : B . f) (\s : C -> C . \z : C . z) ;
+fst p
+  : A -> B -> B
+  = \A . \B . \t : A . \f : B . f ;
+snd p
+  : (A -> A) -> A -> A
+  = \A . \s : A -> A . \z : A . z ;
