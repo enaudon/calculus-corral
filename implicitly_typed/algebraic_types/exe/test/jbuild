@@ -2,14 +2,14 @@
 
 (executable
   ((name test)
-    (libraries (oUnit algebraic_datatypes))
+    (libraries (oUnit algebraic_types))
     (flags (-w +A-4 -warn-error +A-4))))
 
 (rule (
   (targets (cases))
   (action (run
     cp -r
-      ${ROOT}/../../implicitly_typed/algebraic_datatypes/exe/test/cases/
+      ${ROOT}/../../implicitly_typed/algebraic_types/exe/test/cases/
       .))))
 
 (alias

@@ -8,6 +8,6 @@
    (action (chdir . (run ocamlyacc --strict -v ${<})))))
 
 (library
-  ((name algebraic_datatypes)
+  ((name algebraic_types)
    (libraries (records_and_variants utilities))
    (flags (-w +A-4 -warn-error +A-4))))

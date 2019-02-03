@@ -15,7 +15,7 @@ let _ =
     ("variant_option.lc", []) ;
   ] in
 
-  let test_suite = "algebraic_datatypes" >::: [
+  let test_suite = "algebraic_types" >::: [
     Test_repl.make_implicit repl_exe case_dir repl_cases ;
   ] in
 

@@ -11,11 +11,11 @@ module Repl = Language.Repl (struct
 
   module Value = Records_and_variants.Term
 
-  module Kind = Algebraic_datatypes.Kind
+  module Kind = Algebraic_types.Kind
 
   module Type = struct
 
-    include Algebraic_datatypes.Type
+    include Algebraic_types.Type
 
     let beta_reduce ?deep:_ _ _ = assert false
 
@@ -25,7 +25,7 @@ module Repl = Language.Repl (struct
 
   module Term = struct
 
-    include Algebraic_datatypes.Term
+    include Algebraic_types.Term
 
     let to_type env tm =
       let to_type = match !type_inference_algorithm with
@@ -48,7 +48,7 @@ module Repl = Language.Repl (struct
   end
 
   let parse =
-    Algebraic_datatypes.Parser.commands Algebraic_datatypes.Lexer.prog
+    Algebraic_types.Parser.commands Algebraic_types.Lexer.prog
 
   let arg_specs = [
     ( "--type-inference-algorithm",
