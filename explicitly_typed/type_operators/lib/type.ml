@@ -260,4 +260,5 @@ let get_forall' tp =
     | _ ->
       acc, tp
   in
-  get_forall [] tp
+  let quants, tp = get_forall [] tp in
+  List.rev quants, tp
