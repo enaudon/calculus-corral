@@ -75,6 +75,12 @@ module Pools = struct
     in
     insert (remove ps rank id1) rank' id1
 
-  let is_mono ps id = Id.Map.find id ps.ranks >= mono
+  let is_mono ps id =
+    try
+      Id.Map.find id ps.ranks >= mono
+    with Id.Unbound _ ->
+      failwith @@ Printf.sprintf
+        "Rank.Pools.is_mono: Unbound %s"
+        (Id.to_string id)
 
 end
