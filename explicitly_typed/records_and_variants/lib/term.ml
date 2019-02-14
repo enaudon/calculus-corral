@@ -216,8 +216,7 @@ let rec to_type (kn_env, tp_env) tm =
 
 (* Transformations *)
 
-(** [free_vars tm] computes the free term variables in [tm]. *)
-let free_vars : t -> Id.Set.t =
+let free_vars =
   let rec free_vars fvs tm = match tm.desc with
     | Variable id ->
       Id.Set.add id fvs

@@ -68,6 +68,21 @@ val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
  *)
 val alpha_equivalent : t -> t -> bool
 
+(* [free_vars tm] computes the free term variables in [tm]. *)
+val free_vars : t -> Identifier.Set.t
+
+(**
+  [subst_tp tm sub] applies the substitution [sub], which maps
+  identifiers to terms, to [tp].
+*)
+val subst_tp : Identifier.Set.t -> Type.t Identifier.Map.t -> t -> t
+
+(**
+  [subst_tm tm sub] applies the substitution [sub], which maps
+  identifiers to terms, to [tm].
+*)
+val subst_tm : Identifier.Set.t -> t Identifier.Map.t -> t -> t
+
 (**
   [simplify tm] replaces each type variable in [tm] with the
   lexicographically lowest unused variable.

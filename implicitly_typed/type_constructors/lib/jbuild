@@ -1,0 +1,13 @@
+(jbuild_version 1)
+
+(ocamllex (lexer))
+
+(rule
+  ((targets (parser.ml parser.mli))
+   (deps (parser.mly))
+   (action (chdir . (run ocamlyacc --strict -v ${<})))))
+
+(library
+  ((name type_constructors)
+   (libraries (type_operators utilities))
+   (flags (-w +A-4 -warn-error +A-4))))
