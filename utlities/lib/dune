@@ -1,0 +1,5 @@
+(library
+ (name utilities)
+ (libraries oUnit)
+ (wrapped false)
+ (flags -w +A-4 -warn-error +A-4))

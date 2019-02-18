@@ -1,7 +1,0 @@
-(jbuild_version 1)
-
-(executable
-  ((name repl)
-   (modules (repl))
-   (libraries (records_and_variants))
-   (flags (-w +A-4 -warn-error +A-4))))
