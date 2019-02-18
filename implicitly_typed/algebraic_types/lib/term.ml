@@ -93,7 +93,7 @@ let infer_hm : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
 
   let fresh_type_var_list state n kn =
     let init_fn _ = Type.var @@ Id.gen_upper () in
-    let tvs = Misc.list_init n init_fn in
+    let tvs = List.init n init_fn in
     let fold_fn tv state = Infer.register state tv kn in
     let state = List.fold_right fold_fn tvs state in
     state, tvs
@@ -301,9 +301,7 @@ let infer_pr : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
         let constrain_field tp (id, tm) =
           constrain tp tm <$> fun tm' -> id, tm'
         in
-        let kns =
-          Misc.list_init (List.length fields) (fun _ -> Kind.prop)
-        in
+        let kns = List.init (List.length fields) (fun _ -> Kind.prop) in
         TC.exists_list ~loc kns (fun tps ->
           let field_tps = List.combine (List.map fst fields) tps in
           TC.conj_left
@@ -332,9 +330,7 @@ let infer_pr : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
           TC.def id tp @@ constrain res_tp body <$>
             fun body' -> case, id, body'
         in
-        let kns =
-          Misc.list_init (List.length cases) (fun _ -> Kind.prop)
-        in
+        let kns = List.init (List.length cases) (fun _ -> Kind.prop) in
         TC.exists_list ~loc kns (fun tps ->
           let case_tps =
             List.combine (List.map Misc.fst_of_3 cases) tps

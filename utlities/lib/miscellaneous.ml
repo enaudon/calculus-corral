@@ -45,12 +45,3 @@ let int_to_string a z i =
 let int_to_lower = int_to_string (Char.code 'a') (Char.code 'z')
 
 let int_to_upper = int_to_string (Char.code 'A') (Char.code 'Z')
-
-let list_init n fn =
-  let rec list_init acc i =
-    if i >= n then
-      acc
-    else
-      list_init (fn i :: acc) (i + 1)
-  in
-  List.rev @@ list_init [] 0
