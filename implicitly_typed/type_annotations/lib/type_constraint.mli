@@ -29,45 +29,57 @@ val conj_left : ?loc : Location.t -> 'a t -> 'b t -> 'a t
 *)
 val conj_right : ?loc : Location.t -> 'a t -> 'b t -> 'b t
 
-(** [forall (fun tp -> c)] universally quantifies [tp] in [c]. *)
-val forall : ?loc : Location.t -> (Type.t -> 'a t) -> (Type.t * 'a) t
+(**
+  [forall kn (fun tp -> c)] universally quantifies [tp] of kind [kn] in
+  [c].
+*)
+val forall :
+  ?loc : Location.t -> Kind.t -> (Type.t -> 'a t) -> (Type.t * 'a) t
 
 (**
-  [forall_list ids c] behaves as [forall], but it allows the caller to
-  specify a list of universally quantified type variables.
+  [forall_list id c] behaves as [forall], but it allows the caller to
+  specify a list of universally quantified type variables and their kinds.
  *)
-val forall_list : ?loc : Location.t -> Identifier.t list -> 'a t -> 'a t
+val forall_list :
+  ?loc : Location.t -> (Identifier.t * Kind.t) list -> 'a t -> 'a t
 
-(** [exists (fun tp -> c)] existentially quantifies [tp] in [c]. *)
-val exists : ?loc : Location.t -> (Type.t -> 'a t) -> (Type.t * 'a) t
+(**
+  [exists kn (fun tp -> c)] existentially quantifies [tp] of kind [kn]
+  in [c].
+*)
+val exists :
+  ?loc : Location.t -> Kind.t -> (Type.t -> 'a t) -> (Type.t * 'a) t
 
 (**
   [exists_list id c] behaves as [exists], but it allows the caller to
-  specify a list of existentially quantified type variables.
+  specify a list of existentially quantified type variables and their kinds.
  *)
-val exists_list : ?loc : Location.t -> Identifier.t list -> 'a t -> 'a t
+val exists_list :
+  ?loc : Location.t -> (Identifier.t * Kind.t) list -> 'a t -> 'a t
 
 (** [def id tp c] binds [id] to [tp] within [c]. *)
 val def : ?loc : Location.t -> Identifier.t -> Type.t -> 'a t -> 'a t
 
 (**
-  [let_ id (fun tp -> c1) c2] binds [id] to [tp] within [c2], given
-  that [c1] is satisfiable.
+  [let_ id kn (fun tp -> c1) c2] binds [id] to [tp] of kind [kn] within
+  [c2], given that [c1] is satisfiable.
  *)
 val let_ :
   ?loc : Location.t ->
   Identifier.t ->
+  Kind.t ->
   (Type.t -> 'a t) ->
   'b t ->
-  (Type.t * Identifier.Set.t * 'a * 'b) t
+  (Type.t * Kind.t Identifier.Map.t * 'a * 'b) t
 
 (**
   [top c]
  *)
 val top :
   ?loc : Location.t ->
+  Kind.t ->
   (Type.t -> 'a t) ->
-  (Type.t * Identifier.Set.t * 'a) t
+  (Type.t * Kind.t Identifier.Map.t * 'a) t
 
 (**
   [map f c] produces a constraint that is identical to [c] except that

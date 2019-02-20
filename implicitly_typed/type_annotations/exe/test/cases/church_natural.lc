@@ -1,6 +1,6 @@
-zero = (\s . \z . z) : exists A . (A -> A) -> A -> A ;
+zero = \s . \z . z ;
 
-one = (\s . \z . s z) : exists A . (A -> A) -> A -> A ;
+one = \s . \z . s z ;
 
 two = \s . \z . s (s z) ;
 

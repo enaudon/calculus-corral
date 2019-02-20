@@ -16,7 +16,7 @@ module Pools = struct
 
   type p = {
     top : t;
-    pools : Id.Set.t Map.t;
+    pools : Kind.t Id.Map.t Map.t;
     ranks : t Id.Map.t;
   }
 
@@ -24,14 +24,14 @@ module Pools = struct
 
   let push ps =
     let top' = ps.top + 1 in
-    {ps with top = top'; pools = Map.add top' Id.Set.empty ps.pools}
+    {ps with top = top'; pools = Map.add top' Id.Map.empty ps.pools}
 
   let peek {top; pools; _} = Map.find top pools
 
   let pop ps =
     {ps with top = ps.top - 1; pools = Map.remove ps.top ps.pools}
 
-  let find_pool : p -> t -> Id.Set.t = fun ps rank ->
+  let find_pool : p -> t -> Kind.t Id.Map.t = fun ps rank ->
     try
       Map.find rank ps.pools
     with Not_found ->
@@ -40,17 +40,28 @@ module Pools = struct
         rank
         ps.top
 
-  let insert : p -> t -> Identifier.t -> p = fun ps rank id ->
+  let insert : p -> t -> Identifier.t -> Kind.t -> p =
+      fun ps rank id kn ->
     let pool = find_pool ps rank in
     { ps with
-      pools = Map.add rank (Id.Set.add id pool) ps.pools;
+      pools = Map.add rank (Id.Map.add id kn pool) ps.pools;
       ranks = Id.Map.add id rank ps.ranks; }
 
   let remove : p -> t -> Identifier.t -> p = fun ps rank id ->
     let pool = find_pool ps rank in
     { ps with
-      pools = Map.add rank (Id.Set.del id pool) ps.pools;
+      pools = Map.add rank (Id.Map.del id pool) ps.pools;
       ranks = Id.Map.del id ps.ranks; }
+
+  let find : p -> t -> Identifier.t -> Kind.t = fun ps rank id ->
+    try
+      Id.Map.find id @@ find_pool ps rank
+    with Not_found ->
+      failwith @@ Printf.sprintf
+        "Rank.Pools.find: Could not find %s.%d.  Top rank is %d."
+        (Id.to_string id)
+        rank
+        ps.top
 
   let register ps id = insert ps ps.top id
 
@@ -73,7 +84,8 @@ module Pools = struct
           "Rank.Pools.update: Unbound %s"
           (Id.to_string id2)
     in
-    insert (remove ps rank id1) rank' id1
+    let kn = find ps rank id1 in
+    insert (remove ps rank id1) rank' id1 kn
 
   let is_mono ps id =
     try

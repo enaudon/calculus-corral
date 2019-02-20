@@ -36,7 +36,15 @@ val func : t -> t -> t
 val func' : t list -> t -> t
 
 (** [get_forall' tp] computes the variable quantifier of [tp]. *)
-val get_quants : t -> Identifier.t list
+val get_quants : t -> (Identifier.t * Kind.t) list
+
+(** {1 Kinding} *)
+
+(** [default_env] is the default typing environment. *)
+val default_env : Kind.t Identifier.Map.t
+
+(** [to_kind env tp] computes the kind of [tp] under [env]. *)
+val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
 
 (** {1 Inference} *)
 
@@ -61,8 +69,8 @@ module Inferencer : sig
     Unless [rigid] is passed, [tv] will be registered as a flexible type
     variable.
    *)
-  val register : ?rigid : unit -> state -> t -> state
-
+  val register : ?rigid : unit -> state -> t -> Kind.t -> state
+  
   (**
     [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
     [tp2].  In cases where both [tp1] and [tp2] are variables, and either
@@ -84,9 +92,10 @@ module Inferencer : sig
     monomorphic variables introduced within the let-expression with
     polymorphic variables.  The result contains three things: a) the
     updated state, b) a list of identifiers corresponding the newly
-    polymorphic variables, and c) the newly-polymorphic type.
+    polymorphic variables and their kinds, and c) the newly-polymorphic
+    type.
    *)
-  val gen_exit : state -> t -> state * Identifier.Set.t * t
+  val gen_exit : state -> t -> state * Kind.t Identifier.Map.t * t
 
   (**
     [inst state tp] replaces all polymorphic variables in [tp] with fresh
@@ -112,7 +121,7 @@ end
   [to_intl_repr tp] computes an internal representation type which is
   equivalent to [tp].
  *)
-val to_intl_repr : t -> Universal_types.Type.t
+val to_intl_repr : t -> Type_operators.Type.t
 
 (**
   [simplify tp] replaces each variable in [tp] with the

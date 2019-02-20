@@ -47,7 +47,7 @@ val to_type_hm : Type.t Identifier.Map.t -> t -> Type.t
   which is equivalent to [tm].
  *)
 val to_intl_repr_hm :
-  Type.t Identifier.Map.t -> t -> Universal_types.Term.t
+  Type.t Identifier.Map.t -> t -> Type_operators.Term.t
 
 (**
   [to_type_pr env tm] computes the type of [tm] under [env], via
@@ -60,7 +60,7 @@ val to_type_pr : Type.t Identifier.Map.t -> t -> Type.t
   which is equivalent to [tm].
  *)
 val to_intl_repr_pr :
-  Type.t Identifier.Map.t -> t -> Universal_types.Term.t
+  Type.t Identifier.Map.t -> t -> Type_operators.Term.t
 
 (** {1 Utilities} *)
 

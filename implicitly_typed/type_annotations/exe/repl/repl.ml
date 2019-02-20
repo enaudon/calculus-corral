@@ -9,24 +9,13 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Value = Universal_types.Term
+  module Value = Type_operators.Term
 
-  module Kind = struct
-
-    type t =
-      | Base
-
-    let to_string _ = "*"
-
-  end
+  module Kind = Type_annotations.Kind
 
   module Type = struct
 
     include Type_annotations.Type
-
-    let default_env = Identifier.Map.empty
-
-    let to_kind _ _ = Kind.Base
 
     let beta_reduce ?deep:_ _ _ = assert false
 
@@ -51,7 +40,7 @@ module Repl = Language.Repl (struct
         | Pottier_remy -> to_intl_repr_pr
       in
       let vl = to_intl_repr tp_env tm in
-      let kn_env' = Id.Set.of_list @@ Id.Map.keys kn_env in
+      let kn_env' = Id.Map.map Kind.to_intl_repr kn_env in
       let tp_env' = Id.Map.map Type.to_intl_repr tp_env in
       ignore @@ Value.to_type (kn_env', tp_env') vl;
       Value.simplify @@ Value.beta_reduce ?deep vl_env vl

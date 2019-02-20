@@ -11,5 +11,5 @@
 
 (library
  (name type_annotations)
- (libraries universal_types utilities)
+ (libraries type_operators utilities)
  (flags -w +A-4 -warn-error +A-4))

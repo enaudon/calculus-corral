@@ -33,14 +33,14 @@ module Pools : sig
   val push : p -> p
 
   (**
-    [peek pools] computes the set of variables associated with the
-    current top rank in [pools].
+    [peek pools] computes the variables associated with the current top
+    rank in [pools].
    *)
-  val peek : p -> Identifier.Set.t
+  val peek : p -> Kind.t Identifier.Map.t
 
   (**
-    [pop pools] removes the set of variables associated with the current
-    top rank from [pools].
+    [pop pools] removes the variables associated with the current top
+    rank from [pools].
    *)
   val pop : p -> p
 
@@ -48,7 +48,7 @@ module Pools : sig
     [register pools id] inserts [id] into the set of variables in
     [pools] associated with the current top rank.
    *)
-  val register : p -> Identifier.t -> p
+  val register : p -> Identifier.t -> Kind.t -> p
 
   (** [unregister pools id] removes [id] from [pools]. *)
   val unregister : p -> Identifier.t -> p

@@ -3,12 +3,13 @@ module Misc = Miscellaneous
 
 (* The type of monomorphic types. *)
 type mono =
+  | Constant of Id.t
   | Variable of Id.t
-  | Function of mono * mono
+  | Application of mono * mono
 
 (* The type of types schemes. *)
 type t = {
-  quants : Id.t list ;
+  quants : (Id.t * Kind.t) list ;
   body : mono ;
 }
 
@@ -30,23 +31,70 @@ let expected_mono_internal : string -> string -> 'a =
 
 let expected_mono = expected_mono_internal __MODULE__
 
+let cst : Id.t -> mono = fun id -> Constant id
+
 let var : Id.t -> mono = fun id -> Variable id
 
-let func : mono -> mono -> mono = fun arg res -> Function (arg, res)
+let app : mono -> mono -> mono = fun fn arg -> Application (fn, arg)
 
-let scheme : Id.t list -> mono -> t = fun quants body ->
+let scheme : (Id.t * Kind.t) list -> mono -> t = fun quants body ->
   { quants; body }
 
+let func_id = Id.define "->"
+
+(* Kinding *)
+
+let default_env =
+  let prop = Kind.prop in
+  let oper' = Kind.oper' in
+  Id.Map.empty |>
+    Id.Map.add func_id (oper' [prop; prop] prop)
+
+let to_kind env tp =
+
+  let rec to_kind env m = match m with
+    | Constant id | Variable id ->
+      begin try Id.Map.find id env with
+        | Id.Unbound id ->
+          error "to_kind" @@
+            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
+      end
+    | Application (fn, arg) ->
+      let fn_kn = to_kind env fn in
+      let fml_arg_kn, res_kn =
+        try
+          Kind.get_oper fn_kn
+        with Invalid_argument _ ->
+          error "to_kind" @@
+            Printf.sprintf
+              "expected function kind; found '%s'"
+              (Kind.to_string fn_kn)
+      in
+      let act_arg_kn = to_kind env arg in
+      if Kind.alpha_equivalent act_arg_kn fml_arg_kn then
+        res_kn
+      else
+        error "to_kind" @@
+          Printf.sprintf
+            "expected kind '%s'; found kind '%s'"
+              (Kind.to_string fml_arg_kn)
+              (Kind.to_string act_arg_kn)
+  in
+
+  let ext_env env (q, kn) = Id.Map.add q kn env in
+  to_kind (List.fold_left ext_env env tp.quants) tp.body
+
 (* Inference *)
+
 
 module Inferencer : sig
 
   type state
   val initial : state
-  val register : ?rigid : unit -> state -> t -> state
+  val register : ?rigid : unit -> state -> t -> Kind.t -> state
   val unify : state -> t -> t -> state
   val gen_enter : state -> state
-  val gen_exit : state -> t -> state * Id.Set.t * t
+  val gen_exit : state -> t -> state * Kind.t Id.Map.t * t
   val inst : state -> t -> state * t list * t
   val apply : state -> t -> t
 
@@ -73,10 +121,12 @@ end = struct
     let singleton : Id.t -> mono -> sub = Id.Map.singleton
 
     let rec apply m sub = match m with
+      | Constant _ ->
+        m
       | Variable id ->
         Id.Map.find_default m id sub
-      | Function (arg, res) ->
-        func (apply arg sub) (apply res sub)
+      | Application (fn, arg) ->
+        app (apply fn sub) (apply arg sub)
 
     let extend id m state =
       let fn m' = apply m' @@ singleton id m in
@@ -89,9 +139,9 @@ end = struct
   module Pools : sig
 
     val push : state -> state
-    val peek : state -> Id.Set.t
+    val peek : state -> Kind.t Id.Map.t
     val pop : state -> state
-    val register : Id.t -> bool -> state -> state
+    val register : Id.t -> Kind.t -> bool -> state -> state
     val unregister : Id.t -> state -> state
     val update : Id.t -> Id.t -> state -> state
     val is_mono : Id.t -> state -> bool
@@ -107,9 +157,9 @@ end = struct
 
     let pop state = {state with pools = Ps.pop state.pools}
 
-    let register id is_rigid state =
+    let register id kn is_rigid state =
       { state with
-        pools = Ps.register state.pools id;
+        pools = Ps.register state.pools id kn;
         rigid = Id.Map.add id is_rigid state.rigid }
 
     let unregister id state =
@@ -145,29 +195,32 @@ end = struct
     rigid = Id.Map.empty ;
   }
 
-  let register ?rigid state tp = match tp.body with
-    | Variable id -> Pools.register id (rigid <> None) state
-    | _ -> error "register" "expected variable"
-
   let apply state tp =
     let body = Sub.apply tp.body state in
     assert (body = Sub.apply body state);
     scheme tp.quants body
 
+  let register ?rigid state tp kn = match tp.body with
+    | Variable id -> Pools.register id kn (rigid <> None) state
+    | _ -> error "register" "expected variable"
+
   let unify state tp1 tp2 =
 
     let rec occurs : Id.t -> mono -> bool = fun id tp -> match tp with
+      | Constant _ -> false
       | Variable id' -> id = id'
-      | Function (arg, res) -> occurs id arg || occurs id res
+      | Application (fn, arg) -> occurs id fn || occurs id arg
     in
 
     let rec update_ranks : state -> Id.t -> mono -> state =
         fun state id tp ->
       match tp with
+        | Constant _ ->
+          state
         | Variable id' ->
           Pools.update id' id state
-        | Function (arg, res) ->
-          update_ranks (update_ranks state id arg) id res
+        | Application (fn, arg) ->
+          update_ranks (update_ranks state id fn) id arg
     in
 
     let merge : state -> Id.t -> mono -> state =
@@ -186,6 +239,7 @@ end = struct
         | Variable id, _ when not @@ Pools.is_mono id state ->
           expected_mono "unify"
 
+        | Constant id1, Constant id2
         | Variable id1, Variable id2 when id1 = id2 ->
           state
 
@@ -203,18 +257,20 @@ end = struct
           if occurs id m2' then raise_occurs id (scheme tp2.quants m2');
           merge state id m2'
 
-        | Function (arg1, res1), Function (arg2, res2) ->
-          unify (unify state arg1 arg2) res1 res2
+        | Application (fn1, arg1), Application (fn2, arg2) ->
+          unify (unify state fn1 fn2) arg1 arg2
 
         | _, _ ->
           raise_unify (scheme tp1.quants m1') (scheme tp2.quants m2')
+
     in
 
     if tp1.quants <> [] || tp2.quants <> [] then
           expected_mono "unify";
 
     let state' = unify state tp1.body tp2.body in
-    assert (apply state' tp1 = apply state' tp2);
+    (* TODO: Enable this assertion. *)
+    (* assert (apply state' tp1 = apply state' tp2); *)
     state'
 
   let gen_enter state = Pools.push state
@@ -223,13 +279,15 @@ end = struct
 
     let free_vars tp =
       let rec free_vars (seen, fvs) tp = match tp with
+        | Constant _ ->
+          seen, fvs
         | Variable id ->
           if Id.Set.mem id seen then
             seen, fvs
           else
             Id.Set.add id seen, id :: fvs
-        | Function (arg, res) ->
-          free_vars (free_vars (seen, fvs) arg) res
+        | Application (fn, arg) ->
+          free_vars (free_vars (seen, fvs) fn) arg
       in
       List.rev @@ snd @@ free_vars (Id.Set.empty, []) tp
     in
@@ -239,29 +297,34 @@ end = struct
     if tp.quants <> [] then
       expected_mono "gen_exit";
 
-    let qvs = Pools.peek state in
+    let qv_kns = Pools.peek state in
     let state' = Pools.pop state in
-    let pred id = Id.Set.mem id qvs in
+    let pred id = Id.Map.mem id qv_kns in
     let incl, _ = List.partition pred @@ free_vars tp.body in
-    let tp' = { quants = incl; body = tp.body } in
+    let tp' = {
+      quants = List.map (fun q -> q, Id.Map.find q qv_kns) incl;
+      body = tp.body
+    } in
 
-    state', qvs, tp'
+    state', qv_kns, tp'
 
   let inst state tp =
 
     let rec inst env m = match m with
+      | Constant _ -> m
       | Variable id -> Id.Map.find_default m id env
-      | Function (arg, res) -> func (inst env arg) (inst env res)
+      | Application (fn, arg) -> app (inst env fn) (inst env arg)
     in
 
-    let make_var _ (state, tvs) =
+    let make_var kn (state, tvs) =
       let tv = Id.gen_upper () in
-      Pools.register tv false state, var tv :: tvs
+      Pools.register tv kn false state, var tv :: tvs
     in
 
     let tp = apply state tp in
-    let state', vars = List.fold_right make_var tp.quants (state, []) in
-    let env = Id.Map.of_list @@ List.combine tp.quants vars in
+    let quant_ids, quant_kns = List.split tp.quants in
+    let state', vars = List.fold_right make_var quant_kns (state, []) in
+    let env = Id.Map.of_list @@ List.combine quant_ids vars in
 
     state', List.map (scheme []) vars, scheme [] @@ inst env tp.body
 
@@ -271,13 +334,15 @@ end
 
 let to_intl_repr tp =
 
-  let module IR = Universal_types.Type in
+  let module IR = Type_operators.Type in
   let rec to_ir tp = match tp with
+    | Constant id -> IR.var id
     | Variable id -> IR.var id
-    | Function (arg, res) -> IR.func (to_ir arg) (to_ir res)
+    | Application (fn, arg) -> IR.app (to_ir fn) (to_ir arg)
   in
 
-  IR.forall' tp.quants @@ to_ir tp.body
+  let quant_to_ir (q, kn) = q, Kind.to_intl_repr kn in
+  IR.forall' (List.map quant_to_ir tp.quants) @@ to_ir tp.body
 
 (*
   NOTE: [simplify] does not register the new variables that it creates
@@ -306,48 +371,62 @@ let simplify { quants; body } =
   let rec simplify tp = match tp with
     | Variable id when Id.is_generated id ->
       var @@ simplify_id id
-    | Variable _ ->
+    | Constant _ | Variable _ ->
       tp
-    | Function (arg, res) ->
+    | Application (fn, arg) ->
+      let fn' = simplify fn in
       let arg' = simplify arg in
-      let res' = simplify res in
-      func arg' res'
+      app fn' arg'
   in
 
-  let quants = List.map simplify_id quants in
+  let quants = List.map (fun (q, kn) -> simplify_id q, kn) quants in
   let body = simplify body in
   { quants; body }
 
 let to_string ?no_simp ?show_quants tp =
 
   let rec to_string tp =
+
     let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
+
+    let arg_to_string tp = match tp with
+      | Constant _ | Variable _ -> to_string tp
+      | Application _ -> to_paren_string tp
+    in
+
     match tp with
-      | Variable id ->
+      | Constant id | Variable id ->
         Id.to_string id
-      | Function (arg, res) ->
-        let arg_to_string tp = match tp with
-          | Variable _ -> to_string tp
-          | Function _ -> to_paren_string tp
-        in
-        Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
+      | Application (Application (Constant id, arg), res)
+          when id = func_id ->
+        Printf.sprintf "%s %s %s"
+          (arg_to_string arg)
+          (Id.to_string func_id)
+          (to_string res)
+      | Application (fn, arg) ->
+        Printf.sprintf "%s %s" (to_string fn) (arg_to_string arg)
   in
 
   let { quants; body } = if no_simp = None then simplify tp else tp in
   if quants = [] || show_quants = None then
     to_string body
   else
+    let quant_to_string (q, kn) =
+      Printf.sprintf "%s :: %s" (Id.to_string q) (Kind.to_string kn)
+    in
     Printf.sprintf "forall %s . %s"
-      (String.concat " . forall " @@ List.map Id.to_string quants)
+      (String.concat " . forall " @@ List.map quant_to_string quants)
       (to_string body)
 
 (* External functions *)
 
 let var id = scheme [] @@ var id
 
-let func arg res = match arg.quants, res.quants with
-  | [], [] -> scheme [] @@ func arg.body res.body
-  | _ :: _, _ | _, _ :: _ -> expected_mono "func"
+let func arg res =
+  let func arg res = List.fold_left app (cst func_id) [arg; res] in
+  match arg.quants, res.quants with
+    | [], [] -> scheme [] @@ func arg.body res.body
+    | _ :: _, _ | _, _ :: _ -> expected_mono "func"
 
 let func' args res = List.fold_right func args res
 

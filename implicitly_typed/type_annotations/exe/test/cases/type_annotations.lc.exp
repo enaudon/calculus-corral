@@ -1,33 +1,33 @@
 \x . x : exists A . A -> A
   : (A -> A) -> A -> A
-  = \A . \x : A -> A . x ;
+  = \A :: * . \x : A -> A . x ;
 (\x . x) : exists A . A -> A
   : A -> A
-  = \A . \x : A . x ;
+  = \A :: * . \x : A . x ;
 \x . x : exists B . B -> B
   : (B -> B) -> B -> B
-  = \B . \x : B -> B . x ;
+  = \B :: * . \x : B -> B . x ;
 \x . x : exists A . A -> A : exists B . B -> B
   : (B -> B) -> B -> B
-  = \B . \x : B -> B . x ;
+  = \B :: * . \x : B -> B . x ;
 (\x . x) : exists B . B -> B : exists C . C -> C
   : C -> C
-  = \C . \x : C . x ;
+  = \C :: * . \x : C . x ;
 let app = \x . \f . f x in \x . app (x : exists A . A -> A)
   : (A -> A) -> ((A -> A) -> B) -> B
-  = \A . \A . \x : A -> A . \f : (A -> A) -> A . f x ;
+  = \A :: * . \A :: * . \x : A -> A . \f : (A -> A) -> A . f x ;
 let id = \x . x in \x . id x : exists A . A -> A
   : (A -> A) -> A -> A
-  = \A . \x : A -> A . x ;
+  = \A :: * . \x : A -> A . x ;
 let fn = \x . x in fn : exists A . A -> A
   : A -> A
-  = \A . \x : A . x ;
+  = \A :: * . \x : A . x ;
 (let fn = \x . x in fn) : exists A . A -> A
   : A -> A
-  = \A . \x : A . x ;
+  = \A :: * . \x : A . x ;
 \x . x : forall A . A -> A
   : (A -> A) -> A -> A
-  = \A . \x : A -> A . x ;
+  = \A :: * . \x : A -> A . x ;
 (\x . x) : forall A . A -> A
   : A -> A
-  = \A . \x : A . x ;
+  = \A :: * . \x : A . x ;

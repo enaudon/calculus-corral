@@ -7,10 +7,11 @@ type co =
   | Instance of Id.t * Type.t * Type.t list ref
   | Equality of Type.t * Type.t
   | Conjunction of co * co
-  | Universal of Type.t * co
-  | Existential of Type.t * co
+  | Universal of Type.t * Kind.t * co
+  | Existential of Type.t * Kind.t * co
   | Def_binding of Id.t * Type.t * co
-  | Let_binding of Id.t option * Type.t ref * co * co * Id.Set.t ref
+  | Let_binding of
+    Id.t option * Type.t ref * Kind.t * co * co * Kind.t Id.Map.t ref
   | Localized of Loc.t * co
 
 type 'a t = co * (Infer.state -> 'a)
@@ -31,29 +32,30 @@ let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
 
 let pure = True, fun _ -> ()
 
-let forall : Loc.t option -> Type.t -> 'a t -> (Type.t * 'a) t =
-    fun loc tv (c, k) ->
-  ( loc_wrap loc @@ Universal (tv, c),
-    fun sub -> Infer.apply sub tv, k sub )
+let forall : Loc.t option -> Kind.t -> Type.t -> 'a t -> (Type.t * 'a) t =
+    fun loc kn tv (c, k) ->
+  ( loc_wrap loc @@ Universal (tv, kn, c),
+    fun state -> Infer.apply state tv, k state )
 
-let exists : Loc.t option -> Type.t -> 'a t -> (Type.t * 'a) t =
-    fun loc tv (c, k) ->
-  ( loc_wrap loc @@ Existential (tv, c),
-    fun sub -> Infer.apply sub tv, k sub )
+let exists : Loc.t option -> Kind.t -> Type.t -> 'a t -> (Type.t * 'a) t =
+    fun loc kn tv (c, k) ->
+  ( loc_wrap loc @@ Existential (tv, kn, c),
+    fun state -> Infer.apply state tv, k state )
 
 let let_
     : Loc.t option ->
       Id.t option ->
+      Kind.t ->
       (Type.t -> 'a t) ->
       ('b t) ->
-      (Type.t * Id.Set.t * 'a * 'b) t
-    = fun loc_opt id_opt fn (rhs_c, rhs_k) ->
+      (Type.t * Kind.t Id.Map.t * 'a * 'b) t
+    = fun loc_opt id_opt kn fn (rhs_c, rhs_k) ->
   let tv = Type.var @@ Id.gen_upper () in
   let lhs_c, lhs_k = fn tv in
-  let tvs_ref = ref Id.Set.empty in
+  let tvs_ref = ref Id.Map.empty in
   let tp_ref = ref tv in
   ( loc_wrap loc_opt @@
-    Let_binding (id_opt, tp_ref, lhs_c, rhs_c, tvs_ref),
+    Let_binding (id_opt, tp_ref, kn, lhs_c, rhs_c, tvs_ref),
     fun state ->
       Infer.apply state !tp_ref, !tvs_ref, lhs_k state, rhs_k state )
 
@@ -72,15 +74,15 @@ let solve (c, k) =
       Infer.unify state lhs rhs
     | Conjunction (lhs, rhs) ->
       solve env (solve env state lhs) rhs
-    | Universal (tv, c) ->
-      solve env (Infer.register ~rigid:() state tv) c
-    | Existential (tv, c) ->
-      solve env (Infer.register state tv) c
+    | Universal (tv, kn, c) ->
+      solve env (Infer.register ~rigid:() state tv kn) c
+    | Existential (tv, kn, c) ->
+      solve env (Infer.register state tv kn) c
     | Def_binding (id, tp, c) ->
       solve (Id.Map.add id tp env) state c
-    | Let_binding (id_opt, tp_ref, lhs, rhs, tvs_ref) ->
+    | Let_binding (id_opt, tp_ref, kn, lhs, rhs, tvs_ref) ->
       let state = Infer.gen_enter state in
-      let state = solve env (Infer.register state !tp_ref) lhs in
+      let state = solve env (Infer.register state !tp_ref kn) lhs in
       let state, tvs, tp = Infer.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
@@ -95,7 +97,7 @@ let solve (c, k) =
               (Id.to_string id)
               (Type.to_string ~no_simp:() tp)
         | Type.Cannot_unify (tp1, tp2) ->
-          error loc "hm_infer" @@
+          error loc "solve" @@
             Printf.sprintf
               "cannot unify '%s' and '%s'"
               (Type.to_string ~no_simp:() tp1)
@@ -135,28 +137,32 @@ let to_string ?no_simp (c, _) =
             to_string' c
         in
         Printf.sprintf "%s & %s" (to_string' lhs) (to_string' rhs)
-      | Universal (tv, c) ->
-        Printf.sprintf "forall %s . %s"
+      | Universal (tv, kn, c) ->
+        Printf.sprintf "forall %s :: %s . %s"
           (type_to_string tv)
+          (Kind.to_string kn)
           (to_string c)
-      | Existential (tv, c) ->
-        Printf.sprintf "exists %s . %s"
+      | Existential (tv, kn, c) ->
+        Printf.sprintf "exists %s :: %s . %s"
           (type_to_string tv)
+          (Kind.to_string kn)
           (to_string c)
       | Def_binding (id, tp, c) ->
         Printf.sprintf "def %s = %s in %s"
           (Id.to_string id)
           (type_to_string tp)
           (to_string c)
-      | Let_binding (None, tp_ref, lhs, rhs, _) ->
-        Printf.sprintf "let %s[%s] in %s"
+      | Let_binding (None, tp_ref, kn, lhs, rhs, _) ->
+        Printf.sprintf "let %s :: %s . %s in %s"
           (type_to_string !tp_ref)
+          (Kind.to_string kn)
           (to_string lhs)
           (to_string rhs)
-      | Let_binding (Some id, tp_ref, lhs, rhs, _) ->
-        Printf.sprintf "let %s = %s[%s] in %s"
+      | Let_binding (Some id, tp_ref, kn, lhs, rhs, _) ->
+        Printf.sprintf "let %s = %s :: %s . %s in %s"
           (Id.to_string id)
           (type_to_string !tp_ref)
+          (Kind.to_string kn)
           (to_string lhs)
           (to_string rhs)
       | Localized (_, c) ->
@@ -184,35 +190,35 @@ let conj_left ?loc lhs rhs = map fst @@ conj ?loc lhs rhs
 
 let conj_right ?loc lhs rhs = map snd @@ conj ?loc lhs rhs
 
-let forall_list ?loc ids co =
+let forall_list ?loc id_kns co =
   List.fold_right
-    (fun id co -> map snd @@ forall loc (Type.var id) co)
-    ids
+    (fun (id, kn) co -> map snd @@ forall loc kn (Type.var id) co)
+    id_kns
     co
 
-let forall ?loc fn =
+let forall ?loc kn fn =
   let tv = Type.var @@ Id.gen_upper () in
-  forall loc tv @@ fn tv
+  forall loc kn tv @@ fn tv
 
-let exists_list ?loc ids co =
+let exists_list ?loc id_kns co =
   List.fold_right
-    (fun id co -> map snd @@ exists loc (Type.var id) co)
-    ids
+    (fun (id, kn) co -> map snd @@ exists loc kn (Type.var id) co)
+    id_kns
     co
 
-let exists ?loc fn =
+let exists ?loc kn fn =
   let tv = Type.var @@ Id.gen_upper () in
-  exists loc tv @@ fn tv
+  exists loc kn tv @@ fn tv
 
 let def ?loc id tp (c, k) =
   ( loc_wrap loc @@ Def_binding (id, tp, c), k )
 
-let top ?loc fn =
+let top ?loc kn fn =
   map
     (fun (tp, tvs, rhs_v, ()) -> tp, tvs, rhs_v)
-    (let_ loc None fn pure)
+    (let_ loc None kn fn pure)
 
-let let_ ?loc id fn rhs = let_ loc (Some id) fn rhs
+let let_ ?loc id kn fn rhs = let_ loc (Some id) kn fn rhs
 
 module Operators = struct
 
