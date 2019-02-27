@@ -47,11 +47,13 @@ module Inferencer : sig
 
 end = struct
 
+  module IVE = Inference_variable_environment
+
   type sub = mono Id.Map.t
 
   type state = {
     sub : sub ;
-    pools : Rank.Pools.p ;
+    pools : IVE.t ;
   }
 
   module Sub : sig
@@ -92,24 +94,22 @@ end = struct
 
   end = struct
 
-    module Ps = Rank.Pools
+    let push state = {state with pools = IVE.push state.pools}
 
-    let push state = {state with pools = Ps.push state.pools}
+    let peek state = IVE.peek state.pools
 
-    let peek state = Ps.peek state.pools
-
-    let pop state = {state with pools = Ps.pop state.pools}
+    let pop state = {state with pools = IVE.pop state.pools}
 
     let register id state =
-      {state with pools = Ps.register state.pools id}
+      {state with pools = IVE.register state.pools id}
 
     let unregister id state =
-      {state with pools = Ps.unregister state.pools id}
+      {state with pools = IVE.unregister state.pools id}
 
     let update id1 id2 state =
-      {state with pools = Ps.update state.pools id1 id2}
+      {state with pools = IVE.update state.pools id1 id2}
 
-    let is_mono id state = Ps.is_mono state.pools id
+    let is_mono id state = IVE.is_mono state.pools id
 
   end
 
@@ -123,7 +123,7 @@ end = struct
 
   let initial = {
     sub = Sub.identity ;
-    pools = Rank.Pools.empty ;
+    pools = IVE.empty ;
   }
 
   let apply state tp =
