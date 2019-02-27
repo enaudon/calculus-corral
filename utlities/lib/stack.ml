@@ -16,10 +16,10 @@ let size s = s.size
 let push x {size; data} =
   {size = size + 1; data = Map.add size x data}
 
-let get i s =
-  if i < 0 || i >= s.size then
+let get i {size; data} =
+  if i < 0 || i >= size then
     invalid_arg "Stack.get";
-  Map.find i s.data
+  Map.find i data
 
 let peek s =
   if s.size <= 0 then
@@ -32,7 +32,7 @@ let pop {size; data} =
   let size' = size - 1 in
   {size = size'; data = Map.remove size' data}
 
-let update i x s =
-  if i < 0 ||  i >= s.size then
+let update i x {size; data} =
+  if i < 0 ||  i >= size then
     invalid_arg "Stack.update";
-  {s with data = Map.add i x s.data}
+  {size; data = Map.add i x data}

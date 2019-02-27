@@ -2,81 +2,55 @@ module Id = Identifier
 
 type rank = int
 
-let init = -1
-
 let mono = 0
 
-(* TODO: Replace this with a more efficient data-structure. *)
-module Map = Map.Make (struct
-  type t = rank
-  let compare = Pervasives.compare
-end)
-
 type t = {
-  top : rank;
-  pools : Id.Set.t Map.t;
+  pools : Id.Set.t Stack.t;
   ranks : rank Id.Map.t;
 }
 
-let empty = {top = init; pools = Map.empty; ranks = Id.Map.empty}
+let ranks_find : t -> Id.t -> rank = fun ps id ->
+  try
+    Id.Map.find id ps.ranks
+  with Id.Unbound _ ->
+    failwith @@ Printf.sprintf
+      "Inference_variable_state.ranks_find: Unbound %s"
+      (Id.to_string id)
+
+let top : t -> rank = fun ps ->
+  Stack.size ps.pools - 1
+
+let insert : t -> rank -> Id.t -> t = fun ps rank id ->
+  let pool = Stack.get rank ps.pools in
+  { pools = Stack.update rank (Id.Set.add id pool) ps.pools;
+    ranks = Id.Map.add id rank ps.ranks }
+
+let remove : t -> rank -> Id.t -> t = fun ps rank id ->
+  let pool = Stack.get rank ps.pools in
+  { pools = Stack.update rank (Id.Set.del id pool) ps.pools;
+    ranks = Id.Map.del id ps.ranks }
+
+let empty = {pools = Stack.empty; ranks = Id.Map.empty}
 
 let push ps =
-  let top' = ps.top + 1 in
-  {ps with top = top'; pools = Map.add top' Id.Set.empty ps.pools}
+  {ps with pools = Stack.push Id.Set.empty ps.pools}
 
-let peek {top; pools; _} = Map.find top pools
+let peek ps =
+  Stack.peek ps.pools
 
 let pop ps =
-  {ps with top = ps.top - 1; pools = Map.remove ps.top ps.pools}
+  {ps with pools = Stack.pop ps.pools}
 
-let find_pool : t -> rank -> Id.Set.t = fun ps rank ->
-  try
-    Map.find rank ps.pools
-  with Not_found ->
-    failwith @@ Printf.sprintf
-      "Rank.Pools.find_pool: No pool at rank %d.  Top rank is %d."
-      rank
-      ps.top
+let register ps id =
+  insert ps (top ps) id
 
-let insert : t -> rank -> Identifier.t -> t = fun ps rank id ->
-  let pool = find_pool ps rank in
-  { ps with
-    pools = Map.add rank (Id.Set.add id pool) ps.pools;
-    ranks = Id.Map.add id rank ps.ranks; }
-
-let remove : t -> rank -> Identifier.t -> t = fun ps rank id ->
-  let pool = find_pool ps rank in
-  { ps with
-    pools = Map.add rank (Id.Set.del id pool) ps.pools;
-    ranks = Id.Map.del id ps.ranks; }
-
-let register ps id = insert ps ps.top id
-
-let unregister ps id = remove ps ps.top id
+let unregister ps id =
+  remove ps (top ps) id
 
 let update ps id1 id2 =
-  let rank =
-    try
-      Id.Map.find id1 ps.ranks
-    with Id.Unbound _ ->
-      failwith @@ Printf.sprintf
-        "Rank.Pools.update: Unbound %s"
-        (Id.to_string id1)
-  in
-  let rank' =
-    try
-      min rank @@ Id.Map.find id2 ps.ranks
-    with Id.Unbound _ ->
-      failwith @@ Printf.sprintf
-        "Rank.Pools.update: Unbound %s"
-        (Id.to_string id2)
-  in
+  let rank = ranks_find ps id1 in
+  let rank' = min rank @@ ranks_find ps id2 in
   insert (remove ps rank id1) rank' id1
 
 let is_mono ps id =
-  try
-    Id.Map.find id ps.ranks >= mono
-  with Id.Unbound _ ->
-    failwith @@ Printf.sprintf
-      "Rank.Pools.is_mono: Unbound %s"
-      (Id.to_string id)
+  ranks_find ps id >= mono
