@@ -53,7 +53,7 @@ end = struct
 
   type state = {
     sub : sub ;
-    pools : IVE.t ;
+    pools : unit IVE.t ;
   }
 
   module Sub : sig
@@ -96,20 +96,21 @@ end = struct
 
     let push state = {state with pools = IVE.push state.pools}
 
-    let peek state = IVE.peek state.pools
+    let peek state =
+      IVE.peek state.pools |> Id.Map.keys |> Id.Set.of_list
 
     let pop state = {state with pools = IVE.pop state.pools}
 
     let register id state =
-      {state with pools = IVE.register state.pools id}
+      {state with pools = IVE.insert id () state.pools}
 
     let unregister id state =
-      {state with pools = IVE.unregister state.pools id}
+      {state with pools = IVE.remove id state.pools}
 
     let update id1 id2 state =
-      {state with pools = IVE.update state.pools id1 id2}
+      {state with pools = IVE.update id1 id2 state.pools}
 
-    let is_mono id state = IVE.is_mono state.pools id
+    let is_mono id state = IVE.is_mono id state.pools
 
   end
 

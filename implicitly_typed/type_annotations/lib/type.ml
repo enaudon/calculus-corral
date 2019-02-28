@@ -162,12 +162,10 @@ end = struct
 
     let insert id kn is_rigid state =
       let rigidity = if is_rigid then Rigid else Flexible in
-      { state with
-        pools = IVE.insert id (kn, rigidity) state.pools }
+      {state with pools = IVE.insert id (kn, rigidity) state.pools}
 
     let remove id state =
-      { state with
-        pools = IVE.remove id state.pools }
+      {state with pools = IVE.remove id state.pools}
 
     let update id1 id2 state =
       {state with pools = IVE.update id1 id2 state.pools}
