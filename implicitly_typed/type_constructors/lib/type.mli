@@ -38,22 +38,14 @@ val func' : t list -> t -> t
 (** [get_forall' tp] computes the variable quantifier of [tp]. *)
 val get_quants : t -> (Identifier.t * Kind.t) list
 
-(** {1 Kinding} *)
-
-(** [default_env] is the default typing environment. *)
-val default_env : Kind.t Identifier.Map.t
-
-(** [to_kind env tp] computes the kind of [tp] under [env]. *)
-val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
-
 (** {1 Inference} *)
 
 (** Inferencer
 
-  This module contains type inference functionality, such as
-  unification, generalization and instantiation.  After inference is
-  complete, the [apply] function will apply the substitution computed by
-  type inference.
+  This module contains kinding-checking functionality, as well as type
+  inference functionality, like unification, generalization and
+  instantiation.  After inference is complete, the [apply] function will
+  apply the substitution computed by type inference.
  *)
 module Inferencer : sig
 
@@ -65,10 +57,19 @@ module Inferencer : sig
 
   (**
     [register state tv kn] registers the type variable, [tv], of kind
-    [kn], with the inference engine so that it may be used in
-    type-checking.
+    [kn], with the inference engine.
    *)
   val register : state -> t -> Kind.t -> state
+
+  (** {2 Kinding} *)
+
+  (** [default_env] is the default typing environment. *)
+  val default_env : Kind.t Identifier.Map.t
+
+  (** [to_kind env tp] computes the kind of [tp] under [env]. *)
+  val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
+
+  (** {2 Typing} *)
 
   (**
     [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and

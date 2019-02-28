@@ -17,6 +17,10 @@ module Repl = Language.Repl (struct
 
     include Algebraic_types.Type
 
+    let default_env = Inferencer.default_env
+
+    let to_kind = Inferencer.to_kind
+
     let beta_reduce ?deep:_ _ _ = assert false
 
     let to_string tp = to_string tp

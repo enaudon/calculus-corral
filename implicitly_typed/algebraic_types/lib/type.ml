@@ -74,64 +74,6 @@ let rcrd_id = Id.define "rcrd"
 
 let vrnt_id = Id.define "vrnt"
 
-(* Kinding *)
-
-let default_env =
-  let prop = Kind.prop in
-  let row = Kind.row in
-  let oper = Kind.oper in
-  let oper' = Kind.oper' in
-  Id.Map.empty |>
-    Id.Map.add func_id (oper' [prop; prop] prop) |>
-    Id.Map.add rcrd_id (oper row prop) |>
-    Id.Map.add vrnt_id (oper row prop)
-
-let to_kind env tp =
-
-  let rec to_kind env m = match m with
-    | Constant id | Variable id ->
-      begin try Id.Map.find id env with
-        | Id.Unbound id ->
-          error "to_kind" @@
-            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
-      end
-    | Application (fn, arg) ->
-      let fn_kn = to_kind env fn in
-      let fml_arg_kn, res_kn =
-        try
-          Kind.get_oper fn_kn
-        with Invalid_argument _ ->
-          error "to_kind" @@
-            Printf.sprintf
-              "expected function kind; found '%s'"
-              (Kind.to_string fn_kn)
-      in
-      let act_arg_kn = to_kind env arg in
-      if Kind.alpha_equivalent act_arg_kn fml_arg_kn then
-        res_kn
-      else
-        error "to_kind" @@
-          Printf.sprintf
-            "expected kind '%s'; found kind '%s'"
-              (Kind.to_string fml_arg_kn)
-              (Kind.to_string act_arg_kn)
-    | Row_nil ->
-      Kind.row
-    | Row_cons (_, m, rest) ->
-      ignore @@ to_kind env m;
-      let rest_kn = to_kind env rest in
-      if Kind.alpha_equivalent rest_kn Kind.row then
-        Kind.row
-      else
-        error "to_kind" @@
-          Printf.sprintf
-            "expected row kind; found kind '%s'"
-              (Kind.to_string rest_kn)
-  in
-
-  let ext_env env (q, kn) = Id.Map.add q kn env in
-  to_kind (List.fold_left ext_env env tp.quants) tp.body
-
 (* Inference *)
 
 
@@ -140,6 +82,8 @@ module Inferencer : sig
   type state
   val initial : state
   val register : state -> t -> Kind.t -> state
+  val default_env : Kind.t Id.Map.t
+  val to_kind : Kind.t Id.Map.t -> t -> Kind.t
   val unify : state -> t -> t -> state
   val gen_enter : state -> state
   val gen_exit : state -> t -> state * Kind.t Id.Map.t * t
@@ -233,14 +177,74 @@ end = struct
     pools = IVE.empty ;
   }
 
+  let register state tp kn = match tp.body with
+    | Variable id -> Pools.register id kn state
+    | _ -> error "register" "expected variable"
+
+  (* Kinding *)
+
+  let default_env =
+    let prop = Kind.prop in
+    let row = Kind.row in
+    let oper = Kind.oper in
+    let oper' = Kind.oper' in
+    Id.Map.empty |>
+      Id.Map.add func_id (oper' [prop; prop] prop) |>
+      Id.Map.add rcrd_id (oper row prop) |>
+      Id.Map.add vrnt_id (oper row prop)
+
+  let to_kind env tp =
+
+    let rec to_kind env m = match m with
+      | Constant id | Variable id ->
+        begin try Id.Map.find id env with
+          | Id.Unbound id ->
+            error "to_kind" @@
+              Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
+        end
+      | Application (fn, arg) ->
+        let fn_kn = to_kind env fn in
+        let fml_arg_kn, res_kn =
+          try
+            Kind.get_oper fn_kn
+          with Invalid_argument _ ->
+            error "to_kind" @@
+              Printf.sprintf
+                "expected function kind; found '%s'"
+                (Kind.to_string fn_kn)
+        in
+        let act_arg_kn = to_kind env arg in
+        if Kind.alpha_equivalent act_arg_kn fml_arg_kn then
+          res_kn
+        else
+          error "to_kind" @@
+            Printf.sprintf
+              "expected kind '%s'; found kind '%s'"
+                (Kind.to_string fml_arg_kn)
+                (Kind.to_string act_arg_kn)
+      | Row_nil ->
+        Kind.row
+      | Row_cons (_, m, rest) ->
+        ignore @@ to_kind env m;
+        let rest_kn = to_kind env rest in
+        if Kind.alpha_equivalent rest_kn Kind.row then
+          Kind.row
+        else
+          error "to_kind" @@
+            Printf.sprintf
+              "expected row kind; found kind '%s'"
+                (Kind.to_string rest_kn)
+    in
+
+    let ext_env env (q, kn) = Id.Map.add q kn env in
+    to_kind (List.fold_left ext_env env tp.quants) tp.body
+
+  (* Typing *)
+
   let apply state tp =
     let body = Sub.apply tp.body state in
     assert (body = Sub.apply body state);
     scheme tp.quants body
-
-  let register state tp kn = match tp.body with
-    | Variable id -> Pools.register id kn state
-    | _ -> error "register" "expected variable"
 
   let unify state tp1 tp2 =
 
