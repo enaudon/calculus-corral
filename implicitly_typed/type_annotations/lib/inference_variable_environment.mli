@@ -1,43 +1,48 @@
-(** Inference variable state
+(** Inference variable environment
 
-  Inference variables are maintained in a rank-indexed stack of variable
-  "pools."  Each time the inferencer enters the left-hand side of a
-  let-expression, it pushes a new pool onto the stack to track the
+  The inference variables environment is organized into a rank-indexed
+  stack of "pools."  Each time the inferencer enters the left-hand side
+  of a let-expression, it pushes a new pool onto the stack to track the
   variables introduced by that let-expression.
  *)
 
-(** The type of variable pools. *)
-type t
+(** The type of variable pool stacks. *)
+type 'a t
 
-(** [empty] is the empty set of pools. *)
-val empty : t
+(** [empty] is the empty stack of pools. *)
+val empty : 'a t
 
 (** [push pools] extends [pools] with an empty variable pool. *)
-val push : t -> t
+val push : 'a t -> 'a t
 
 (** [peek pools] retrieves variable pool at the top of [pools]. *)
-val peek : t -> Kind.t Identifier.Map.t
+val peek : 'a t -> 'a Identifier.Map.t
 
 (** [peek pools] removes variable pool at the top of [pools]. *)
-val pop : t -> t
+val pop : 'a t -> 'a t
 
 (**
-  [register pools id] inserts [id] into the variable pool at the top of
-  [pools].
+  [insert id data pools] associates [data] with [id] in the variable
+  pool at the top of [pools].
  *)
-val register : t -> Identifier.t -> Kind.t -> t
+val insert : Identifier.t -> 'a -> 'a t -> 'a t
 
-(** [unregister pools id] removes [id] from [pools]. *)
-val unregister : t -> Identifier.t -> t
+(** [remove id pools] deletes [id] from [pools]. *)
+val remove : Identifier.t -> 'a t -> 'a t
 
 (**
-  [update pools id1 id2] moves [id1] to the variable pool of which [id2]
+  [find id pools] retrieves the data associated with [id] in [pools].
+ *)
+val find : Identifier.t -> 'a t -> 'a
+
+(**
+  [update id1 id2 pools] moves [id1] to the variable pool of which [id2]
   is a member, if [id2]'s rank is lower than [id1]'s.
  *)
-val update : t -> Identifier.t -> Identifier.t -> t
+val update : Identifier.t -> Identifier.t -> 'a t -> 'a t
 
 (**
-  [is_mono pools id] evaluates to [true] if [id] has a monomorphic
+  [is_mono id pools] evaluates to [true] if [id] has a monomorphic
   rank, or [false] otherwise.
  *)
-val is_mono : t -> Identifier.t -> bool
+val is_mono : Identifier.t -> 'a t -> bool

@@ -104,10 +104,13 @@ end = struct
 
   type sub = mono Id.Map.t
 
+  type rigidity =
+    | Flexible
+    | Rigid
+
   type state = {
     sub : sub ;
-    pools : IVE.t ;
-    rigid : bool Id.Map.t ;
+    pools : (Kind.t * rigidity) IVE.t ;
   }
 
   module Sub : sig
@@ -143,8 +146,8 @@ end = struct
     val push : state -> state
     val peek : state -> Kind.t Id.Map.t
     val pop : state -> state
-    val register : Id.t -> Kind.t -> bool -> state -> state
-    val unregister : Id.t -> state -> state
+    val insert : Id.t -> Kind.t -> bool -> state -> state
+    val remove : Id.t -> state -> state
     val update : Id.t -> Id.t -> state -> state
     val is_mono : Id.t -> state -> bool
     val is_rigid : Id.t -> state -> bool
@@ -153,31 +156,27 @@ end = struct
 
     let push state = {state with pools = IVE.push state.pools}
 
-    let peek state = IVE.peek state.pools
+    let peek state = Id.Map.map fst @@ IVE.peek state.pools
 
     let pop state = {state with pools = IVE.pop state.pools}
 
-    let register id kn is_rigid state =
+    let insert id kn is_rigid state =
+      let rigidity = if is_rigid then Rigid else Flexible in
       { state with
-        pools = IVE.register state.pools id kn;
-        rigid = Id.Map.add id is_rigid state.rigid }
+        pools = IVE.insert id (kn, rigidity) state.pools }
 
-    let unregister id state =
+    let remove id state =
       { state with
-        pools = IVE.unregister state.pools id;
-        rigid = Id.Map.del id state.rigid }
+        pools = IVE.remove id state.pools }
 
     let update id1 id2 state =
-      {state with pools = IVE.update state.pools id1 id2}
+      {state with pools = IVE.update id1 id2 state.pools}
 
-    let is_mono id state = IVE.is_mono state.pools id
+    let is_mono id state = IVE.is_mono id state.pools
 
-    let is_rigid id state =
-      try
-        Id.Map.find id state.rigid
-      with Id.Unbound _ ->
-        error "is_rigid" @@
-          Printf.sprintf "Unbound %s" (Id.to_string id)
+    let is_rigid id state = match snd @@ IVE.find id state.pools with
+      | Flexible -> false
+      | Rigid -> true
 
   end
 
@@ -192,7 +191,6 @@ end = struct
   let initial = {
     sub = Sub.identity ;
     pools = IVE.empty ;
-    rigid = Id.Map.empty ;
   }
 
   let apply state tp =
@@ -201,7 +199,7 @@ end = struct
     scheme tp.quants body
 
   let register ?rigid state tp kn = match tp.body with
-    | Variable id -> Pools.register id kn (rigid <> None) state
+    | Variable id -> Pools.insert id kn (rigid <> None) state
     | _ -> error "register" "expected variable"
 
   let unify state tp1 tp2 =
@@ -226,7 +224,7 @@ end = struct
     let merge : state -> Id.t -> mono -> state =
         fun state id m ->
       let state' = update_ranks state id m in
-      Sub.extend id m @@ Pools.unregister id state'
+      Sub.extend id m @@ Pools.remove id state'
     in
 
     let rec unify state m1 m2 =
@@ -318,7 +316,7 @@ end = struct
 
     let make_var kn (state, tvs) =
       let tv = Id.gen_upper () in
-      Pools.register tv kn false state, var tv :: tvs
+      Pools.insert tv kn false state, var tv :: tvs
     in
 
     let tp = apply state tp in
