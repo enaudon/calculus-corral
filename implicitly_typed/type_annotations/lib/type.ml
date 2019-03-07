@@ -50,7 +50,7 @@ module Inferencer : sig
   val initial : state
   val register : ?rigid : unit -> state -> t -> Kind.t -> state
   val default_env : Kind.t Id.Map.t
-  val to_kind : Kind.t Id.Map.t -> t -> Kind.t
+  val to_kind : state -> t -> Kind.t
   val unify : state -> t -> t -> state
   val gen_enter : state -> state
   val gen_exit : state -> t -> state * Kind.t Id.Map.t * t
@@ -109,6 +109,7 @@ end = struct
     val remove : Id.t -> state -> state
     val update : Id.t -> Id.t -> state -> state
     val is_mono : Id.t -> state -> bool
+    val get_kind : Id.t -> state -> Kind.t
     val is_rigid : Id.t -> state -> bool
 
   end = struct
@@ -131,6 +132,8 @@ end = struct
 
     let is_mono id state = IVE.is_mono id state.pools
 
+    let get_kind id state = fst @@ IVE.find id state.pools
+
     let is_rigid id state = match snd @@ IVE.find id state.pools with
       | Flexible -> false
       | Rigid -> true
@@ -147,12 +150,22 @@ end = struct
 
   let initial = {
     sub = Sub.identity ;
-    pools = IVE.empty ;
+    pools =
+      let prop = Kind.prop in
+      let oper' = Kind.oper' in
+      IVE.empty |>
+        IVE.push |>
+        IVE.insert func_id (oper' [prop; prop] prop, Rigid) ;
   }
 
   let register ?rigid state tp kn = match tp.body with
     | Variable id -> Pools.insert id kn (rigid <> None) state
     | _ -> error "register" "expected variable"
+
+  let apply state tp =
+    let body = Sub.apply tp.body state in
+    assert (body = Sub.apply body state);
+    scheme tp.quants body
 
   (* Kinding *)
 
@@ -162,17 +175,17 @@ end = struct
     Id.Map.empty |>
       Id.Map.add func_id (oper' [prop; prop] prop)
 
-  let to_kind env tp =
+  let to_kind state tp =
 
-    let rec to_kind env m = match m with
+    let rec to_kind state m = match m with
       | Constant id | Variable id ->
-        begin try Id.Map.find id env with
+        begin try Pools.get_kind id state with
           | Id.Unbound id ->
             error "to_kind" @@
               Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
         end
       | Application (fn, arg) ->
-        let fn_kn = to_kind env fn in
+        let fn_kn = to_kind state fn in
         let fml_arg_kn, res_kn =
           try
             Kind.get_oper fn_kn
@@ -182,7 +195,7 @@ end = struct
                 "expected function kind; found '%s'"
                 (Kind.to_string fn_kn)
         in
-        let act_arg_kn = to_kind env arg in
+        let act_arg_kn = to_kind state arg in
         if Kind.alpha_equivalent act_arg_kn fml_arg_kn then
           res_kn
         else
@@ -193,15 +206,11 @@ end = struct
                 (Kind.to_string act_arg_kn)
     in
 
-    let ext_env env (q, kn) = Id.Map.add q kn env in
-    to_kind (List.fold_left ext_env env tp.quants) tp.body
+    let tp' = apply state tp in
+    let ext_env state (q, kn) = Pools.insert q kn true state in
+    to_kind (List.fold_left ext_env state tp'.quants) tp'.body
 
   (* Typing *)
-
-  let apply state tp =
-    let body = Sub.apply tp.body state in
-    assert (body = Sub.apply body state);
-    scheme tp.quants body
 
   let unify state tp1 tp2 =
 
@@ -266,6 +275,15 @@ end = struct
 
     if tp1.quants <> [] || tp2.quants <> [] then
           expected_mono "unify";
+
+    let kn1 = to_kind state tp1 in
+    let kn2 = to_kind state tp2 in
+    if not (Kind.alpha_equivalent kn1 kn2) then
+      error "unify" @@
+        Printf.sprintf
+          "expected '%s'; found '%s'"
+          (Kind.to_string kn1)
+          (Kind.to_string kn2);
 
     let state' = unify state tp1.body tp2.body in
     (* TODO: Enable this assertion. *)

@@ -19,7 +19,11 @@ module Repl = Language.Repl (struct
 
     let default_env = Inferencer.default_env
 
-    let to_kind = Inferencer.to_kind
+    let to_kind env =
+      let open Inferencer in
+      let register id kn state = register state (var id) kn in
+      let state = Id.Map.fold register env initial in
+      to_kind state
 
     let beta_reduce ?deep:_ _ _ = assert false
 

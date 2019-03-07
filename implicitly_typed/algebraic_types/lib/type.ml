@@ -83,7 +83,7 @@ module Inferencer : sig
   val initial : state
   val register : state -> t -> Kind.t -> state
   val default_env : Kind.t Id.Map.t
-  val to_kind : Kind.t Id.Map.t -> t -> Kind.t
+  val to_kind : state -> t -> Kind.t
   val unify : state -> t -> t -> state
   val gen_enter : state -> state
   val gen_exit : state -> t -> state * Kind.t Id.Map.t * t
@@ -138,10 +138,11 @@ end = struct
     val push : state -> state
     val peek : state -> Kind.t Id.Map.t
     val pop : state -> state
-    val register : Id.t -> Kind.t -> state -> state
-    val unregister : Id.t -> state -> state
+    val insert : Id.t -> Kind.t -> state -> state
+    val remove : Id.t -> state -> state
     val update : Id.t -> Id.t -> state -> state
     val is_mono : Id.t -> state -> bool
+    val get_kind : Id.t -> state -> Kind.t
 
   end = struct
 
@@ -151,16 +152,18 @@ end = struct
 
     let pop state = {state with pools = IVE.pop state.pools}
 
-    let register id kn state =
+    let insert id kn state =
       {state with pools = IVE.insert id kn state.pools}
 
-    let unregister id state =
+    let remove id state =
       {state with pools = IVE.remove id state.pools}
 
     let update id1 id2 state =
       {state with pools = IVE.update id1 id2 state.pools}
 
     let is_mono id state = IVE.is_mono id state.pools
+
+    let get_kind id state = IVE.find id state.pools
 
   end
 
@@ -174,12 +177,26 @@ end = struct
 
   let initial = {
     sub = Sub.identity ;
-    pools = IVE.empty ;
+    pools =
+      let prop = Kind.prop in
+      let row = Kind.row in
+      let oper = Kind.oper in
+      let oper' = Kind.oper' in
+      IVE.empty |>
+        IVE.push |>
+        IVE.insert func_id (oper' [prop; prop] prop) |>
+        IVE.insert rcrd_id (oper row prop) |>
+        IVE.insert vrnt_id (oper row prop)
   }
 
   let register state tp kn = match tp.body with
-    | Variable id -> Pools.register id kn state
+    | Variable id -> Pools.insert id kn state
     | _ -> error "register" "expected variable"
+
+  let apply state tp =
+    let body = Sub.apply tp.body state in
+    assert (body = Sub.apply body state);
+    scheme tp.quants body
 
   (* Kinding *)
 
@@ -193,17 +210,17 @@ end = struct
       Id.Map.add rcrd_id (oper row prop) |>
       Id.Map.add vrnt_id (oper row prop)
 
-  let to_kind env tp =
+  let to_kind state tp =
 
-    let rec to_kind env m = match m with
+    let rec to_kind state m = match m with
       | Constant id | Variable id ->
-        begin try Id.Map.find id env with
+        begin try Pools.get_kind id state with
           | Id.Unbound id ->
             error "to_kind" @@
               Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
         end
       | Application (fn, arg) ->
-        let fn_kn = to_kind env fn in
+        let fn_kn = to_kind state fn in
         let fml_arg_kn, res_kn =
           try
             Kind.get_oper fn_kn
@@ -213,7 +230,7 @@ end = struct
                 "expected function kind; found '%s'"
                 (Kind.to_string fn_kn)
         in
-        let act_arg_kn = to_kind env arg in
+        let act_arg_kn = to_kind state arg in
         if Kind.alpha_equivalent act_arg_kn fml_arg_kn then
           res_kn
         else
@@ -225,8 +242,8 @@ end = struct
       | Row_nil ->
         Kind.row
       | Row_cons (_, m, rest) ->
-        ignore @@ to_kind env m;
-        let rest_kn = to_kind env rest in
+        ignore @@ to_kind state m;
+        let rest_kn = to_kind state rest in
         if Kind.alpha_equivalent rest_kn Kind.row then
           Kind.row
         else
@@ -236,15 +253,11 @@ end = struct
                 (Kind.to_string rest_kn)
     in
 
-    let ext_env env (q, kn) = Id.Map.add q kn env in
-    to_kind (List.fold_left ext_env env tp.quants) tp.body
+    let tp' = apply state tp in
+    let ext_env state (q, kn) = Pools.insert q kn state in
+    to_kind (List.fold_left ext_env state tp'.quants) tp'.body
 
   (* Typing *)
-
-  let apply state tp =
-    let body = Sub.apply tp.body state in
-    assert (body = Sub.apply body state);
-    scheme tp.quants body
 
   let unify state tp1 tp2 =
 
@@ -274,7 +287,7 @@ end = struct
     let merge : state -> Id.t -> mono -> state =
         fun state id m ->
       let state' = update_ranks state id m in
-      Sub.extend id m @@ Pools.unregister id state'
+      Sub.extend id m @@ Pools.remove id state'
     in
 
     let rec unify state m1 m2 =
@@ -308,7 +321,7 @@ end = struct
             unify (unify state m1 m2) rest1 rest2
           else
             let tv = Id.gen_upper () in
-            let state = Pools.register tv Kind.row state in
+            let state = Pools.insert tv Kind.row state in
             let rest = var tv in
             let state = unify state rest1 @@ row_cons id2 m2 rest in
             let state = unify state rest2 @@ row_cons id1 m1 rest in
@@ -321,6 +334,15 @@ end = struct
 
     if tp1.quants <> [] || tp2.quants <> [] then
           expected_mono "unify";
+
+    let kn1 = to_kind state tp1 in
+    let kn2 = to_kind state tp2 in
+    if not (Kind.alpha_equivalent kn1 kn2) then
+      error "unify" @@
+        Printf.sprintf
+          "expected '%s'; found '%s'"
+          (Kind.to_string kn1)
+          (Kind.to_string kn2);
 
     let state' = unify state tp1.body tp2.body in
     (* TODO: Enable this assertion. *)
@@ -378,7 +400,7 @@ end = struct
 
     let make_var kn (state, tvs) =
       let tv = Id.gen_upper () in
-      Pools.register tv kn state, var tv :: tvs
+      Pools.insert tv kn state, var tv :: tvs
     in
 
     let tp = apply state tp in
