@@ -9,15 +9,40 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Value = Records_and_variants.Term
+  module Value = struct
 
-  module Kind = Algebraic_types.Kind
+    include Records_and_variants.Term
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add = Id.Map.add
+    end
+
+  end
+
+  module Kind = struct
+
+    include Algebraic_types.Kind
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Algebraic_types.Type.Inferencer.default_env
+      let add _ _ _ = assert false
+    end
+
+  end
 
   module Type = struct
 
     include Algebraic_types.Type
 
-    let default_env = Inferencer.default_env
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add_type _ _ _ = assert false
+      let add_term = Id.Map.add
+    end
 
     let to_kind env =
       let open Inferencer in

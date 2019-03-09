@@ -1,12 +1,44 @@
+module Id = Identifier
 module Misc = Miscellaneous
 
 module Repl = Language.Repl (struct
 
-  module Value = Type_operators.Term
+  module Value = struct
 
-  module Kind = Type_operators.Kind
+    include Type_operators.Term
 
-  module Type = Type_operators.Type
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add = Id.Map.add
+    end
+
+  end
+
+  module Kind = struct
+
+    include Type_operators.Kind
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Type_operators.Type.default_env
+      let add = Id.Map.add
+    end
+
+  end
+
+  module Type = struct
+
+    include Type_operators.Type
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add_type = Id.Map.add
+      let add_term = Id.Map.add
+    end
+
+  end
 
   module Term = struct 
 

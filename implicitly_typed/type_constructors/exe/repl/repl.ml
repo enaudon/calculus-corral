@@ -9,15 +9,40 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Value = Type_operators.Term
+  module Value = struct
 
-  module Kind = Type_constructors.Kind
+    include Type_operators.Term
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add = Id.Map.add
+    end
+
+  end
+
+  module Kind = struct
+
+    include Type_constructors.Kind
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Type_constructors.Type.Inferencer.default_env
+      let add _ _ _ = assert false
+    end
+
+  end
 
   module Type = struct
 
     include Type_constructors.Type
 
-    let default_env = Inferencer.default_env
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add_type _ _ _ = assert false
+      let add_term = Id.Map.add
+    end
 
     let to_kind env =
       let open Inferencer in

@@ -1,3 +1,4 @@
+module Id = Identifier
 module Misc = Miscellaneous
 
 type type_inference_algorithm =
@@ -12,6 +13,12 @@ module Repl = Language.Repl (struct
 
     include Monomorphic_types.Term
 
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add = Id.Map.add
+    end
+
     let to_string _ = "<value>"
 
   end
@@ -21,6 +28,12 @@ module Repl = Language.Repl (struct
     type t =
       | Base
 
+    module Environment = struct
+      type env = unit
+      let initial = ()
+      let add _ _ _ = assert false
+    end
+
     let to_string _ = "*"
 
   end
@@ -29,7 +42,12 @@ module Repl = Language.Repl (struct
 
     include Monomorphic_types.Type
 
-    let default_env = Identifier.Map.empty
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add_type _ _ _ = assert false
+      let add_term = Id.Map.add
+    end
 
     let to_kind _ _ = Kind.Base
 

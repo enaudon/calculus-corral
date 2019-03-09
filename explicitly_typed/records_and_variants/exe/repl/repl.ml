@@ -3,11 +3,42 @@ module Misc = Miscellaneous
 
 module Repl = Language.Repl (struct
 
-  module Value = Records_and_variants.Term
+  module Value = struct
 
-  module Kind = Records_and_variants.Kind
+    include Records_and_variants.Term
 
-  module Type = Records_and_variants.Type
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add = Id.Map.add
+    end
+
+  end
+
+  module Kind = struct
+
+    include Records_and_variants.Kind
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Records_and_variants.Type.default_env
+      let add = Id.Map.add
+    end
+
+  end
+
+  module Type = struct
+
+    include Records_and_variants.Type
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add_type = Id.Map.add
+      let add_term = Id.Map.add
+    end
+
+  end
 
   module Term = struct
 

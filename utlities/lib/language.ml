@@ -3,32 +3,70 @@ module Id = Identifier
 module type Sig = sig
 
   module Value : sig
+
     type t
+
+    module Environment : sig
+      type env
+      val initial : env
+      val add : Identifier.t -> t -> env -> env
+    end
+
     val to_string : t -> string
+
   end
 
   module Kind : sig
+
     type t
+
+    module Environment : sig
+      type env
+      val initial : env
+      val add : Identifier.t -> t -> env -> env
+
+    end
+
     val to_string : t -> string
+
   end
 
   module Type : sig
+
     type t
-    val default_env : Kind.t Id.Map.t
-    val to_kind : Kind.t Id.Map.t -> t -> Kind.t
-    val beta_reduce : ?deep : unit -> t Id.Map.t -> t -> t
+
+    module Environment : sig
+      type env
+      val initial : env
+      val add_term : Identifier.t -> t -> env -> env
+      val add_type : Identifier.t -> t -> env -> env
+    end
+
+    val to_kind : Kind.Environment.env -> t -> Kind.t
+    val beta_reduce : ?deep : unit -> Environment.env -> t -> t
     val to_string : t -> string
+
   end
 
   module Term : sig
+
     type t
-    val to_type : (Kind.t Id.Map.t * Type.t Id.Map.t) -> t -> Type.t
+
+    val to_type :
+      (Kind.Environment.env * Type.Environment.env) ->
+      t ->
+      Type.t
+
     val to_value :
       ?deep : unit ->
-      (Value.t Id.Map.t * Kind.t Id.Map.t * Type.t Id.Map.t) ->
+      ( Value.Environment.env *
+        Kind.Environment.env *
+        Type.Environment.env ) ->
       t ->
       Value.t
+
     val to_string : t -> string
+
   end
 
   val parse : Lexing.lexbuf -> (Type.t, Term.t) Command.t list
@@ -41,6 +79,10 @@ module Repl (Input : Sig) = struct
 
   open Input
 
+  module Value_env = Value.Environment
+  module Kind_env = Kind.Environment
+  module Type_env = Type.Environment
+
   type mode =
     | Repl
     | File of string list
@@ -50,7 +92,7 @@ module Repl (Input : Sig) = struct
   let deep = ref None
 
   let parse_cmd_args () =
-    let default_specs = [
+    let initial_specs = [
       ( "--deep-beta-reduction", Arg.Unit (fun () -> deep := Some ()),
         "Beta-reduce within the body of abstractions." ) ;
     ] in
@@ -59,7 +101,7 @@ module Repl (Input : Sig) = struct
       | File fs -> mode := File (f :: fs)
     in
     let usage_msg = Printf.sprintf "Usage: %s [file]" Sys.argv.(0) in
-    Arg.parse (arg_specs @ default_specs) parse_file usage_msg
+    Arg.parse (arg_specs @ initial_specs) parse_file usage_msg
 
   let evaluate kn_env tp_env vl_env lexbuf =
 
@@ -73,7 +115,9 @@ module Repl (Input : Sig) = struct
           (Id.to_string id)
           (Kind.to_string kn)
           (Type.to_string tp');
-        Id.Map.add id kn kn_env, Id.Map.add id tp' tp_env, vl_env
+        ( Kind_env.add id kn kn_env,
+          Type_env.add_type id tp' tp_env,
+          vl_env )
       | Command.Bind_term (id, tm) ->
         let tp = Term.to_type (kn_env, tp_env) tm in
         let vl = Term.to_value ?deep (vl_env, kn_env, tp_env) tm in
@@ -81,7 +125,9 @@ module Repl (Input : Sig) = struct
           (Id.to_string id)
           (Type.to_string tp)
           (Value.to_string vl);
-        kn_env, Id.Map.add id tp tp_env, Id.Map.add id vl vl_env
+        ( kn_env,
+          Type_env.add_term id tp tp_env,
+          Value_env.add id vl vl_env )
       | Command.Eval_term tm ->
         let tp = Term.to_type (kn_env, tp_env) tm in
         let vl = Term.to_value ?deep (vl_env, kn_env, tp_env) tm in
@@ -125,7 +171,7 @@ module Repl (Input : Sig) = struct
           in
           eval_phrase kn_env' tp_env' vl_env'
         in
-        eval_phrase Type.default_env Id.Map.empty Id.Map.empty
+        eval_phrase Kind_env.initial Type_env.initial Value_env.initial
       | File fs ->
         let eval_file f (kn_env, tp_env, vl_env) =
           let chan = open_in f in
@@ -135,7 +181,9 @@ module Repl (Input : Sig) = struct
           close_in chan;
           envs
         in
-        let envs = Type.default_env, Id.Map.empty, Id.Map.empty in
+        let envs =
+          (Kind_env.initial, Type_env.initial, Value_env.initial)
+        in
         ignore @@ List.fold_right eval_file fs envs
 
 end

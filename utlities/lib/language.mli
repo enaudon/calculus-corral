@@ -4,6 +4,16 @@ module type Sig = sig
 
     type t
 
+    module Environment : sig
+
+      type env
+
+      val initial : env
+
+      val add : Identifier.t -> t -> env -> env
+
+    end
+
     val to_string : t -> string
 
   end
@@ -11,6 +21,16 @@ module type Sig = sig
   module Kind : sig
 
     type t
+
+    module Environment : sig
+
+      type env
+
+      val initial : env
+
+      val add : Identifier.t -> t -> env -> env
+
+    end
 
     val to_string : t -> string
 
@@ -20,11 +40,21 @@ module type Sig = sig
 
     type t
 
-    val default_env : Kind.t Identifier.Map.t
+    module Environment : sig
 
-    val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
+      type env
 
-    val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
+      val initial : env
+
+      val add_term : Identifier.t -> t -> env -> env
+
+      val add_type : Identifier.t -> t -> env -> env
+
+    end
+
+    val to_kind : Kind.Environment.env -> t -> Kind.t
+
+    val beta_reduce : ?deep : unit -> Environment.env -> t -> t
 
     val to_string : t -> string
 
@@ -35,15 +65,15 @@ module type Sig = sig
     type t
 
     val to_type :
-      (Kind.t Identifier.Map.t * Type.t Identifier.Map.t) ->
+      (Kind.Environment.env * Type.Environment.env) ->
       t ->
       Type.t
 
     val to_value :
       ?deep : unit ->
-      ( Value.t Identifier.Map.t *
-        Kind.t Identifier.Map.t *
-        Type.t Identifier.Map.t ) ->
+      ( Value.Environment.env *
+        Kind.Environment.env *
+        Type.Environment.env ) ->
       t ->
       Value.t
 

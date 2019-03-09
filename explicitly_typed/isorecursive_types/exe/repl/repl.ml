@@ -3,11 +3,42 @@ module Misc = Miscellaneous
 
 module Repl = Language.Repl (struct
 
-  module Value = Isorecursive_types.Term
+  module Value = struct
 
-  module Kind = Isorecursive_types.Kind
+    include Isorecursive_types.Term
 
-  module Type = Isorecursive_types.Type
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add = Id.Map.add
+    end
+
+  end
+
+  module Kind = struct
+
+    include Isorecursive_types.Kind
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Isorecursive_types.Type.default_env
+      let add = Id.Map.add
+    end
+
+  end
+
+  module Type = struct
+
+    include Isorecursive_types.Type
+
+    module Environment = struct
+      type env = t Id.Map.t
+      let initial = Id.Map.empty
+      let add_type = Id.Map.add
+      let add_term = Id.Map.add
+    end
+
+  end
 
   module Term = struct
 
