@@ -40,8 +40,6 @@ let app : mono -> mono -> mono = fun fn arg -> Application (fn, arg)
 let scheme : (Id.t * Kind.t) list -> mono -> t = fun quants body ->
   { quants; body }
 
-let func_id = Id.define "->"
-
 (* Inference *)
 
 module Inferencer : sig
@@ -155,7 +153,7 @@ end = struct
       let oper' = Kind.oper' in
       IVE.empty |>
         IVE.push |>
-        IVE.insert func_id (oper' [prop; prop] prop, Rigid) ;
+        IVE.insert Id.func (oper' [prop; prop] prop, Rigid) ;
   }
 
   let register ?rigid state tp kn = match tp.body with
@@ -173,7 +171,7 @@ end = struct
     let prop = Kind.prop in
     let oper' = Kind.oper' in
     Id.Map.empty |>
-      Id.Map.add func_id (oper' [prop; prop] prop)
+      Id.Map.add Id.func (oper' [prop; prop] prop)
 
   let to_kind state tp =
 
@@ -415,10 +413,10 @@ let to_string ?no_simp ?show_quants tp =
       | Constant id | Variable id ->
         Id.to_string id
       | Application (Application (Constant id, arg), res)
-          when id = func_id ->
+          when id = Id.func ->
         Printf.sprintf "%s %s %s"
           (arg_to_string arg)
-          (Id.to_string func_id)
+          (Id.to_string id)
           (to_string res)
       | Application (fn, arg) ->
         Printf.sprintf "%s %s" (to_string fn) (arg_to_string arg)
@@ -440,7 +438,7 @@ let to_string ?no_simp ?show_quants tp =
 let var id = scheme [] @@ var id
 
 let func arg res =
-  let func arg res = List.fold_left app (cst func_id) [arg; res] in
+  let func arg res = List.fold_left app (cst Id.func) [arg; res] in
   match arg.quants, res.quants with
     | [], [] -> scheme [] @@ func arg.body res.body
     | _ :: _, _ | _, _ :: _ -> expected_mono "func"

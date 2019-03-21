@@ -55,7 +55,21 @@ let define =
   fun str -> Defined (str, get_num str)
 *)
 
+(* Constructors *)
+
 let define str = Defined str
+
+let prop = define "*"
+
+let row = define "<>"
+
+let oper = define "=>"
+
+let func = define "->"
+
+let rcrd = define "{}"
+
+let vrnt = define "[]"
 
 let gen_lower, reset_lower =
   let cntr = ref (-1) in
@@ -74,6 +88,8 @@ let gen_upper, reset_upper =
   in
   let reset () = cntr := -1 in
   gen, reset
+
+(* Utilities *)
 
 let is_defined id = match id with
   | Generated _ -> false

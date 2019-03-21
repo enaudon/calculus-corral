@@ -68,12 +68,6 @@ let scheme_to_mono : t -> mono = fun tp ->
   else
     tp.body
 
-let func_id = Id.define "->"
-
-let rcrd_id = Id.define "rcrd"
-
-let vrnt_id = Id.define "vrnt"
-
 (* Inference *)
 
 
@@ -184,9 +178,9 @@ end = struct
       let oper' = Kind.oper' in
       IVE.empty |>
         IVE.push |>
-        IVE.insert func_id (oper' [prop; prop] prop) |>
-        IVE.insert rcrd_id (oper row prop) |>
-        IVE.insert vrnt_id (oper row prop)
+        IVE.insert Id.func (oper' [prop; prop] prop) |>
+        IVE.insert Id.rcrd (oper row prop) |>
+        IVE.insert Id.vrnt (oper row prop)
   }
 
   let register state tp kn = match tp.body with
@@ -206,9 +200,9 @@ end = struct
     let oper = Kind.oper in
     let oper' = Kind.oper' in
     Id.Map.empty |>
-      Id.Map.add func_id (oper' [prop; prop] prop) |>
-      Id.Map.add rcrd_id (oper row prop) |>
-      Id.Map.add vrnt_id (oper row prop)
+      Id.Map.add Id.func (oper' [prop; prop] prop) |>
+      Id.Map.add Id.rcrd (oper row prop) |>
+      Id.Map.add Id.vrnt (oper row prop)
 
   let to_kind state tp =
 
@@ -488,7 +482,7 @@ let to_string ?no_simp ?show_quants tp =
       | Constant _ | Variable _ | Row_nil | Row_cons _ ->
         to_string tp
       | Application (Constant id, _)
-          when id = rcrd_id || id = vrnt_id ->
+          when id = Id.rcrd || id = Id.vrnt ->
         to_string tp
       | Application _ ->
         to_paren_string tp
@@ -516,14 +510,14 @@ let to_string ?no_simp ?show_quants tp =
       | Constant id | Variable id ->
         Id.to_string id
       | Application (Application (Constant id, arg), res)
-          when id = func_id ->
+          when id = Id.func ->
         Printf.sprintf "%s %s %s"
           (arg_to_string arg)
-          (Id.to_string func_id)
+          (Id.to_string id)
           (to_string res)
-      | Application (Constant id, row) when id = rcrd_id ->
+      | Application (Constant id, row) when id = Id.rcrd ->
         Printf.sprintf "{%s}" (row_to_string row)
-      | Application (Constant id, row) when id = vrnt_id ->
+      | Application (Constant id, row) when id = Id.vrnt ->
         Printf.sprintf "[%s]" (row_to_string row)
       | Application (fn, arg) ->
         Printf.sprintf "%s %s" (to_string fn) (arg_to_string arg)
@@ -545,7 +539,7 @@ let to_string ?no_simp ?show_quants tp =
 (* External functions *)
 
 let func arg res =
-  let func arg res = List.fold_left app (cst func_id) [arg; res] in
+  let func arg res = List.fold_left app (cst Id.func) [arg; res] in
   match arg.quants, res.quants with
     | [], [] -> scheme [] @@ func arg.body res.body
     | _ :: _, _ | _, _ :: _ -> expected_mono "func"
@@ -556,13 +550,13 @@ let rcrd fields rest =
   let field_to_mono (id, tp) = id, scheme_to_mono tp in
   let fields' = List.map field_to_mono fields in
   let rest' = Option.map scheme_to_mono rest in
-  scheme [] @@ app (cst rcrd_id) (row_of_list fields' rest')
+  scheme [] @@ app (cst Id.rcrd) (row_of_list fields' rest')
 
 let vrnt cases rest =
   let case_to_mono (id, tp) = id, scheme_to_mono tp in
   let cases' = List.map case_to_mono cases in
   let rest' = Option.map scheme_to_mono rest in
-  scheme [] @@ app (cst vrnt_id) (row_of_list cases' rest')
+  scheme [] @@ app (cst Id.vrnt) (row_of_list cases' rest')
 
 let var id = scheme [] @@ var id
 

@@ -22,14 +22,12 @@ let app : t -> t -> t = fun fn arg -> Application (fn, arg)
 let forall : Id.t -> Kind.t -> t -> t = fun quant kn body ->
   Universal (quant, kn, body)
 
-let func_id = Id.define "->"
-
 (* Kinding *)
 
 let default_env =
   let prop = Kind.prop in
   let oper' = Kind.oper' in
-  Id.Map.add func_id (oper' [prop; prop] prop) Id.Map.empty
+  Id.Map.add Id.func (oper' [prop; prop] prop) Id.Map.empty
 
 let rec to_kind env tp = match tp with
   | Variable id ->
@@ -209,10 +207,10 @@ let rec to_string tp =
         (Kind.to_string kn)
         (to_string body)
     | Application (Application (Variable id, arg), res)
-        when id = func_id ->
+        when id = Id.func ->
       Printf.sprintf "%s %s %s"
         (arg_to_string arg)
-        (Id.to_string func_id)
+        (Id.to_string id)
         (to_string res)
     | Application (fn, arg) ->
       let fn_to_string tp = match tp with
@@ -233,7 +231,7 @@ let abs' args body =
 
 let app' fn args = List.fold_left app fn args
 
-let func arg res = app' (var func_id) [arg; res]
+let func arg res = app' (var Id.func) [arg; res]
 
 let func' args res = List.fold_right func args res
 
@@ -245,7 +243,7 @@ let forall' quants body =
 
 let get_func tp = match tp with
   | Application (Application (Variable id, arg), res)
-      when id = func_id ->
+      when id = Id.func ->
     arg, res
   | _ -> invalid_arg "Type.get_func: expected function"
 

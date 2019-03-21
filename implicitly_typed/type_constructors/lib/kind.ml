@@ -1,3 +1,5 @@
+module Id = Identifier
+
 type t =
   | Proper
   | Operator of t * t
@@ -22,13 +24,16 @@ let rec to_string kn =
   let to_paren_string kn = Printf.sprintf "(%s)" (to_string kn) in
   match kn with
     | Proper ->
-      "*"
+      Id.to_string Id.prop
     | Operator (arg, res) ->
       let arg_to_string kn = match kn with
         | Proper -> to_string kn
         | Operator _ -> to_paren_string kn
       in
-      Printf.sprintf "%s => %s" (arg_to_string arg) (to_string res)
+      Printf.sprintf "%s %s %s"
+        (arg_to_string arg)
+        (Id.to_string Id.oper)
+        (to_string res)
 
 (* Constructors *)
 

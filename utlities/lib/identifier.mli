@@ -114,7 +114,28 @@ module Map : sig
 
 end
 
-(** {1 Functions} *)
+(** {1 Constructors} *)
+
+(** [prop] is the identifier for proper type kinds. *)
+val prop : t
+
+(** [row] is the identifier for row kinds. *)
+val row : t
+
+(**
+  [oper] is the identifier for kind-level functions, a.k.a. type
+  operators.
+ *)
+val oper : t
+
+(** [func] is the identifier for type-level functions. *)
+val func : t
+
+(** [rcrd] is the identifier for record types. *)
+val rcrd : t
+
+(** [vrnt] is the identifier for variant types. *)
+val vrnt : t
 
 (**
   [define str] constructs a user-defined identifier with the specified
@@ -133,6 +154,8 @@ val gen_lower : unit -> t
   upper string.
  *)
 val gen_upper : unit -> t
+
+(** {1 Utilities} *)
 
 (**
   [is_defined id] returns [true] if [id] was user-defined, or [false]

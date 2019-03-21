@@ -48,12 +48,6 @@ let row_to_list : t -> (Id.t * t) list * t option = fun row ->
   let fields, rest = to_list [] row in
   List.rev fields, rest
 
-let func_id = Id.define "->"
-
-let rcrd_id = Id.define "rcrd"
-
-let vrnt_id = Id.define "vrnt"
-
 (* Kinding *)
 
 let default_env =
@@ -62,9 +56,9 @@ let default_env =
   let oper = Kind.oper in
   let oper' = Kind.oper' in
   Id.Map.empty |>
-    Id.Map.add func_id (oper' [prop; prop] prop) |>
-    Id.Map.add rcrd_id (oper row prop) |>
-    Id.Map.add vrnt_id (oper row prop)
+    Id.Map.add Id.func (oper' [prop; prop] prop) |>
+    Id.Map.add Id.rcrd (oper row prop) |>
+    Id.Map.add Id.vrnt (oper row prop)
 
 let rec to_kind env tp = match tp with
   | Variable id ->
@@ -317,7 +311,7 @@ let rec to_string tp =
   let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
 
   let arg_to_string tp = match tp with
-    | Application (Variable id, _) when id = rcrd_id || id = vrnt_id ->
+    | Application (Variable id, _) when id = Id.rcrd || id = Id.vrnt ->
       to_string tp
     | Variable _ | Row_nil | Row_cons _ ->
       to_string tp
@@ -352,14 +346,14 @@ let rec to_string tp =
         (Kind.to_string kn)
         (to_string body)
     | Application (Application (Variable id, arg), res)
-        when id = func_id ->
+        when id = Id.func ->
       Printf.sprintf "%s %s %s"
         (arg_to_string arg)
-        (Id.to_string func_id)
+        (Id.to_string id)
         (to_string res)
-    | Application (Variable id, row) when id = rcrd_id ->
+    | Application (Variable id, row) when id = Id.rcrd ->
       Printf.sprintf "{%s}" (row_to_string row)
-    | Application (Variable id, row) when id = vrnt_id ->
+    | Application (Variable id, row) when id = Id.vrnt ->
       Printf.sprintf "[%s]" (row_to_string row)
     | Application (fn, arg) ->
       let fn_to_string tp = match tp with
@@ -389,7 +383,7 @@ let abs' args body =
 
 let app' fn args = List.fold_left app fn args
 
-let func arg res = app' (var func_id) [arg; res]
+let func arg res = app' (var Id.func) [arg; res]
 
 let func' args res = List.fold_right func args res 
 
@@ -400,9 +394,9 @@ let forall' quants body =
 let mu' quants body =
   List.fold_right (fun (q, kn) body -> mu q kn body) quants body
 
-let rcrd fields rest = app (var rcrd_id) (row_of_list fields rest)
+let rcrd fields rest = app (var Id.rcrd) (row_of_list fields rest)
 
-let vrnt cases rest = app (var vrnt_id) (row_of_list cases rest)
+let vrnt cases rest = app (var Id.vrnt) (row_of_list cases rest)
 
 let row = row_of_list
 
@@ -410,7 +404,7 @@ let row = row_of_list
 
 let get_func tp = match tp with
   | Application (Application (Variable id, arg), res)
-      when id = func_id ->
+      when id = Id.func ->
     arg, res
   | _ -> invalid_arg "Type.get_func: expected function"
 
@@ -440,11 +434,11 @@ let get_mu' tp =
   get_mu [] tp
 
 let get_rcrd tp = match tp with
-  | Application (Variable id, row) when id = rcrd_id ->
+  | Application (Variable id, row) when id = Id.rcrd ->
     row_to_list row
   | _ -> invalid_arg "Type.get_rcrd: expected record"
 
 let get_vrnt tp = match tp with
-  | Application (Variable id, row) when id = vrnt_id ->
+  | Application (Variable id, row) when id = Id.vrnt ->
     row_to_list row
   | _ -> invalid_arg "Type.get_vrnt: expected variant"
