@@ -7,11 +7,10 @@ module Repl = Language.Repl (struct
 
     include Simply_typed.Term
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add = Id.Map.add
-    end
+    module Environment = Environment.Make (struct
+      type value = t
+      let initial = []
+    end)
 
   end
 
@@ -20,11 +19,10 @@ module Repl = Language.Repl (struct
     type t =
       | Base
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add = Id.Map.add
-    end
+    module Environment = Environment.Make (struct
+      type value = t
+      let initial = []
+    end)
 
     let to_string _ = "*"
 
@@ -34,16 +32,19 @@ module Repl = Language.Repl (struct
 
     include Simply_typed.Type
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add_type = Id.Map.add
-      let add_term = Id.Map.add
-    end
+    module Environment = Type_environment.Make (struct
+      type value = t
+      let initial_types = []
+      let initial_terms = []
+    end)
 
     let to_kind env tp =
-      check (Id.Set.of_list @@ Id.Map.keys env) tp;
+      check (Id.Set.of_list @@ Kind.Environment.keys env) tp;
       Kind.Base
+
+    let beta_reduce ?deep env tp =
+      let env' = Id.Map.of_list @@ Environment.type_bindings env in
+      beta_reduce ?deep env' tp
 
   end
 
@@ -51,9 +52,12 @@ module Repl = Language.Repl (struct
 
     include Simply_typed.Term
 
-    let to_type env tm = to_type (snd env) tm
+    let to_type (_, env) tm =
+      to_type (Id.Map.of_list @@ Type.Environment.bindings env) tm
 
-    let to_value ?deep env tm = beta_reduce ?deep (Misc.fst_of_3 env) tm
+    let to_value ?deep (env, _, _) tm =
+      let env' = Id.Map.of_list @@ Value.Environment.bindings env in
+      beta_reduce ?deep env' tm
 
   end
 

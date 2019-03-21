@@ -7,11 +7,10 @@ module Repl = Language.Repl (struct
 
     include Records_and_variants.Term
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add = Id.Map.add
-    end
+    module Environment = Environment.Make (struct
+      type value = t
+      let initial = []
+    end)
 
   end
 
@@ -19,11 +18,11 @@ module Repl = Language.Repl (struct
 
     include Records_and_variants.Kind
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Records_and_variants.Type.default_env
-      let add = Id.Map.add
-    end
+    module Environment = Environment.Make (struct
+      type value = t
+      let initial =
+        Id.Map.bindings @@ Records_and_variants.Type.default_env
+    end)
 
   end
 
@@ -31,12 +30,18 @@ module Repl = Language.Repl (struct
 
     include Records_and_variants.Type
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add_type = Id.Map.add
-      let add_term = Id.Map.add
-    end
+    module Environment = Type_environment.Make (struct
+      type value = t
+      let initial_types = []
+      let initial_terms = []
+    end)
+
+    let to_kind env tp =
+      to_kind (Id.Map.of_list @@ Kind.Environment.bindings env) tp
+
+    let beta_reduce ?deep env tp =
+      let env' = Id.Map.of_list @@ Environment.type_bindings env in
+      beta_reduce ?deep env' tp
 
   end
 
@@ -44,8 +49,18 @@ module Repl = Language.Repl (struct
 
     include Records_and_variants.Term
 
-    let to_value ?deep env tm =
-      simplify @@ beta_reduce ?deep (Misc.fst_of_3 env) tm
+    let to_type (kn_env, tp_env) tm =
+      let kn_env' =
+        Id.Map.of_list @@ Kind.Environment.bindings kn_env
+      in
+      let tp_env' =
+        Id.Map.of_list @@ Type.Environment.bindings tp_env
+      in
+      to_type (kn_env', tp_env') tm
+
+    let to_value ?deep (env, _, _) tm =
+      let env' = Id.Map.of_list @@ Value.Environment.bindings env in
+      beta_reduce ?deep env' tm
 
   end
 

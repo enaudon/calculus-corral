@@ -7,11 +7,10 @@ module Repl = Language.Repl (struct
 
     include Universal_types.Term
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add = Id.Map.add
-    end
+    module Environment = Environment.Make (struct
+      type value = t
+      let initial = []
+    end)
 
   end
 
@@ -20,11 +19,10 @@ module Repl = Language.Repl (struct
     type t =
       | Base
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add = Id.Map.add
-    end
+    module Environment = Environment.Make (struct
+      type value = t
+      let initial = []
+    end)
 
     let to_string _ = "*"
 
@@ -34,16 +32,19 @@ module Repl = Language.Repl (struct
 
     include Universal_types.Type
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add_type = Id.Map.add
-      let add_term = Id.Map.add
-    end
+    module Environment = Type_environment.Make (struct
+      type value = t
+      let initial_types = []
+      let initial_terms = []
+    end)
 
     let to_kind env tp =
-      check (Id.Set.of_list @@ Id.Map.keys env) tp;
+      check (Id.Set.of_list @@ Kind.Environment.keys env) tp;
       Kind.Base
+
+    let beta_reduce ?deep env tp =
+      let env' = Id.Map.of_list @@ Environment.type_bindings env in
+      beta_reduce ?deep env' tp
 
   end
 
@@ -52,10 +53,15 @@ module Repl = Language.Repl (struct
     include Universal_types.Term
 
     let to_type (kn_env, tp_env) tm =
-      to_type (Id.Set.of_list @@ Id.Map.keys kn_env, tp_env) tm
+      let kn_env' = Id.Set.of_list @@ Kind.Environment.keys kn_env in
+      let tp_env' =
+        Id.Map.of_list @@ Type.Environment.bindings tp_env
+      in
+      to_type (kn_env', tp_env') tm
 
-    let to_value ?deep env tm =
-      simplify @@ beta_reduce ?deep (Misc.fst_of_3 env) tm
+    let to_value ?deep (env, _, _) tm =
+      let env' = Id.Map.of_list @@ Value.Environment.bindings env in
+      beta_reduce ?deep env' tm
 
   end
 

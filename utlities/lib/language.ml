@@ -1,51 +1,23 @@
-module Id = Identifier
-
 module type Sig = sig
 
   module Value : sig
-
     type t
-
-    module Environment : sig
-      type env
-      val initial : env
-      val add : Identifier.t -> t -> env -> env
-    end
-
+    module Environment : Environment.Output with type value := t
     val to_string : t -> string
-
   end
 
   module Kind : sig
-
     type t
-
-    module Environment : sig
-      type env
-      val initial : env
-      val add : Identifier.t -> t -> env -> env
-
-    end
-
+    module Environment : Environment.Output with type value := t
     val to_string : t -> string
-
   end
 
   module Type : sig
-
     type t
-
-    module Environment : sig
-      type env
-      val initial : env
-      val add_term : Identifier.t -> t -> env -> env
-      val add_type : Identifier.t -> t -> env -> env
-    end
-
-    val to_kind : Kind.Environment.env -> t -> Kind.t
-    val beta_reduce : ?deep : unit -> Environment.env -> t -> t
+    module Environment : Type_environment.Output with type value := t
+    val to_kind : Kind.Environment.t -> t -> Kind.t
+    val beta_reduce : ?deep : unit -> Environment.t -> t -> t
     val to_string : t -> string
-
   end
 
   module Term : sig
@@ -53,15 +25,15 @@ module type Sig = sig
     type t
 
     val to_type :
-      (Kind.Environment.env * Type.Environment.env) ->
+      (Kind.Environment.t * Type.Environment.t) ->
       t ->
       Type.t
 
     val to_value :
       ?deep : unit ->
-      ( Value.Environment.env *
-        Kind.Environment.env *
-        Type.Environment.env ) ->
+      ( Value.Environment.t *
+        Kind.Environment.t *
+        Type.Environment.t ) ->
       t ->
       Value.t
 
@@ -79,6 +51,7 @@ module Repl (Input : Sig) = struct
 
   open Input
 
+  module Id = Identifier
   module Value_env = Value.Environment
   module Kind_env = Kind.Environment
   module Type_env = Type.Environment

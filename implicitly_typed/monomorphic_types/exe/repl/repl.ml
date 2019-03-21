@@ -13,11 +13,10 @@ module Repl = Language.Repl (struct
 
     include Monomorphic_types.Term
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add = Id.Map.add
-    end
+    module Environment = Environment.Make (struct
+      type value = t
+      let initial = []
+    end)
 
     let to_string _ = "<value>"
 
@@ -28,11 +27,10 @@ module Repl = Language.Repl (struct
     type t =
       | Base
 
-    module Environment = struct
-      type env = unit
-      let initial = ()
-      let add _ _ _ = assert false
-    end
+    module Environment = Environment.Make (struct
+      type value = t
+      let initial = []
+    end)
 
     let to_string _ = "*"
 
@@ -42,12 +40,11 @@ module Repl = Language.Repl (struct
 
     include Monomorphic_types.Type
 
-    module Environment = struct
-      type env = t Id.Map.t
-      let initial = Id.Map.empty
-      let add_type _ _ _ = assert false
-      let add_term = Id.Map.add
-    end
+    module Environment = Type_environment.Make (struct
+      type value = t
+      let initial_types = []
+      let initial_terms = []
+    end)
 
     let to_kind _ _ = Kind.Base
 
@@ -61,12 +58,12 @@ module Repl = Language.Repl (struct
 
     include Monomorphic_types.Term
 
-    let to_type env tm =
+    let to_type (_, env) tm =
       let to_type = match !type_inference_algorithm with
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      to_type (snd env) tm
+      to_type (Id.Map.of_list @@ Type.Environment.bindings env) tm
 
     let to_value ?deep:_ _ tm = tm
 
