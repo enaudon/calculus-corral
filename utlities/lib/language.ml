@@ -1,4 +1,4 @@
-module type Sig = sig
+module type Input = sig
 
   module Value : sig
     type t
@@ -47,7 +47,7 @@ module type Sig = sig
 
 end
 
-module Repl (Input : Sig) = struct
+module Repl (Input : Input) = struct
 
   open Input
 

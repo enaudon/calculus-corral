@@ -1,4 +1,4 @@
-module type Sig = sig
+module type Input = sig
 
   module Value : sig
 
@@ -61,7 +61,7 @@ module type Sig = sig
 
 end
 
-module Repl (Input : Sig) : sig
+module Repl (Input : Input) : sig
 
   (** [main ()] is the function where the program starts. *)
   val main : unit -> unit
