@@ -67,9 +67,9 @@ let oper = define "=>"
 
 let func = define "->"
 
-let rcrd = define "{}"
+let rcrd = define "Π"
 
-let vrnt = define "[]"
+let vrnt = define "Σ"
 
 let gen_lower, reset_lower =
   let cntr = ref (-1) in
