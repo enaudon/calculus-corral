@@ -76,7 +76,6 @@ module Inferencer : sig
   type state
   val initial : state
   val register : state -> t -> Kind.t -> state
-  val default_env : Kind.t Id.Map.t
   val to_kind : state -> t -> Kind.t
   val unify : state -> t -> t -> state
   val gen_enter : state -> state
@@ -172,15 +171,9 @@ end = struct
   let initial = {
     sub = Sub.identity ;
     pools =
-      let prop = Kind.prop in
-      let row = Kind.row in
-      let oper = Kind.oper in
-      let oper' = Kind.oper' in
-      IVE.empty |>
-        IVE.push |>
-        IVE.insert Id.func (oper' [prop; prop] prop) |>
-        IVE.insert Id.rcrd (oper row prop) |>
-        IVE.insert Id.vrnt (oper row prop)
+      let ive = IVE.push IVE.empty in
+      let insert ive (id, kn) = IVE.insert id kn ive in
+      List.fold_left insert ive Kind.initial_env ;
   }
 
   let register state tp kn = match tp.body with
@@ -193,16 +186,6 @@ end = struct
     scheme tp.quants body
 
   (* Kinding *)
-
-  let default_env =
-    let prop = Kind.prop in
-    let row = Kind.row in
-    let oper = Kind.oper in
-    let oper' = Kind.oper' in
-    Id.Map.empty |>
-      Id.Map.add Id.func (oper' [prop; prop] prop) |>
-      Id.Map.add Id.rcrd (oper row prop) |>
-      Id.Map.add Id.vrnt (oper row prop)
 
   let to_kind state tp =
 

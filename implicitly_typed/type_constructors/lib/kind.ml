@@ -48,3 +48,8 @@ let oper' args res = List.fold_right oper args res
 let get_oper kn = match kn with
   | Operator (arg, res) -> arg, res
   | _ -> invalid_arg "Kind.get_oper: expected operator"
+
+(* Environment *)
+
+let initial_env =
+  [ (Id.func, oper' [prop; prop] prop) ]

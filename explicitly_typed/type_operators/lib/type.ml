@@ -24,11 +24,6 @@ let forall : Id.t -> Kind.t -> t -> t = fun quant kn body ->
 
 (* Kinding *)
 
-let default_env =
-  let prop = Kind.prop in
-  let oper' = Kind.oper' in
-  Id.Map.add Id.func (oper' [prop; prop] prop) Id.Map.empty
-
 let rec to_kind env tp = match tp with
   | Variable id ->
     begin try Id.Map.find id env with
@@ -64,7 +59,6 @@ let rec to_kind env tp = match tp with
 
 (* Transformations *)
 
-(* TODO: Think, is [default_env] safe here? *)
 let free_vars : t -> Id.Set.t =
   let rec free_vars fvs tp = match tp with
     | Variable id ->
@@ -76,6 +70,7 @@ let free_vars : t -> Id.Set.t =
     | Universal (quant, _, body) ->
       Id.Set.del quant @@ free_vars fvs body
   in
+  (* TODO: Think, would [Kind.initial_env] be safe here? *)
   free_vars Id.Set.empty
 
 (**

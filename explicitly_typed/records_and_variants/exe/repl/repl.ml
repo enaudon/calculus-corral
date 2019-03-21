@@ -20,8 +20,7 @@ module Repl = Language.Repl (struct
 
     module Environment = Environment.Make (struct
       type value = t
-      let initial =
-        Id.Map.bindings @@ Records_and_variants.Type.default_env
+      let initial = initial_env
     end)
 
   end

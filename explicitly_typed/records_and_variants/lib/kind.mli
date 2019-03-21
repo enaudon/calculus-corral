@@ -3,6 +3,11 @@
 (** The type of kinds. *)
 type t
 
+(** {1 Environments} *)
+
+(** [initial_env] is the initial kind environment. *)
+val initial_env : (Identifier.t * t) list
+
 (** {1 Constructors and Destructors} *)
 
 (** [prop] is the proper kind. *)

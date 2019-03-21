@@ -63,9 +63,6 @@ module Inferencer : sig
 
   (** {2 Kinding} *)
 
-  (** [default_env] is the default typing environment. *)
-  val default_env : Kind.t Identifier.Map.t
-
   (** [to_kind state tp] computes the kind of [tp]. *)
   val to_kind : state -> t -> Kind.t
 

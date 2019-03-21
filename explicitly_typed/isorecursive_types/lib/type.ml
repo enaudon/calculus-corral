@@ -50,16 +50,6 @@ let row_to_list : t -> (Id.t * t) list * t option = fun row ->
 
 (* Kinding *)
 
-let default_env =
-  let prop = Kind.prop in
-  let row = Kind.row in
-  let oper = Kind.oper in
-  let oper' = Kind.oper' in
-  Id.Map.empty |>
-    Id.Map.add Id.func (oper' [prop; prop] prop) |>
-    Id.Map.add Id.rcrd (oper row prop) |>
-    Id.Map.add Id.vrnt (oper row prop)
-
 let rec to_kind env tp = match tp with
   | Variable id ->
     begin try Id.Map.find id env with
@@ -118,7 +108,6 @@ let rec to_kind env tp = match tp with
 
 (* Transformations *)
 
-(* TODO: Think, would [default_env] be safe here? *)
 let free_vars : t -> Id.Set.t =
   let rec free_vars fvs tp = match tp with
     | Variable id ->
@@ -134,6 +123,7 @@ let free_vars : t -> Id.Set.t =
     | Row_cons (_, tp, rest) ->
       free_vars (free_vars fvs tp) rest
   in
+  (* TODO: Think, would [Kind.initial_env] be safe here? *)
   free_vars Id.Set.empty
 
 (**

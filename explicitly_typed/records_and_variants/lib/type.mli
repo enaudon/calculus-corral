@@ -79,9 +79,6 @@ val get_vrnt : t -> (Identifier.t * t) list * t option
 
 (** {1 Kinding} *)
 
-(** [default_env] is the default typing environment. *)
-val default_env : Kind.t Identifier.Map.t
-
 (** [to_kind env tp] computes the kind of [tp] under [env]. *)
 val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
 
