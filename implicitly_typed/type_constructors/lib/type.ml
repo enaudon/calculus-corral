@@ -13,6 +13,12 @@ type t = {
   body : mono ;
 }
 
+module Environment = Type_environment.Make (struct
+  type value = t
+  let initial_types = []
+  let initial_terms = []
+end)
+
 (* Exceptions *)
 
 exception Occurs of Id.t * t
@@ -138,9 +144,8 @@ end = struct
   let initial = {
     sub = Sub.identity ;
     pools =
-      let ive = IVE.push IVE.empty in
       let insert ive (id, kn) = IVE.insert id kn ive in
-      List.fold_left insert ive Kind.initial_env ;
+      List.fold_left insert (IVE.push IVE.empty) Kind.initial_env ;
   }
 
   let register state tp kn = match tp.body with

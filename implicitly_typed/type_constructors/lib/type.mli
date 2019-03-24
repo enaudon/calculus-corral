@@ -3,6 +3,11 @@
 (** The type of types. *)
 type t
 
+(** {1 Containers} *)
+
+(** Environment of bound types. *)
+module Environment : Type_environment.Output with type value := t
+
 (** {1 Exceptions} *)
 
 (**

@@ -9,16 +9,7 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Value = struct
-
-    include Universal_types.Term
-
-    module Environment = Environment.Make (struct
-      type value = t
-      let initial = []
-    end)
-
-  end
+  module Value = Universal_types.Term
 
   module Kind = struct
 
@@ -38,12 +29,6 @@ module Repl = Language.Repl (struct
 
     include Polymorphic_types.Type
 
-    module Environment = Type_environment.Make (struct
-      type value = t
-      let initial_types = []
-      let initial_terms = []
-    end)
-
     let to_kind _ _ = Kind.Base
 
     let beta_reduce ?deep:_ _ _ = assert false
@@ -56,32 +41,34 @@ module Repl = Language.Repl (struct
 
     include Polymorphic_types.Term
 
-    let to_type (_, env) tm =
+    let to_type env tm =
       let to_type = match !type_inference_algorithm with
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      to_type (Id.Map.of_list @@ Type.Environment.bindings env) tm
+      to_type (snd env) tm
 
     let to_value ?deep (vl_env, kn_env, tp_env) tm =
+
+      let module IR_env = Universal_types.Type.Environment in
+      let module Type_env = Type.Environment in
 
       let to_intl_repr = match !type_inference_algorithm with
         | Hindley_milner -> to_intl_repr_hm
         | Pottier_remy -> to_intl_repr_pr
       in
 
-      let tp_env' =
-        Id.Map.of_list @@ Type.Environment.bindings tp_env
-      in
-      let vl = to_intl_repr tp_env' tm in
-
-      let vl_env' =
-        Id.Map.of_list @@ Value.Environment.bindings vl_env
-      in
+      let vl = to_intl_repr tp_env tm in
       let kn_env' = Id.Set.of_list @@ Kind.Environment.keys kn_env in
-      let tp_env' = Id.Map.map Type.to_intl_repr tp_env' in
+      let tp_env' =
+        Type_env.fold_both
+          (fun id tp -> IR_env.add_type id (Type.to_intl_repr tp))
+          (fun id tp -> IR_env.add_term id (Type.to_intl_repr tp))
+          tp_env
+          IR_env.empty
+      in
       ignore @@ Value.to_type (kn_env', tp_env') vl;
-      Value.simplify @@ Value.beta_reduce ?deep vl_env' vl
+      Value.simplify @@ Value.beta_reduce ?deep vl_env vl
 
   end
 

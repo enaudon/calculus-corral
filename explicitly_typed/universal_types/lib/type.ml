@@ -6,6 +6,14 @@ type t =
   | Function of t * t
   | Universal of Id.t * t
 
+module Env = Type_environment.Make (struct
+  type value = t
+  let initial_types = []
+  let initial_terms = []
+end)
+
+module Environment = Env
+
 (* Internal utilities *)
 
 let error : string -> string -> 'a = fun fn_name msg ->
@@ -47,7 +55,7 @@ let rec beta_reduce ?deep env tp =
   let beta_reduce = beta_reduce ?deep env in
   match tp with
     | Variable id ->
-      Id.Map.find_default tp id env
+      Env.find_default_type tp id env
     | Function (arg, res) ->
       func (beta_reduce arg) (beta_reduce res)
     | Universal (quant, body) ->
@@ -69,7 +77,7 @@ let rec check env tp = match tp with
   | Universal (quant, body) ->
     check (Id.Set.add quant env) body
 
-let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env=[]) tp1 tp2 =
+let alpha_equivalent ?(beta_env = Env.initial) ?(env=[]) tp1 tp2 =
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
     | Variable id1, Variable id2 ->
       Id.alpha_equivalent env id1 id2
@@ -95,16 +103,16 @@ let free_vars =
 
 let rec subst fvs sub tp = match tp with
   | Variable id ->
-    Id.Map.find_default tp id sub
+    Env.find_default_type tp id sub
   | Function (arg, res) ->
     func (subst fvs sub arg) (subst fvs sub res)
   | Universal (quant, body) when Id.Set.mem quant fvs ->
     let quant' = Id.gen_upper () in
-    let sub' = Id.Map.add quant (var quant') sub in
+    let sub' = Env.add_type quant (var quant') sub in
     forall quant' @@ subst (Id.Set.add quant' fvs) sub' body
   | Universal (quant, body) ->
     forall quant @@
-      subst (Id.Set.add quant fvs) (Id.Map.del quant sub) body
+      subst (Id.Set.add quant fvs) (Env.del_type quant sub) body
 
 let simplify ?ctx:ctx_opt tp =
 

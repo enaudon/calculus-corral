@@ -2,6 +2,7 @@ module Id = Identifier
 module Infer = Type.Inferencer
 module IR = Universal_types
 module Loc = Location
+module Type_env = Type.Environment
 
 type desc =
   | Variable of Id.t
@@ -40,6 +41,8 @@ let bind : Loc.t -> Id.t -> t -> t -> t = fun loc id value body ->
 (* TODO: Comment. *)
 let coerce tvs qs ir_tm =
 
+  let module Env = IR.Type.Environment in
+
   (* Compute unused type variables *)
   let diff = List.fold_left (fun tvs q -> Id.Set.del q tvs) tvs qs in
   let unused = Id.Set.elements diff in
@@ -47,7 +50,8 @@ let coerce tvs qs ir_tm =
   (* Create a substitution *)
   let id = Id.define "_" in
   let bot = IR.Type.forall id @@ IR.Type.var id in
-  let sub = Id.Map.of_list @@ List.map (fun id -> id, bot) unused in
+  let add env id = Env.add_type id bot env in
+  let sub = List.fold_left add Env.empty unused in
 
   (* Apply the substitution *)
   IR.Term.subst_tp diff sub ir_tm
@@ -58,8 +62,7 @@ let coerce tvs qs ir_tm =
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)
-let infer_hm : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
-    fun env tm ->
+let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
 
   let type_to_ir state tp =
     Type.to_intl_repr @@ Infer.apply state tp
@@ -86,7 +89,7 @@ let infer_hm : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
       | Variable id ->
         let state, tvs, tp =
           try
-            Infer.inst state @@ Id.Map.find id env
+            Infer.inst state @@ Type_env.find_term id env
           with Id.Unbound id ->
             error tm.loc "infer_hm" @@
               Printf.sprintf
@@ -101,7 +104,7 @@ let infer_hm : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
       | Abstraction (arg, body) ->
         let state, arg_tp = fresh_type_var state in
         let state, body_tp = fresh_type_var state in
-        let env' = Id.Map.add arg arg_tp env in
+        let env' = Type_env.add_term arg arg_tp env in
         let state, body_k = infer env' state body_tp body in
         ( unify loc state exp_tp @@ Type.func arg_tp body_tp,
           fun state ->
@@ -119,7 +122,7 @@ let infer_hm : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
         let state, value_k = infer env state tp value in
         let state, tvs, tp' = Infer.gen_exit state tp in
         let qs = Type.get_quants tp' in
-        let env' = Id.Map.add id tp' env in
+        let env' = Type_env.add_term id tp' env in
         let state, body_k = infer env' state exp_tp body in
         ( state,
           fun state ->
@@ -151,8 +154,7 @@ let to_intl_repr_hm env tm = snd @@ infer_hm env tm
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)
-let infer_pr : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
-    fun env tm ->
+let infer_pr : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
 
   let module TC = Type_constraint in
   let open TC.Operators in
@@ -202,7 +204,7 @@ let infer_pr : Type.t Id.Map.t -> t -> Type.t * IR.Term.t =
         let qs = fst @@ IR.Type.get_forall' @@ Type.to_intl_repr tp in
         tp, coerce tvs qs @@ IR.Term.tp_abs' ~loc qs tm'
   in
-  TC.solve @@ Id.Map.fold (fun id -> TC.def id) env c
+  TC.solve @@ Type_env.fold_term (fun id -> TC.def id) env c
 
 let to_type_pr env tm = fst @@ infer_pr env tm
 

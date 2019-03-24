@@ -3,6 +3,11 @@
 (** The type of types. *)
 type t
 
+(** {1 Containers} *)
+
+(** Environment of bound types. *)
+module Environment : Type_environment.Output with type value := t
+
 (** {1 Constructors and Destructors} *)
 
 (** [base] is the base type. *)
@@ -30,7 +35,7 @@ val get_func : t -> t * t
   [env].  If the [deep] argument is passed, then [beta_reduce] will
   reduce the body of abstractions.
  *)
-val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
+val beta_reduce : ?deep : unit -> Environment.t -> t -> t
 
 (** {1 Utilities} *)
 
@@ -48,7 +53,7 @@ val check : Identifier.Set.t -> t -> unit
   [beta_env] is the beta-reduction environment.
  *)
 val alpha_equivalent :
-  ?beta_env : t Identifier.Map.t ->
+  ?beta_env : Environment.t ->
   ?env : (Identifier.t * Identifier.t) list ->
   t ->
   t ->

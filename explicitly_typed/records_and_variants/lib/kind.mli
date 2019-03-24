@@ -3,10 +3,10 @@
 (** The type of kinds. *)
 type t
 
-(** {1 Environments} *)
+(** {1 Containers} *)
 
-(** [initial_env] is the initial kind environment. *)
-val initial_env : (Identifier.t * t) list
+(** Environment of bound types. *)
+module Environment : Environment.Output with type value := t
 
 (** {1 Constructors and Destructors} *)
 

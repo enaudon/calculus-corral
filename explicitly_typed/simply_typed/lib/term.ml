@@ -1,5 +1,6 @@
 module Id = Identifier
 module Loc = Location
+module Type_env = Type.Environment
 
 type desc =
   | Variable of Id.t
@@ -10,6 +11,11 @@ and t = {
   desc : desc ;
   loc : Loc.t ;
 }
+
+module Env = Environment.Make (struct
+  type value = t
+  let initial = []
+end)
 
 (* Internal utilities *)
 
@@ -34,13 +40,13 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 
 let rec to_type env tm = match tm.desc with
   | Variable id ->
-    begin try Id.Map.find id env with
+    begin try Type_env.find_term id env with
       | Id.Unbound id ->
         error tm.loc "to_type" @@
           Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
     end
   | Abstraction (arg, arg_tp, body) ->
-    let body_tp = to_type (Id.Map.add arg arg_tp env) body in
+    let body_tp = to_type (Type_env.add_term arg arg_tp env) body in
     Type.func arg_tp body_tp
   | Application (fn, arg) ->
     let fn_tp = to_type env fn in
@@ -86,28 +92,28 @@ let subst : t -> Id.t -> t -> t = fun tm id tm' ->
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        Id.Map.find_default tm id sub
+        Env.find_default tm id sub
       | Abstraction (arg, tp, body) when Id.Set.mem arg fvs ->
         let arg' = Id.gen_lower () in
-        let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
+        let sub' = Env.add arg (var Loc.dummy arg') sub in
         abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
       | Abstraction (arg, tp, body) ->
         abs loc arg tp @@
-          subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
+          subst (Id.Set.add arg fvs) (Env.del arg sub) body
       | Application (fn, arg) ->
         app loc (subst fvs sub fn) (subst fvs sub arg)
   in
-  subst (free_vars tm') (Id.Map.singleton id tm') tm
+  subst (free_vars tm') (Env.singleton id tm') tm
 
 let rec beta_reduce ?deep env tm =
   let beta_reduce = beta_reduce ?deep in
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
-      Id.Map.find_default tm id env
+      Env.find_default tm id env
     | Abstraction (arg, tp, body) ->
       if deep <> None then
-        let env' = Id.Map.del arg env in
+        let env' = Env.del arg env in
         abs loc arg tp @@ beta_reduce env' body
       else
         tm
@@ -117,7 +123,7 @@ let rec beta_reduce ?deep env tm =
       match fn'.desc with
         | Abstraction (fml_arg, _, body) ->
           let body' = subst body fml_arg act_arg' in
-          let env' = Id.Map.del fml_arg env in
+          let env' = Env.del fml_arg env in
           beta_reduce env' body'
         | _ ->
           app loc fn' act_arg'
@@ -158,6 +164,10 @@ let rec to_string tm =
         | Abstraction _ | Application _ -> to_paren_string tm
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
+
+(* Containers *)
+
+module Environment = Env
 
 (* Constructors *)
 

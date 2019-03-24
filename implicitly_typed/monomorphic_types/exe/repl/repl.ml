@@ -1,6 +1,3 @@
-module Id = Identifier
-module Misc = Miscellaneous
-
 type type_inference_algorithm =
   | Hindley_milner
   | Pottier_remy
@@ -40,12 +37,6 @@ module Repl = Language.Repl (struct
 
     include Monomorphic_types.Type
 
-    module Environment = Type_environment.Make (struct
-      type value = t
-      let initial_types = []
-      let initial_terms = []
-    end)
-
     let to_kind _ _ = Kind.Base
 
     let beta_reduce ?deep:_ _ _ = assert false
@@ -58,12 +49,12 @@ module Repl = Language.Repl (struct
 
     include Monomorphic_types.Term
 
-    let to_type (_, env) tm =
+    let to_type env tm =
       let to_type = match !type_inference_algorithm with
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      to_type (Id.Map.of_list @@ Type.Environment.bindings env) tm
+      to_type (snd env) tm
 
     let to_value ?deep:_ _ tm = tm
 

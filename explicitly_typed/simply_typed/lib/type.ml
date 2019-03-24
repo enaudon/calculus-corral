@@ -4,6 +4,14 @@ type t =
   | Variable of Id.t
   | Function of t * t
 
+module Env = Type_environment.Make (struct
+  type value = t
+  let initial_types = []
+  let initial_terms = []
+end)
+
+module Environment = Env
+
 (* Internal utilities *)
 
 let error : string -> string -> 'a = fun fn_name msg ->
@@ -33,7 +41,7 @@ let rec beta_reduce ?deep env tp =
   let beta_reduce = beta_reduce ?deep env in
   match tp with
     | Variable id ->
-      Id.Map.find_default tp id env
+      Env.find_default_type tp id env
     | Function (arg, res) ->
       func (beta_reduce arg) (beta_reduce res)
 
@@ -48,7 +56,7 @@ let rec check env tp = match tp with
     check env arg;
     check env res
 
-let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env=[]) tp1 tp2 =
+let alpha_equivalent ?(beta_env = Env.initial) ?(env=[]) tp1 tp2 =
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
     | Variable id1, Variable id2 ->
       Id.alpha_equivalent env id1 id2

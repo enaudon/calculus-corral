@@ -1,6 +1,7 @@
 module Id = Identifier
 module Loc = Location
 module Misc = Miscellaneous
+module Type_env = Type.Environment
 
 type desc =
   | Variable of Id.t
@@ -13,6 +14,11 @@ and t = {
   desc : desc ;
   loc : Loc.t ;
 }
+
+module Env = Environment.Make (struct
+  type value = t
+  let initial = []
+end)
 
 (* Internal utilities *)
 
@@ -46,13 +52,13 @@ let rec to_type (kn_env, tp_env) tm =
   let to_type kn_env tp_env = to_type (kn_env, tp_env) in
   match tm.desc with
     | Variable id ->
-      begin try Id.Map.find id tp_env with
+      begin try Type_env.find_term id tp_env with
         | Id.Unbound id ->
           error tm.loc "to_type" @@
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Abstraction (arg, arg_tp, body) ->
-      let tp_env' = Id.Map.add arg arg_tp tp_env in
+      let tp_env' = Type_env.add_term arg arg_tp tp_env in
       let body_tp = to_type kn_env tp_env' body in
       Type.func arg_tp body_tp
     | Application (fn, arg) ->
@@ -89,8 +95,10 @@ let rec to_type (kn_env, tp_env) tm =
       in
       let tm_tp = to_type kn_env tp_env tm in
       let tp2_tp' =
-        let sub = Id.Map.singleton tp2_tv tp1 in
-        Type.subst (Id.Set.of_list @@ Id.Map.keys tp_env) sub tp2_tp
+        Type.subst
+          (Id.Set.of_list @@ Type_env.type_keys tp_env)
+          (Type_env.singleton_type tp2_tv tp1)
+          tp2_tp
       in
       if Type.alpha_equivalent ~beta_env:tp_env tm_tp tp2_tp' then
         tp2
@@ -112,10 +120,12 @@ let rec to_type (kn_env, tp_env) tm =
               (Type.to_string pack_tp)
       in
       let pack_tp_tp' =
-        let sub = (Id.Map.singleton pack_tp_tv @@ Type.var tp_id) in
-        Type.subst (Id.Set.of_list @@ Id.Map.keys tp_env) sub pack_tp_tp
+        Type.subst
+          (Id.Set.of_list @@ Type_env.type_keys tp_env)
+          (Type_env.singleton_type pack_tp_tv @@ Type.var tp_id)
+          pack_tp_tp
       in
-      let tp_env' = Id.Map.add tm_id pack_tp_tp' tp_env in
+      let tp_env' = Type_env.add_term tm_id pack_tp_tp' tp_env in
       let res_tp = to_type kn_env tp_env' body in
       if Id.Set.mem tp_id @@ Type.free_vars res_tp then
         error body.loc "to_type" @@
@@ -168,19 +178,19 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
         let tp_id' = Id.gen_upper () in
         let fvs' = Id.Set.add tp_id' fvs in
         let sub' =
-          Id.Map.add tp_id (Type.var tp_id') sub
+          Type_env.add_type tp_id (Type.var tp_id') sub
         in
         unpack loc tp_id' tm_id
           (subst fvs' sub' pack)
           (subst fvs' sub' body)
       | Unpack (tp_id, tm_id, pack, body) ->
         let fvs' = Id.Set.add tp_id fvs in
-        let sub' = Id.Map.del tp_id sub in
+        let sub' = Type_env.del_type tp_id sub in
         unpack loc tp_id tm_id
           (subst fvs' sub' pack)
           (subst fvs' sub' body)
   in
-  subst (Type.free_vars tp') (Id.Map.singleton id tp') tm
+  subst (Type.free_vars tp') (Type_env.singleton_type id tp') tm
 
 (**
   [subst_tm tm id tm'] replaces occurences of [id] in [tm] with [tm'].
@@ -193,14 +203,14 @@ let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        Id.Map.find_default tm id sub
+        Env.find_default tm id sub
       | Abstraction (arg, tp, body) when Id.Set.mem arg fvs ->
         let arg' = Id.gen_lower () in
-        let sub' = Id.Map.add arg (var Loc.dummy arg') sub in
+        let sub' = Env.add arg (var Loc.dummy arg') sub in
         abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
       | Abstraction (arg, tp, body) ->
         abs loc arg tp @@
-          subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
+          subst (Id.Set.add arg fvs) (Env.del arg sub) body
       | Application (fn, arg) ->
         app loc (subst fvs sub fn) (subst fvs sub arg)
       | Pack (tp1, tm, tp2) ->
@@ -208,28 +218,28 @@ let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
       | Unpack (tp_id, tm_id, pack, body) when Id.Set.mem tm_id fvs ->
         let tm_id' = Id.gen_lower () in
         let fvs' = Id.Set.add tm_id' fvs in
-        let sub' = Id.Map.add tp_id (var Loc.dummy tm_id') sub in
+        let sub' = Env.add tp_id (var Loc.dummy tm_id') sub in
         unpack loc tp_id tm_id
           (subst fvs' sub' pack)
           (subst fvs' sub' body)
       | Unpack (tp_id, tm_id, pack, body) ->
         let fvs' = Id.Set.add tp_id fvs in
-        let sub' = Id.Map.del tp_id sub in
+        let sub' = Env.del tp_id sub in
         unpack loc tp_id tm_id
           (subst fvs' sub' pack)
           (subst fvs' sub' body)
   in
-  subst (free_vars tm') (Id.Map.singleton id tm') tm
+  subst (free_vars tm') (Env.singleton id tm') tm
 
 let rec beta_reduce ?deep env tm =
   let beta_reduce = beta_reduce ?deep in
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
-      Id.Map.find_default tm id env
+      Env.find_default tm id env
     | Abstraction (arg, tp, body) ->
       if deep <> None then
-        let env' = Id.Map.del arg env in
+        let env' = Env.del arg env in
         abs loc arg tp @@ beta_reduce env' body
       else
         tm
@@ -239,7 +249,7 @@ let rec beta_reduce ?deep env tm =
       begin match fn'.desc with
         | Abstraction (fml_arg, _, body) ->
           let body' = subst_tm body fml_arg act_arg' in
-          let env' = Id.Map.del fml_arg env in
+          let env' = Env.del fml_arg env in
           beta_reduce env' body'
         | _ ->
           app loc fn' act_arg'
@@ -251,8 +261,9 @@ let rec beta_reduce ?deep env tm =
       let body' = beta_reduce env body in
       begin match pack'.desc with
         | Pack (tp, tm, _) ->
-          let env' = Id.Map.del tp_id (Id.Map.del tm_id env) in
-          beta_reduce env' @@ subst_tp (subst_tm body' tm_id tm) tp_id tp
+          let env' = Env.del tp_id (Env.del tm_id env) in
+          beta_reduce env' @@
+            subst_tp (subst_tm body' tm_id tm) tp_id tp
         | _ ->
           unpack loc tp_id tm_id pack' body'
       end
@@ -362,6 +373,8 @@ let rec to_string tm =
         (to_string body)
 
 (* Constructors *)
+
+module Environment = Env
 
 let var ?(loc = Loc.dummy) id = var loc id
 

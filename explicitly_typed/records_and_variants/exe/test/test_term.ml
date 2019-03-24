@@ -18,6 +18,8 @@ module Term = struct
 
   include Records_and_variants.Term
 
+  module Env = Environment
+
   let var id = var (Id.define id)
 
   let abs arg tp body = abs (Id.define arg) tp body
@@ -35,7 +37,7 @@ let assert_beta_reduce tm exp_shallow exp_deep =
   let assert_beta_reduce ?deep tm exp =
     let act =
       try
-        Term.beta_reduce ?deep Id.Map.empty tm
+        Term.beta_reduce ?deep Term.Env.initial tm
       with Failure msg ->
         assert_failure @@
           Printf.sprintf "Failure beta-reducing '%s'\n%s"

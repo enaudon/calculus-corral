@@ -3,6 +3,11 @@
 (** The type of terms. *)
 type t
 
+(** {1 Containers} *)
+
+(** Environment of bound terms. *)
+module Environment : Environment.Output with type value := t
+
 (** {1 Constructors} *)
 
 (** [var id] constructs a variable with the identifier [id]. *)
@@ -28,7 +33,7 @@ val app' : ?loc : Location.t -> t -> t list -> t
 (** {1 Typing} *)
 
 (** [to_type env tm] computes the type of [tm] under [env]. *)
-val to_type : Type.t Identifier.Map.t -> t -> Type.t
+val to_type : Type.Environment.t -> t -> Type.t
 
 (** {1 Transformations} *)
 
@@ -37,7 +42,7 @@ val to_type : Type.t Identifier.Map.t -> t -> Type.t
   [env]. If the [deep] argument is passed, then [beta_reduce] will
   evaluate the body of abstractions.
  *)
-val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
+val beta_reduce : ?deep : unit -> Environment.t -> t -> t
 
 (** {1 Utilities} *)
 

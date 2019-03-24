@@ -1,4 +1,5 @@
 module Id = Identifier
+module Kind_env = Kind.Environment
 module Misc = Miscellaneous
 
 type t =
@@ -9,6 +10,12 @@ type t =
   | Recursive of Id.t * Kind.t * t
   | Row_nil
   | Row_cons of Id.t * t * t
+
+module Env = Type_environment.Make (struct
+  type value = t
+  let initial_types = []
+  let initial_terms = []
+end)
 
 (* Internal utilities *)
 
@@ -52,13 +59,13 @@ let row_to_list : t -> (Id.t * t) list * t option = fun row ->
 
 let rec to_kind env tp = match tp with
   | Variable id ->
-    begin try Id.Map.find id env with
+    begin try Kind_env.find id env with
       | Id.Unbound id ->
         error "to_kind" @@
           Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
     end
   | Abstraction (arg, arg_kn, body) ->
-    let body_kn = to_kind (Id.Map.add arg arg_kn env) body in
+    let body_kn = to_kind (Kind_env.add arg arg_kn env) body in
     Kind.oper arg_kn body_kn
   | Application (fn, arg) ->
     let fn_kn = to_kind env fn in
@@ -81,10 +88,10 @@ let rec to_kind env tp = match tp with
             (Kind.to_string fml_arg_kn)
             (Kind.to_string act_arg_kn)
   | Universal (quant, kn, body) ->
-    to_kind (Id.Map.add quant kn env) body
+    to_kind (Kind_env.add quant kn env) body
   (* TODO: check that this case is correct. *)
   | Recursive (quant, kn, body) ->
-    let kn' = to_kind (Id.Map.add quant kn env) body in
+    let kn' = to_kind (Kind_env.add quant kn env) body in
     if not @@ Kind.alpha_equivalent kn kn' then
       error "to_kind" @@
         Printf.sprintf
@@ -133,30 +140,30 @@ let free_vars : t -> Id.Set.t =
  *)
 let rec subst fvs sub tp = match tp with
   | Variable id ->
-    Id.Map.find_default tp id sub
+    Env.find_default_type tp id sub
   | Abstraction (arg, kn, body) when Id.Set.mem arg fvs ->
     let arg' = Id.gen_upper () in
-    let sub' = Id.Map.add arg (var arg') sub in
+    let sub' = Env.add_type arg (var arg') sub in
     abs arg' kn @@ subst (Id.Set.add arg' fvs) sub' body
   | Abstraction (arg, kn, body) ->
     abs arg kn @@
-      subst (Id.Set.add arg fvs) (Id.Map.del arg sub) body
+      subst (Id.Set.add arg fvs) (Env.del_type arg sub) body
   | Application (fn, arg) ->
     app (subst fvs sub fn) (subst fvs sub arg)
   | Universal (quant, kn, body) when Id.Set.mem quant fvs ->
     let quant' = Id.gen_upper () in
-    let sub' = Id.Map.add quant (var quant') sub in
+    let sub' = Env.add_type quant (var quant') sub in
     forall quant' kn @@ subst (Id.Set.add quant' fvs) sub' body
   | Universal (quant, kn, body) ->
     forall quant kn @@
-      subst (Id.Set.add quant fvs) (Id.Map.del quant sub) body
+      subst (Id.Set.add quant fvs) (Env.del_type quant sub) body
   | Recursive (quant, kn, body) when Id.Set.mem quant fvs ->
     let quant' = Id.gen_upper () in
-    let sub' = Id.Map.add quant (var quant') sub in
+    let sub' = Env.add_type quant (var quant') sub in
     mu quant' kn @@ subst (Id.Set.add quant' fvs) sub' body
   | Recursive (quant, kn, body) ->
     mu quant kn @@
-      subst (Id.Set.add quant fvs) (Id.Map.del quant sub) body
+      subst (Id.Set.add quant fvs) (Env.del_type quant sub) body
   | Row_nil ->
     row_nil
   | Row_cons (id, tp, rest) ->
@@ -166,7 +173,7 @@ let rec beta_reduce ?deep env tp =
   let beta_reduce = beta_reduce ?deep in
   match tp with
     | Variable id ->
-      Id.Map.find_default tp id env
+      Env.find_default_type tp id env
     | Abstraction (arg, kn, body) ->
       if deep <> None then
         abs arg kn @@ beta_reduce env body
@@ -177,7 +184,7 @@ let rec beta_reduce ?deep env tp =
       let act_arg' = beta_reduce env act_arg in
       begin match fn' with
         | Abstraction (fml_arg, _, body) ->
-          let sub = Id.Map.singleton fml_arg act_arg' in
+          let sub = Env.singleton_type fml_arg act_arg' in
           let body' = subst (free_vars act_arg') sub body in
           beta_reduce env body'
         | _ ->
@@ -185,12 +192,12 @@ let rec beta_reduce ?deep env tp =
       end
     | Universal (quant, kn, body) ->
       if deep <> None then
-        forall quant kn @@ beta_reduce (Id.Map.del quant env) body
+        forall quant kn @@ beta_reduce (Env.del_type quant env) body
       else
         tp
     | Recursive (quant, kn, body) ->
       if deep <> None then
-        mu quant kn @@ beta_reduce (Id.Map.del quant env) body
+        mu quant kn @@ beta_reduce (Env.del_type quant env) body
       else
         tp
     | Row_nil ->
@@ -200,7 +207,7 @@ let rec beta_reduce ?deep env tp =
 
 (* Utilities *)
 
-let alpha_equivalent ?(beta_env = Id.Map.empty) ?(env = []) tp1 tp2 =
+let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
 
   let rec alpha_equiv env tp1 tp2 = match tp1, tp2 with
     | Variable id1, Variable id2 ->
@@ -365,6 +372,10 @@ let rec to_string tp =
         (to_string body)
     | Row_nil | Row_cons _ ->
       Printf.sprintf "<%s>" (row_to_string tp)
+
+(* Containers *)
+
+module Environment = Env
 
 (* Constructors *)
 

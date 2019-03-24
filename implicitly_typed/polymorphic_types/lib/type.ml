@@ -12,6 +12,12 @@ type t = {
   body : mono ;
 }
 
+module Environment = Type_environment.Make (struct
+  type value = t
+  let initial_types = []
+  let initial_terms = []
+end)
+
 (* Exceptions *)
 
 exception Occurs of Id.t * t

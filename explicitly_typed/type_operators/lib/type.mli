@@ -3,6 +3,11 @@
 (** The type of types. *)
 type t
 
+(** {1 Containers} *)
+
+(** Environment of bound types. *)
+module Environment : Type_environment.Output with type value := t
+
 (** {1 Constructors and Destructors} *)
 
 (** [var id] constructs a type variable identified by [id]. *)
@@ -59,7 +64,7 @@ val get_forall' : t -> (Identifier.t * Kind.t) list * t
 (** {1 Kinding} *)
 
 (** [to_kind env tp] computes the kind of [tp] under [env]. *)
-val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
+val to_kind : Kind.Environment.t -> t -> Kind.t
 
 (** {1 Transformations} *)
 
@@ -68,7 +73,7 @@ val to_kind : Kind.t Identifier.Map.t -> t -> Kind.t
   [env].  If the [deep] argument is passed, then [beta_reduce] will
   reduce the body of abstractions.
  *)
-val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
+val beta_reduce : ?deep : unit -> Environment.t -> t -> t
 
 (** {1 Utilities} *)
 
@@ -79,7 +84,7 @@ val beta_reduce : ?deep : unit -> t Identifier.Map.t -> t -> t
   [beta_env] is the beta-reduction environment.
  *)
 val alpha_equivalent :
-  ?beta_env : t Identifier.Map.t ->
+  ?beta_env : Environment.t ->
   ?env : (Identifier.t * Identifier.t) list ->
   t ->
   t ->
@@ -95,7 +100,7 @@ val free_vars : t -> Identifier.Set.t
   [subst fvars tp sub] applies the substitution [sub] to [tp], assuming
   that the identifiers in [fvars] may occur free in the range of [sub].
 *)
-val subst : Identifier.Set.t -> t Identifier.Map.t -> t -> t
+val subst : Identifier.Set.t -> Environment.t -> t -> t
 
 (**
   [simplify ~ctx tp] replaces each variable in [tp] with the

@@ -1,6 +1,7 @@
 module Id = Identifier
 module Loc = Location
 module Sub = Type.Substitution
+module Type_env = Type.Environment
 
 type desc =
   | Variable of Id.t
@@ -37,8 +38,7 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
   W-style Hindley-Milner type inference.  [tm] is assumed to be closed
   under [env].
  *)
-let infer_hm : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
-    fun env exp_tp tm ->
+let infer_hm : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
 
   let unify loc sub tp1 tp2 =
     try Type.unify sub tp1 tp2 with
@@ -54,7 +54,7 @@ let infer_hm : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        let tp = try Id.Map.find id env with
+        let tp = try Type_env.find_term id env with
           | Id.Unbound id ->
           error loc "infer_hm" @@
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
@@ -63,7 +63,8 @@ let infer_hm : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
       | Abstraction (arg, body) ->
         let arg_tp = Type.var @@ Id.gen_upper () in
         let body_tp = Type.var @@ Id.gen_upper () in
-        let sub' = infer (Id.Map.add arg arg_tp env) sub body_tp body in
+        let env' = Type_env.add_term arg arg_tp env in
+        let sub' = infer env' sub body_tp body in
         unify loc sub' exp_tp @@ Type.func arg_tp body_tp
       | Application (fn, arg) ->
         let tp = Type.var @@ Id.gen_upper () in
@@ -82,8 +83,7 @@ let to_type_hm env tm =
   constraint-based type inference a la Pottier and Remy.  [tm] is
   assumed to be closed under [env].
  *)
-let infer_pr : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
-    fun env exp_tp tm ->
+let infer_pr : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
 
   let module TC = Type_constraint in
 
@@ -109,7 +109,7 @@ let infer_pr : Type.t Id.Map.t -> Type.t -> t -> Sub.s =
   in
 
   TC.solve @@
-    Id.Map.fold (fun id -> TC.def id) env (constrain exp_tp tm)
+    Type_env.fold_term (fun id -> TC.def id) env (constrain exp_tp tm)
 
 let to_type_pr env tm =
   let tp = Type.var @@ Id.gen_upper () in

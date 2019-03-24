@@ -1,4 +1,3 @@
-module Id = Identifier
 module Misc = Miscellaneous
 
 type type_inference_algorithm =
@@ -9,16 +8,7 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Value = struct
-
-    include Type_operators.Term
-
-    module Environment = Environment.Make (struct
-      type value = t
-      let initial = []
-    end)
-
-  end
+  module Value = Type_operators.Term
 
   module Kind = struct
 
@@ -34,12 +24,6 @@ module Repl = Language.Repl (struct
   module Type = struct
 
     include Type_constructors.Type
-
-    module Environment = Type_environment.Make (struct
-      type value = t
-      let initial_types = []
-      let initial_terms = []
-    end)
 
     let to_kind env =
       let open Inferencer in
@@ -57,36 +41,41 @@ module Repl = Language.Repl (struct
 
     include Type_constructors.Term
 
-    let to_type (_, env) tm =
+    let to_type env tm =
       let to_type = match !type_inference_algorithm with
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      to_type (Id.Map.of_list @@ Type.Environment.bindings env) tm
+      to_type (snd env) tm
 
     let to_value ?deep (vl_env, kn_env, tp_env) tm =
+
+      let module IR_kind_env = Type_operators.Kind.Environment in
+      let module IR_type_env = Type_operators.Type.Environment in
+      let module Type_env = Type.Environment in
+      let module Kind_env = Kind.Environment in
 
       let to_intl_repr = match !type_inference_algorithm with
         | Hindley_milner -> to_intl_repr_hm
         | Pottier_remy -> to_intl_repr_pr
       in
 
-      let tp_env' =
-        Id.Map.of_list @@ Type.Environment.bindings tp_env
-      in
-      let vl = to_intl_repr tp_env' tm in
-
-      let vl_env' =
-        Id.Map.of_list @@ Value.Environment.bindings vl_env
-      in
+      let vl = to_intl_repr tp_env tm in
       let kn_env' =
-        Kind.Environment.bindings kn_env |>
-          Id.Map.of_list |>
-          Id.Map.map Kind.to_intl_repr
+        Kind_env.fold
+          (fun id kn -> IR_kind_env.add id @@ Kind.to_intl_repr kn)
+          kn_env
+          IR_kind_env.empty
       in
-      let tp_env' = Id.Map.map Type.to_intl_repr tp_env' in
+      let tp_env' =
+        Type_env.fold_both
+          (fun id tp -> IR_type_env.add_type id (Type.to_intl_repr tp))
+          (fun id tp -> IR_type_env.add_term id (Type.to_intl_repr tp))
+          tp_env
+          IR_type_env.empty
+      in
       ignore @@ Value.to_type (kn_env', tp_env') vl;
-      Value.simplify @@ Value.beta_reduce ?deep vl_env' vl
+      Value.simplify @@ Value.beta_reduce ?deep vl_env vl
 
   end
 

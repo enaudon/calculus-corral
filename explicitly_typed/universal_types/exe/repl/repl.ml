@@ -3,16 +3,7 @@ module Misc = Miscellaneous
 
 module Repl = Language.Repl (struct
 
-  module Value = struct
-
-    include Universal_types.Term
-
-    module Environment = Environment.Make (struct
-      type value = t
-      let initial = []
-    end)
-
-  end
+  module Value = Universal_types.Term
 
   module Kind = struct
 
@@ -32,19 +23,9 @@ module Repl = Language.Repl (struct
 
     include Universal_types.Type
 
-    module Environment = Type_environment.Make (struct
-      type value = t
-      let initial_types = []
-      let initial_terms = []
-    end)
-
     let to_kind env tp =
       check (Id.Set.of_list @@ Kind.Environment.keys env) tp;
       Kind.Base
-
-    let beta_reduce ?deep env tp =
-      let env' = Id.Map.of_list @@ Environment.type_bindings env in
-      beta_reduce ?deep env' tp
 
   end
 
@@ -54,14 +35,10 @@ module Repl = Language.Repl (struct
 
     let to_type (kn_env, tp_env) tm =
       let kn_env' = Id.Set.of_list @@ Kind.Environment.keys kn_env in
-      let tp_env' =
-        Id.Map.of_list @@ Type.Environment.bindings tp_env
-      in
-      to_type (kn_env', tp_env') tm
+      to_type (kn_env', tp_env) tm
 
-    let to_value ?deep (env, _, _) tm =
-      let env' = Id.Map.of_list @@ Value.Environment.bindings env in
-      beta_reduce ?deep env' tm
+    let to_value ?deep env tm =
+      simplify @@ beta_reduce ?deep (Misc.fst_of_3 env) tm
 
   end
 
