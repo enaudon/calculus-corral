@@ -51,13 +51,13 @@ let rec to_type (kn_env, tp_env) tm =
   let to_type kn_env tp_env = to_type (kn_env, tp_env) in
   match tm.desc with
     | Variable id ->
-      begin try Type_env.find_term id tp_env with
+      begin try Type_env.Term.find id tp_env with
         | Id.Unbound id ->
           error tm.loc "to_type" @@
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Term_abs (arg, arg_tp, body) ->
-      let tp_env' = Type_env.add_term arg arg_tp tp_env in
+      let tp_env' = Type_env.Term.add arg arg_tp tp_env in
       Type.func arg_tp @@ to_type kn_env tp_env' body
     | Term_app (fn, arg) ->
       let fn_tp = to_type kn_env tp_env fn in
@@ -94,7 +94,7 @@ let rec to_type (kn_env, tp_env) tm =
               (Type.to_string fn_tp)
       in
       Type.check kn_env arg;
-      Type.subst kn_env (Type_env.singleton_type tv arg) tp
+      Type.subst kn_env (Type_env.Type.singleton tv arg) tp
 
 (* Transformations *)
 
@@ -124,11 +124,11 @@ let rec subst_tp fvs sub tm =
       app loc (subst_tp fvs sub fn) (subst_tp fvs sub arg)
     | Type_abs (arg, body) when Id.Set.mem arg fvs ->
       let arg' = Id.gen_upper () in
-      let sub' = Type_env.add_type arg (Type.var arg') sub in
+      let sub' = Type_env.Type.add arg (Type.var arg') sub in
       tp_abs loc arg' @@ subst_tp (Id.Set.add arg' fvs) sub' body
     | Type_abs (arg, body) ->
       tp_abs loc arg @@
-        subst_tp (Id.Set.add arg fvs) (Type_env.del_type arg sub) body
+        subst_tp (Id.Set.add arg fvs) (Type_env.Type.del arg sub) body
     | Type_app (fn, arg) ->
       tp_app loc (subst_tp fvs sub fn) (Type.subst fvs sub arg)
 
@@ -160,7 +160,7 @@ let rec beta_reduce ?deep env tm =
   let beta_reduce = beta_reduce ?deep in
 
   let subst_tp tm id tp =
-    subst_tp (Type.free_vars tp) (Type_env.singleton_type id tp) tm
+    subst_tp (Type.free_vars tp) (Type_env.Type.singleton id tp) tm
   in
 
   let subst_tm tm id tm' =

@@ -54,7 +54,7 @@ let infer_hm : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        let tp = try Type_env.find_term id env with
+        let tp = try Type_env.Term.find id env with
           | Id.Unbound id ->
           error loc "infer_hm" @@
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
@@ -63,7 +63,7 @@ let infer_hm : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
       | Abstraction (arg, body) ->
         let arg_tp = Type.var @@ Id.gen_upper () in
         let body_tp = Type.var @@ Id.gen_upper () in
-        let env' = Type_env.add_term arg arg_tp env in
+        let env' = Type_env.Term.add arg arg_tp env in
         let sub' = infer env' sub body_tp body in
         unify loc sub' exp_tp @@ Type.func arg_tp body_tp
       | Application (fn, arg) ->
@@ -109,7 +109,7 @@ let infer_pr : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
   in
 
   TC.solve @@
-    Type_env.fold_term (fun id -> TC.def id) env (constrain exp_tp tm)
+    Type_env.Term.fold (fun id -> TC.def id) env (constrain exp_tp tm)
 
 let to_type_pr env tm =
   let tp = Type.var @@ Id.gen_upper () in

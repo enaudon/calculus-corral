@@ -41,7 +41,7 @@ let rec beta_reduce ?deep env tp =
   let beta_reduce = beta_reduce ?deep env in
   match tp with
     | Variable id ->
-      Env.find_default_type tp id env
+      Env.Type.find_default tp id env
     | Function (arg, res) ->
       func (beta_reduce arg) (beta_reduce res)
 

@@ -70,7 +70,7 @@ let coerce tvs qs ir_tm =
   let id = Id.define "_" in
   let bot kn = IR.Type.forall id kn @@ IR.Type.var id in
   let add env (id, kn) =
-    Env.add_type id (bot @@ Kind.to_intl_repr kn) env
+    Env.Type.add id (bot @@ Kind.to_intl_repr kn) env
   in
   let sub = List.fold_left add Env.empty unused in
 
@@ -127,7 +127,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
       | Variable id ->
         let state, tvs, tp =
           try
-            Infer.inst state @@ Type_env.find_term id env
+            Infer.inst state @@ Type_env.Term.find id env
           with Id.Unbound id ->
             error tm.loc "infer_hm" @@
               Printf.sprintf
@@ -142,7 +142,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
       | Abstraction (arg, body) ->
         let state, arg_tp = fresh_type_var state Kind.prop in
         let state, body_tp = fresh_type_var state Kind.prop in
-        let env' = Type_env.add_term arg arg_tp env in
+        let env' = Type_env.Term.add arg arg_tp env in
         let state, body_k = infer env' state body_tp body in
         ( unify loc state exp_tp @@ Type.func arg_tp body_tp,
           fun state ->
@@ -160,7 +160,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
         let state, value_k = infer env state tp value in
         let state, tvs, tp' = Infer.gen_exit state tp in
         let qs = Type.get_quants tp' in
-        let env' = Type_env.add_term id tp' env in
+        let env' = Type_env.Term.add id tp' env in
         let state, body_k = infer env' state exp_tp body in
         ( state,
           fun state ->
@@ -213,7 +213,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
       | Case (vrnt, cases) ->
         let infer_case res_tp (state, ks) tp (case, id, body) =
           let state, k =
-            infer (Type_env.add_term id tp env) state res_tp body
+            infer (Type_env.Term.add id tp env) state res_tp body
           in
           state, (case, id, k) :: ks
         in
@@ -361,7 +361,7 @@ let infer_pr : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
         let qs = fst @@ IR.Type.get_forall' @@ Type.to_intl_repr tp in
         tp, coerce tvs qs @@ IR.Term.tp_abs' ~loc qs tm'
   in
-  TC.solve @@ Type_env.fold_term (fun id -> TC.def id) env c
+  TC.solve @@ Type_env.Term.fold (fun id -> TC.def id) env c
 
 let to_type_pr env tm = fst @@ infer_pr env tm
 

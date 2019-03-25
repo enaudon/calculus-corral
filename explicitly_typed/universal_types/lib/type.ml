@@ -55,7 +55,7 @@ let rec beta_reduce ?deep env tp =
   let beta_reduce = beta_reduce ?deep env in
   match tp with
     | Variable id ->
-      Env.find_default_type tp id env
+      Env.Type.find_default tp id env
     | Function (arg, res) ->
       func (beta_reduce arg) (beta_reduce res)
     | Universal (quant, body) ->
@@ -103,16 +103,16 @@ let free_vars =
 
 let rec subst fvs sub tp = match tp with
   | Variable id ->
-    Env.find_default_type tp id sub
+    Env.Type.find_default tp id sub
   | Function (arg, res) ->
     func (subst fvs sub arg) (subst fvs sub res)
   | Universal (quant, body) when Id.Set.mem quant fvs ->
     let quant' = Id.gen_upper () in
-    let sub' = Env.add_type quant (var quant') sub in
+    let sub' = Env.Type.add quant (var quant') sub in
     forall quant' @@ subst (Id.Set.add quant' fvs) sub' body
   | Universal (quant, body) ->
     forall quant @@
-      subst (Id.Set.add quant fvs) (Env.del_type quant sub) body
+      subst (Id.Set.add quant fvs) (Env.Type.del quant sub) body
 
 let simplify ?ctx:ctx_opt tp =
 

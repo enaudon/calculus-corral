@@ -36,131 +36,127 @@ module type Output = sig
   (** [initial] is the initial environment. *)
   val initial : t
 
-  (** {1 Type Identifier Functions} *)
+  (** Type Identifier Functions *)
+  module Type : sig
 
-  (**
-    [singleton id v] constructs an environment with the type
-    identifier, [id], bound to [v].
-   *)
-  val singleton_type : Identifier.t -> value -> t
-  
-  (**
-    [add_type id tp env] extends [env] with a binding from the type
-    identifier, [id], to [tp].
-   *)
-  val add_type : Identifier.t -> value -> t -> t
-  
-  (**
-    [del_type id env] from [env] removes the binding from the type
-    identifier, [id].
-   *)
-  val del_type : Identifier.t -> t -> t
-  
-  (**
-    [find_type id env] computes the value to which the type identifier
-    [id] is bound in [env].  If no such value exists, [find] raises
-    [Identifier.Map.Unbound id].
-   *)
-  val find_type : Identifier.t -> t -> value
+    (**
+      [singleton id v] constructs an environment with the type
+      identifier, [id], bound to [v].
+     *)
+    val singleton : Identifier.t -> value -> t
 
-  (**
-    [find_default_type tp id env] computes the value to which the type
-    identifier, [id], is bound in [env].  If no such value exists,
-    [find] evaluates to [tp].
-   *)
-  val find_default_type : value -> Identifier.t -> t -> value
+    (**
+      [add id tp env] extends [env] with a binding from the type
+      identifier, [id], to [tp].
+     *)
+    val add : Identifier.t -> value -> t -> t
 
-  (**
-    [mem_type id env] determines whether the type identifier, [id] is
-    bound in [env].
-   *)
-  val mem_type : Identifier.t -> t -> bool
+    (**
+      [del id env] from [env] removes the binding from the type
+      identifier, [id].
+     *)
+    val del : Identifier.t -> t -> t
 
-  (**
-    [type_bindings env] computes a list of the type bindings in [env].
-   *)
-  val type_bindings : t -> (Identifier.t * value) list
+    (**
+      [find id env] computes the value to which the type identifier [id]
+      is bound in [env].  If no such value exists, [find] raises
+      [Identifier.Map.Unbound id].
+     *)
+    val find : Identifier.t -> t -> value
 
-  (**
-    [type_keys env] computes a list of the bound type identifiers in
-    [env].
-   *)
-  val type_keys : t -> Identifier.t list
+    (**
+      [find_default tp id env] computes the value to which the type
+      identifier, [id], is bound in [env].  If no such value exists,
+      [find] evaluates to [tp].
+     *)
+    val find_default : value -> Identifier.t -> t -> value
 
-  (** [type_values env] computes a list of the type values in [env]. *)
-  val type_values : t -> value list
+    (**
+      [mem id env] determines whether the type identifier, [id] is bound
+      in [env].
+     *)
+    val mem : Identifier.t -> t -> bool
 
-  (**
-    [fold_type fn env init] computes
-    [fn idN vN (... (fn id0 v0 init)...)],
-    where the [id]'s and [v]'s are the type bindings in [env] in
-    increasing order.
-   *)
-  val fold_type :
-    (Identifier.t -> value -> 'a -> 'a) -> t -> 'a -> 'a
+    (** [bindings env] computes a list of the type bindings in [env]. *)
+    val bindings : t -> (Identifier.t * value) list
 
-  (** {1 Term Identifier Functions} *)
+    (**
+      [keys env] computes a list of the bound type identifiers in [env].
+     *)
+    val keys : t -> Identifier.t list
 
-  (**
-    [singleton id v] constructs an environment with the term
-    identifier, [id], bound to [v].
-   *)
-  val singleton_term : Identifier.t -> value -> t
-  
-  (**
-    [add_term id tp env] extends [env] with a binding from the term
-    identifier, [id], to [tp].
-   *)
-  val add_term : Identifier.t -> value -> t -> t
-  
-  (**
-    [del_term id env] from [env] removes the binding from the term
-    identifier, [id].
-   *)
-  val del_term : Identifier.t -> t -> t
-  
-  (**
-    [find_term id env] computes the value to which the term identifier
-    [id] is bound in [env].  If no such value exists, [find] raises
-    [Identifier.Map.Unbound id].
-   *)
-  val find_term : Identifier.t -> t -> value
+    (** [values env] computes a list of the type values in [env]. *)
+    val values : t -> value list
 
-  (**
-    [find_default_term tp id env] computes the value to which the term
-    identifier, [id], is bound in [env].  If no such value exists,
-    [find] evaluates to [tp].
-   *)
-  val find_default_term : value -> Identifier.t -> t -> value
+    (**
+      [fold fn env init] computes [fn idN vN (... (fn id0 v0 init)...)],
+      where the [id]'s and [v]'s are the type bindings in [env] in
+      increasing order.
+     *)
+    val fold : (Identifier.t -> value -> 'a -> 'a) -> t -> 'a -> 'a
 
-  (**
-    [mem_term id env] determines whether the term identifier, [id] is
-    bound in [env].
-   *)
-  val mem_term : Identifier.t -> t -> bool
+  end
 
-  (**
-    [term_bindings env] computes a list of the term bindings in [env].
-   *)
-  val term_bindings : t -> (Identifier.t * value) list
+  (** Term Identifier Functions *)
+  module Term : sig
 
-  (**
-    [term_keys env] computes a list of the bound term identifiers in
-    [env].
-   *)
-  val term_keys : t -> Identifier.t list
+    (**
+      [singleton id v] constructs an environment with the term
+      identifier, [id], bound to [v].
+     *)
+    val singleton : Identifier.t -> value -> t
 
-  (** [term_values env] computes a list of the term values in [env]. *)
-  val term_values : t -> value list
+    (**
+      [add id tp env] extends [env] with a binding from the term
+      identifier, [id], to [tp].
+     *)
+    val add : Identifier.t -> value -> t -> t
 
-  (**
-    [fold_term fn env init] computes
-    [fn idN vN (... (fn id0 v0 init)...)],
-    where the [id]'s and [v]'s are the term bindings in [env] in
-    increasing order.
-   *)
-  val fold_term :
-    (Identifier.t -> value -> 'a -> 'a) -> t -> 'a -> 'a
+    (**
+      [del id env] from [env] removes the binding from the term
+      identifier, [id].
+     *)
+    val del : Identifier.t -> t -> t
+
+    (**
+      [find id env] computes the value to which the term identifier [id]
+      is bound in [env].  If no such value exists, [find] raises
+      [Identifier.Map.Unbound id].
+     *)
+    val find : Identifier.t -> t -> value
+
+    (**
+      [find_default tp id env] computes the value to which the term
+      identifier, [id], is bound in [env].  If no such value exists,
+      [find] evaluates to [tp].
+     *)
+    val find_default : value -> Identifier.t -> t -> value
+
+    (**
+      [mem id env] determines whether the term identifier, [id] is bound
+      in [env].
+     *)
+    val mem : Identifier.t -> t -> bool
+
+    (** [bindings env] computes a list of the term bindings in [env]. *)
+    val bindings : t -> (Identifier.t * value) list
+
+    (**
+      [keys env] computes a list of the bound term identifiers in [env].
+     *)
+    val keys : t -> Identifier.t list
+
+    (** [values env] computes a list of the term values in [env]. *)
+    val values : t -> value list
+
+    (**
+      [fold fn env init] computes [fn idN vN (... (fn id0 v0 init)...)],
+      where the [id]'s and [v]'s are the term bindings in [env] in
+      increasing order.
+     *)
+    val fold : (Identifier.t -> value -> 'a -> 'a) -> t -> 'a -> 'a
+
+  end
 
   (** {1 Other Functions} *)
 
@@ -178,12 +174,12 @@ module type Output = sig
   val bindings : t -> (Identifier.t * value) list
 
   (**
-    [fold_both tp_fn tm_fn env init] computes
+    [fold tp_fn tm_fn env init] computes
     [tm_fn idN vN (... (tp_fn id0 v0 init)...)],
     where the [id]'s and [v]'s are the type and term bindings in [env]
     in increasing order.
    *)
-  val fold_both :
+  val fold :
     (Identifier.t -> value -> 'a -> 'a) ->
     (Identifier.t -> value -> 'a -> 'a) ->
     t ->

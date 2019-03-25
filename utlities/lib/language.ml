@@ -89,7 +89,7 @@ module Repl (Input : Input) = struct
           (Kind.to_string kn)
           (Type.to_string tp');
         ( Kind_env.add id kn kn_env,
-          Type_env.add_type id tp' tp_env,
+          Type_env.Type.add id tp' tp_env,
           vl_env )
       | Command.Bind_term (id, tm) ->
         let tp = Term.to_type (kn_env, tp_env) tm in
@@ -99,7 +99,7 @@ module Repl (Input : Input) = struct
           (Type.to_string tp)
           (Value.to_string vl);
         ( kn_env,
-          Type_env.add_term id tp tp_env,
+          Type_env.Term.add id tp tp_env,
           Value_env.add id vl vl_env )
       | Command.Eval_term tm ->
         let tp = Term.to_type (kn_env, tp_env) tm in

@@ -61,9 +61,9 @@ module Repl = Language.Repl (struct
       let vl = to_intl_repr tp_env tm in
       let kn_env' = Id.Set.of_list @@ Kind.Environment.keys kn_env in
       let tp_env' =
-        Type_env.fold_both
-          (fun id tp -> IR_env.add_type id (Type.to_intl_repr tp))
-          (fun id tp -> IR_env.add_term id (Type.to_intl_repr tp))
+        Type_env.fold
+          (fun id tp -> IR_env.Type.add id (Type.to_intl_repr tp))
+          (fun id tp -> IR_env.Term.add id (Type.to_intl_repr tp))
           tp_env
           IR_env.empty
       in

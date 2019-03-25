@@ -81,7 +81,7 @@ let rec to_type (kn_env, tp_env) tm =
   let to_type kn_env tp_env = to_type (kn_env, tp_env) in
   match tm.desc with
     | Variable id ->
-      begin try Type_env.find_term id tp_env with
+      begin try Type_env.Term.find id tp_env with
         | Id.Unbound id ->
           error tm.loc "to_type" @@
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
@@ -95,7 +95,7 @@ let rec to_type (kn_env, tp_env) tm =
           Printf.sprintf
             "expected proper kind; found '%s'"
             (Kind.to_string arg_kn);
-      let tp_env' = Type_env.add_term arg arg_tp tp_env in
+      let tp_env' = Type_env.Term.add arg arg_tp tp_env in
       Type.func arg_tp @@ to_type kn_env tp_env' body
     | Term_app (fn, arg) ->
       let fn_tp = to_type kn_env tp_env fn in
@@ -142,7 +142,7 @@ let rec to_type (kn_env, tp_env) tm =
             (Kind.to_string fn_kn)
             (Kind.to_string arg_kn);
       let ftvs = Id.Set.of_list @@ Kind_env.keys kn_env in
-      Type.subst ftvs (Type_env.singleton_type fn_quant arg) fn_body
+      Type.subst ftvs (Type_env.Type.singleton fn_quant arg) fn_body
     | Roll (tp, tm) ->
       let tp' = Type.beta_reduce ~deep:() tp_env tp in
       let quant, kn, body =
@@ -155,7 +155,7 @@ let rec to_type (kn_env, tp_env) tm =
               (Type.to_string tp')
       in
       let ftvs = Id.Set.of_list @@ Kind_env.keys kn_env in
-      let exp = Type.subst ftvs (Type_env.singleton_type quant tp) body in
+      let exp = Type.subst ftvs (Type_env.Type.singleton quant tp) body in
       let act = to_type (Kind_env.add quant kn kn_env) tp_env tm in
       if Type.alpha_equivalent ~beta_env:tp_env act exp then
         tp
@@ -180,7 +180,7 @@ let rec to_type (kn_env, tp_env) tm =
               (Type.to_string tp)
       in
       let ftvs = Id.Set.of_list @@ Kind_env.keys kn_env in
-      Type.subst ftvs (Type_env.singleton_type quant tp) body
+      Type.subst ftvs (Type_env.Type.singleton quant tp) body
     | Fix tm ->
       let tp =
        Type.beta_reduce ~deep:() tp_env @@ to_type kn_env tp_env tm
@@ -263,7 +263,7 @@ let rec to_type (kn_env, tp_env) tm =
               (Type.to_string data_tp)
     | Case (vrnt, cases) ->
       let case_to_type (_, tp) (_, id, tm) =
-        to_type kn_env (Type_env.add_term id tp tp_env) tm, tm.loc
+        to_type kn_env (Type_env.Term.add id tp tp_env) tm, tm.loc
       in
       let rec cases_to_type tps tms = match tps, tms with
         | [tp], [tm] ->
@@ -346,11 +346,11 @@ let rec subst_tp fvs sub tm =
       app loc (subst_tp fvs sub fn) (subst_tp fvs sub arg)
     | Type_abs (arg, kn, body) when Id.Set.mem arg fvs ->
       let arg' = Id.gen_upper () in
-      let sub' = Type_env.add_type arg (Type.var arg') sub in
+      let sub' = Type_env.Type.add arg (Type.var arg') sub in
       tp_abs loc arg' kn @@ subst_tp (Id.Set.add arg' fvs) sub' body
     | Type_abs (arg, kn, body) ->
       tp_abs loc arg kn @@
-        subst_tp (Id.Set.add arg fvs) (Type_env.del_type arg sub) body
+        subst_tp (Id.Set.add arg fvs) (Type_env.Type.del arg sub) body
     | Type_app (fn, arg) ->
       tp_app loc (subst_tp fvs sub fn) (Type.subst fvs sub arg)
     | Roll (tp, tm) ->
@@ -421,7 +421,7 @@ let rec subst_tm fvs sub tm =
 let beta_reduce ?deep env tm =
 
   let subst_tp tm id tp =
-    subst_tp (Type.free_vars tp) (Type_env.singleton_type id tp) tm
+    subst_tp (Type.free_vars tp) (Type_env.Type.singleton id tp) tm
   in
 
   let subst_tm tm id tm' =

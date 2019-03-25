@@ -40,13 +40,13 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 
 let rec to_type env tm = match tm.desc with
   | Variable id ->
-    begin try Type_env.find_term id env with
+    begin try Type_env.Term.find id env with
       | Id.Unbound id ->
         error tm.loc "to_type" @@
           Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
     end
   | Abstraction (arg, arg_tp, body) ->
-    let body_tp = to_type (Type_env.add_term arg arg_tp env) body in
+    let body_tp = to_type (Type_env.Term.add arg arg_tp env) body in
     Type.func arg_tp body_tp
   | Application (fn, arg) ->
     let fn_tp = to_type env fn in

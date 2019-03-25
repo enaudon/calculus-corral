@@ -52,13 +52,13 @@ let rec to_type (kn_env, tp_env) tm =
   let to_type kn_env tp_env = to_type (kn_env, tp_env) in
   match tm.desc with
     | Variable id ->
-      begin try Type_env.find_term id tp_env with
+      begin try Type_env.Term.find id tp_env with
         | Id.Unbound id ->
           error tm.loc "to_type" @@
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
       end
     | Abstraction (arg, arg_tp, body) ->
-      let tp_env' = Type_env.add_term arg arg_tp tp_env in
+      let tp_env' = Type_env.Term.add arg arg_tp tp_env in
       let body_tp = to_type kn_env tp_env' body in
       Type.func arg_tp body_tp
     | Application (fn, arg) ->
@@ -96,8 +96,8 @@ let rec to_type (kn_env, tp_env) tm =
       let tm_tp = to_type kn_env tp_env tm in
       let tp2_tp' =
         Type.subst
-          (Id.Set.of_list @@ Type_env.type_keys tp_env)
-          (Type_env.singleton_type tp2_tv tp1)
+          (Id.Set.of_list @@ Type_env.Type.keys tp_env)
+          (Type_env.Type.singleton tp2_tv tp1)
           tp2_tp
       in
       if Type.alpha_equivalent ~beta_env:tp_env tm_tp tp2_tp' then
@@ -121,11 +121,11 @@ let rec to_type (kn_env, tp_env) tm =
       in
       let pack_tp_tp' =
         Type.subst
-          (Id.Set.of_list @@ Type_env.type_keys tp_env)
-          (Type_env.singleton_type pack_tp_tv @@ Type.var tp_id)
+          (Id.Set.of_list @@ Type_env.Type.keys tp_env)
+          (Type_env.Type.singleton pack_tp_tv @@ Type.var tp_id)
           pack_tp_tp
       in
-      let tp_env' = Type_env.add_term tm_id pack_tp_tp' tp_env in
+      let tp_env' = Type_env.Term.add tm_id pack_tp_tp' tp_env in
       let res_tp = to_type kn_env tp_env' body in
       if Id.Set.mem tp_id @@ Type.free_vars res_tp then
         error body.loc "to_type" @@
@@ -178,19 +178,19 @@ let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
         let tp_id' = Id.gen_upper () in
         let fvs' = Id.Set.add tp_id' fvs in
         let sub' =
-          Type_env.add_type tp_id (Type.var tp_id') sub
+          Type_env.Type.add tp_id (Type.var tp_id') sub
         in
         unpack loc tp_id' tm_id
           (subst fvs' sub' pack)
           (subst fvs' sub' body)
       | Unpack (tp_id, tm_id, pack, body) ->
         let fvs' = Id.Set.add tp_id fvs in
-        let sub' = Type_env.del_type tp_id sub in
+        let sub' = Type_env.Type.del tp_id sub in
         unpack loc tp_id tm_id
           (subst fvs' sub' pack)
           (subst fvs' sub' body)
   in
-  subst (Type.free_vars tp') (Type_env.singleton_type id tp') tm
+  subst (Type.free_vars tp') (Type_env.Type.singleton id tp') tm
 
 (**
   [subst_tm tm id tm'] replaces occurences of [id] in [tm] with [tm'].
