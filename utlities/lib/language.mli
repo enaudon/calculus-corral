@@ -1,10 +1,44 @@
+module type Environment = sig
+
+  type value
+
+  type t
+
+  val initial : t
+
+  val add : Identifier.t -> value -> t -> t
+
+end
+
+module type Type_environment = sig
+
+  type value
+
+  type t
+
+  val initial : t
+
+  module Type : sig
+
+    val add : Identifier.t -> value -> t -> t
+
+  end
+
+  module Term : sig
+
+    val add : Identifier.t -> value -> t -> t
+
+  end
+
+end
+
 module type Input = sig
 
   module Value : sig
 
     type t
 
-    module Environment : Environment.Output with type value := t
+    module Environment : Environment with type value := t
 
     val to_string : t -> string
 
@@ -14,7 +48,7 @@ module type Input = sig
 
     type t
 
-    module Environment : Environment.Output with type value := t
+    module Environment : Environment with type value := t
 
     val to_string : t -> string
 
@@ -24,7 +58,7 @@ module type Input = sig
 
     type t
 
-    module Environment : Type_environment.Output with type value := t
+    module Environment : Type_environment with type value := t
 
     val to_kind : Kind.Environment.t -> t -> Kind.t
 
