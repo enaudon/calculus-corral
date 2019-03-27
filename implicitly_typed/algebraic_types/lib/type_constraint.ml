@@ -45,7 +45,7 @@ let let_
       ('b t) ->
       (Type.t * Kind.t Id.Map.t * 'a * 'b) t
     = fun loc_opt id_opt kn fn (rhs_c, rhs_k) ->
-  let tv = Type.var @@ Id.gen_upper () in
+  let tv = Type.inf_var @@ Id.gen_upper () in
   let lhs_c, lhs_k = fn tv in
   let tvs_ref = ref Id.Map.empty in
   let tp_ref = ref tv in
@@ -186,13 +186,13 @@ let exists_list ?loc kns (fn : Type.t list -> 'a t) =
     map (fun (tp, (tps, x)) -> (tp :: tps, x)) @@ exists loc tv kn c
   in
   let tvs =
-    List.map (fun kn -> Type.var @@ Id.gen_upper (), kn) kns
+    List.map (fun kn -> Type.inf_var @@ Id.gen_upper (), kn) kns
   in
   List.fold_right exists_cons tvs @@
     map (fun x -> [], x) (fn @@ List.map fst tvs)
 
 let exists ?loc kn fn =
-  let tv = Type.var @@ Id.gen_upper () in
+  let tv = Type.inf_var @@ Id.gen_upper () in
   exists loc tv kn @@ fn tv
 
 let def ?loc id tp (c, k) =

@@ -37,7 +37,7 @@ let let_
       ('b t) ->
       (Type.t * Id.Set.t * 'a * 'b) t
     = fun loc_opt id_opt fn (rhs_c, rhs_k) ->
-  let tv = Type.var @@ Id.gen_upper () in
+  let tv = Type.inf_var @@ Id.gen_upper () in
   let lhs_c, lhs_k = fn tv in
   let tvs_ref = ref Id.Set.empty in
   let tp_ref = ref tv in
@@ -161,7 +161,7 @@ let conj_left ?loc lhs rhs = map fst @@ conj ?loc lhs rhs
 let conj_right ?loc lhs rhs = map snd @@ conj ?loc lhs rhs
 
 let exists ?loc fn =
-  let tv = Type.var @@ Id.gen_upper () in
+  let tv = Type.inf_var @@ Id.gen_upper () in
   let c, k = fn tv in
   ( loc_wrap loc @@ Existential (tv, c),
     fun state -> Infer.apply state tv, k state )

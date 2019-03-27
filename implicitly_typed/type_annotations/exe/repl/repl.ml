@@ -27,7 +27,7 @@ module Repl = Language.Repl (struct
 
     let to_kind env =
       let open Inferencer in
-      let register id kn state = register state (var id) kn in
+      let register id kn state = register state (inf_var id) kn in
       let state = Kind.Environment.fold register env initial in
       to_kind state
 

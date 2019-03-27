@@ -61,20 +61,20 @@ let infer_hm : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
         in
         unify loc sub exp_tp tp
       | Abstraction (arg, body) ->
-        let arg_tp = Type.var @@ Id.gen_upper () in
-        let body_tp = Type.var @@ Id.gen_upper () in
+        let arg_tp = Type.inf_var @@ Id.gen_upper () in
+        let body_tp = Type.inf_var @@ Id.gen_upper () in
         let env' = Type_env.Term.add arg arg_tp env in
         let sub' = infer env' sub body_tp body in
         unify loc sub' exp_tp @@ Type.func arg_tp body_tp
       | Application (fn, arg) ->
-        let tp = Type.var @@ Id.gen_upper () in
+        let tp = Type.inf_var @@ Id.gen_upper () in
         infer env (infer env sub (Type.func tp exp_tp) fn) tp arg
   in
 
   infer env Sub.identity exp_tp tm
 
 let to_type_hm env tm =
-  let tp = Type.var @@ Id.gen_upper () in
+  let tp = Type.inf_var @@ Id.gen_upper () in
   let sub = infer_hm env tp tm in
   Sub.apply tp sub
 
@@ -94,15 +94,15 @@ let infer_pr : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
         TC.var_eq ~loc id exp_tp
       | Abstraction (arg, body) ->
         TC.exists ~loc @@ fun arg_id ->
-          let arg_tp = Type.var arg_id in
+          let arg_tp = Type.inf_var arg_id in
           TC.exists ~loc @@ fun body_id ->
-            let body_tp = Type.var body_id in
+            let body_tp = Type.inf_var body_id in
             TC.conj
               (TC.def arg arg_tp @@ constrain body_tp body)
               (TC.type_eq exp_tp @@ Type.func arg_tp body_tp)
       | Application (fn, arg) ->
         TC.exists ~loc @@ fun arg_id ->
-          let arg_tp = Type.var arg_id in
+          let arg_tp = Type.inf_var arg_id in
           TC.conj
             (constrain (Type.func arg_tp exp_tp) fn)
             (constrain arg_tp arg)
@@ -112,7 +112,7 @@ let infer_pr : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
     Type_env.Term.fold (fun id -> TC.def id) env (constrain exp_tp tm)
 
 let to_type_pr env tm =
-  let tp = Type.var @@ Id.gen_upper () in
+  let tp = Type.inf_var @@ Id.gen_upper () in
   let sub = infer_pr env tp tm in
   Sub.apply tp sub
 

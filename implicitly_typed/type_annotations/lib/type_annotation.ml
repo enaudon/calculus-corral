@@ -30,12 +30,12 @@ let get_typo an = match an with
 let infer state an = match an with
   | Type tp -> state, tp
   | Universal (quants, tp) ->
-    let tvs = List.map Type.var quants in
+    let tvs = List.map Type.inf_var quants in
     let register state tp = Infer.register ~rigid:() state tp Kind.prop in
     let state' = List.fold_left register state tvs in
     state', tp
   | Existential (quants, tp) ->
-    let tvs = List.map Type.var quants in
+    let tvs = List.map Type.inf_var quants in
     let register state tp = Infer.register state tp Kind.prop in
     let state' = List.fold_left register state tvs in
     state', tp

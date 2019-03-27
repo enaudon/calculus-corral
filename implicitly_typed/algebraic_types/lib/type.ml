@@ -3,7 +3,7 @@ module Misc = Miscellaneous
 
 (* The type of monomorphic types. *)
 type mono =
-  | Constant of Id.t
+  | Inference_variable of Id.t
   | Variable of Id.t
   | Application of mono * mono
   | Row_nil
@@ -39,7 +39,7 @@ let expected_mono_internal : string -> string -> 'a =
 
 let expected_mono = expected_mono_internal __MODULE__
 
-let cst : Id.t -> mono = fun id -> Constant id
+let inf_var : Id.t -> mono = fun id -> Inference_variable id
 
 let var : Id.t -> mono = fun id -> Variable id
 
@@ -113,10 +113,10 @@ end = struct
     let singleton : Id.t -> mono -> sub = Id.Map.singleton
 
     let rec apply m sub = match m with
-      | Constant _ ->
-        m
-      | Variable id ->
+      | Inference_variable id ->
         Id.Map.find_default m id sub
+      | Variable _ ->
+        m
       | Application (fn, arg) ->
         app (apply fn sub) (apply arg sub)
       | Row_nil ->
@@ -182,7 +182,7 @@ end = struct
   }
 
   let register state tp kn = match tp.body with
-    | Variable id -> Pools.insert id kn state
+    | Inference_variable id -> Pools.insert id kn state
     | _ -> error "register" "expected variable"
 
   let apply state tp =
@@ -195,7 +195,7 @@ end = struct
   let to_kind state tp =
 
     let rec to_kind state m = match m with
-      | Constant id | Variable id ->
+      | Inference_variable id | Variable id ->
         begin try Pools.get_kind id state with
           | Id.Unbound id ->
             error "to_kind" @@
@@ -244,8 +244,8 @@ end = struct
   let unify state tp1 tp2 =
 
     let rec occurs : Id.t -> mono -> bool = fun id tp -> match tp with
-      | Constant _ -> false
-      | Variable id' -> id = id'
+      | Inference_variable id' -> id = id'
+      | Variable _ -> false
       | Application (fn, arg) -> occurs id fn || occurs id arg
       | Row_nil -> false
       | Row_cons (_, m, rest) -> occurs id m || occurs id rest
@@ -254,10 +254,10 @@ end = struct
     let rec update_ranks : state -> Id.t -> mono -> state =
         fun state id tp ->
       match tp with
-        | Constant _ ->
-          state
-        | Variable id' ->
+        | Inference_variable id' ->
           Pools.update id' id state
+        | Variable _ ->
+          state
         | Application (fn, arg) ->
           update_ranks (update_ranks state id fn) id arg
         | Row_nil ->
@@ -277,19 +277,20 @@ end = struct
       let m2' = Sub.apply m2 state in
       match m1', m2' with
 
-        | _, Variable id when not @@ Pools.is_mono id state ->
+        | _, Inference_variable id when not @@ Pools.is_mono id state ->
           expected_mono "unify"
-        | Variable id, _ when not @@ Pools.is_mono id state ->
+        | Inference_variable id, _ when not @@ Pools.is_mono id state ->
           expected_mono "unify"
 
-        | Constant id1, Constant id2
-        | Variable id1, Variable id2 when id1 = id2 ->
+        | Inference_variable id1, Inference_variable id2
+        | Variable id1, Variable id2
+            when id1 = id2 ->
           state
 
-        | _, Variable id ->
+        | _, Inference_variable id ->
           if occurs id m1' then raise_occurs id (scheme tp2.quants m1');
           merge state id m1'
-        | Variable id, _ ->
+        | Inference_variable id, _ ->
           if occurs id m2' then raise_occurs id (scheme tp2.quants m2');
           merge state id m2'
 
@@ -304,7 +305,7 @@ end = struct
           else
             let tv = Id.gen_upper () in
             let state = Pools.insert tv Kind.row state in
-            let rest = var tv in
+            let rest = inf_var tv in
             let state = unify state rest1 @@ row_cons id2 m2 rest in
             let state = unify state rest2 @@ row_cons id1 m1 rest in
             state
@@ -335,23 +336,23 @@ end = struct
 
   let gen_exit state tp =
 
-    let free_vars tp =
-      let rec free_vars (seen, fvs) tp = match tp with
-        | Constant _ ->
-          seen, fvs
-        | Variable id ->
+    let free_inf_vars tp =
+      let rec free_inf_vars (seen, fvs) tp = match tp with
+        | Inference_variable id ->
           if Id.Set.mem id seen then
             seen, fvs
           else
             Id.Set.add id seen, id :: fvs
+        | Variable _ ->
+          seen, fvs
         | Application (fn, arg) ->
-          free_vars (free_vars (seen, fvs) fn) arg
+          free_inf_vars (free_inf_vars (seen, fvs) fn) arg
         | Row_nil ->
           seen, fvs
         | Row_cons (_, m, rest) ->
-          free_vars (free_vars (seen, fvs) m) rest
+          free_inf_vars (free_inf_vars (seen, fvs) m) rest
       in
-      List.rev @@ snd @@ free_vars (Id.Set.empty, []) tp
+      List.rev @@ snd @@ free_inf_vars (Id.Set.empty, []) tp
     in
 
     let tp = apply state tp in
@@ -362,7 +363,7 @@ end = struct
     let qv_kns = Pools.peek state in
     let state' = Pools.pop state in
     let pred id = Id.Map.mem id qv_kns in
-    let incl, _ = List.partition pred @@ free_vars tp.body in
+    let incl, _ = List.partition pred @@ free_inf_vars tp.body in
     let tp' = {
       quants = List.map (fun q -> q, Id.Map.find q qv_kns) incl;
       body = tp.body
@@ -373,8 +374,8 @@ end = struct
   let inst state tp =
 
     let rec inst env m = match m with
-      | Constant _ -> m
-      | Variable id -> Id.Map.find_default m id env
+      | Inference_variable id -> Id.Map.find_default m id env
+      | Variable _ -> m
       | Application (fn, arg) -> app (inst env fn) (inst env arg)
       | Row_nil -> row_nil
       | Row_cons (id, m, m') -> row_cons id (inst env m) (inst env m')
@@ -382,7 +383,7 @@ end = struct
 
     let make_var kn (state, tvs) =
       let tv = Id.gen_upper () in
-      Pools.insert tv kn state, var tv :: tvs
+      Pools.insert tv kn state, inf_var tv :: tvs
     in
 
     let tp = apply state tp in
@@ -400,7 +401,7 @@ let to_intl_repr tp =
 
   let module IR = Records_and_variants.Type in
   let rec to_ir tp = match tp with
-    | Constant id ->
+    | Inference_variable id ->
       IR.var id
     | Variable id ->
       IR.var id
@@ -440,10 +441,10 @@ let simplify { quants; body } =
   in
 
   let rec simplify tp = match tp with
-    | Constant _ ->
+    | Inference_variable id ->
+      inf_var @@ simplify_id id
+    | Variable _ ->
       tp
-    | Variable id ->
-      var @@ simplify_id id
     | Application (fn, arg) ->
       let fn' = simplify fn in
       let arg' = simplify arg in
@@ -467,9 +468,9 @@ let to_string ?no_simp ?show_quants tp =
     let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
 
     let arg_to_string tp = match tp with
-      | Constant _ | Variable _ | Row_nil | Row_cons _ ->
+      | Inference_variable _ | Variable _ | Row_nil | Row_cons _ ->
         to_string tp
-      | Application (Constant id, _)
+      | Application (Variable id, _)
           when id = Id.rcrd || id = Id.vrnt ->
         to_string tp
       | Application _ ->
@@ -495,17 +496,17 @@ let to_string ?no_simp ?show_quants tp =
     in
 
     match tp with
-      | Constant id | Variable id ->
+      | Inference_variable id | Variable id ->
         Id.to_string id
-      | Application (Application (Constant id, arg), res)
+      | Application (Application (Variable id, arg), res)
           when id = Id.func ->
         Printf.sprintf "%s %s %s"
           (arg_to_string arg)
           (Id.to_string id)
           (to_string res)
-      | Application (Constant id, row) when id = Id.rcrd ->
+      | Application (Variable id, row) when id = Id.rcrd ->
         Printf.sprintf "{%s}" (row_to_string row)
-      | Application (Constant id, row) when id = Id.vrnt ->
+      | Application (Variable id, row) when id = Id.vrnt ->
         Printf.sprintf "[%s]" (row_to_string row)
       | Application (fn, arg) ->
         Printf.sprintf "%s %s" (to_string fn) (arg_to_string arg)
@@ -527,7 +528,7 @@ let to_string ?no_simp ?show_quants tp =
 (* External functions *)
 
 let func arg res =
-  let func arg res = List.fold_left app (cst Id.func) [arg; res] in
+  let func arg res = List.fold_left app (var Id.func) [arg; res] in
   match arg.quants, res.quants with
     | [], [] -> scheme [] @@ func arg.body res.body
     | _ :: _, _ | _, _ :: _ -> expected_mono "func"
@@ -538,14 +539,14 @@ let rcrd fields rest =
   let field_to_mono (id, tp) = id, scheme_to_mono tp in
   let fields' = List.map field_to_mono fields in
   let rest' = Option.map scheme_to_mono rest in
-  scheme [] @@ app (cst Id.rcrd) (row_of_list fields' rest')
+  scheme [] @@ app (var Id.rcrd) (row_of_list fields' rest')
 
 let vrnt cases rest =
   let case_to_mono (id, tp) = id, scheme_to_mono tp in
   let cases' = List.map case_to_mono cases in
   let rest' = Option.map scheme_to_mono rest in
-  scheme [] @@ app (cst Id.vrnt) (row_of_list cases' rest')
+  scheme [] @@ app (var Id.vrnt) (row_of_list cases' rest')
 
-let var id = scheme [] @@ var id
+let inf_var id = scheme [] @@ inf_var id
 
 let get_quants { quants; _ } = quants

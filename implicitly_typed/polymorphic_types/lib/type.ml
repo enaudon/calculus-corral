@@ -3,7 +3,7 @@ module Misc = Miscellaneous
 
 (* The type of monomorphic types. *)
 type mono =
-  | Variable of Id.t
+  | Inference_variable of Id.t
   | Function of mono * mono
 
 (* The type of types schemes. *)
@@ -31,7 +31,7 @@ let expected_mono_internal : string -> string -> 'a =
 
 let expected_mono = expected_mono_internal __MODULE__
 
-let var : Id.t -> mono = fun id -> Variable id
+let inf_var : Id.t -> mono = fun id -> Inference_variable id
 
 let func : mono -> mono -> mono = fun arg res -> Function (arg, res)
 
@@ -75,7 +75,7 @@ end = struct
     let singleton : Id.t -> mono -> sub = Id.Map.singleton
 
     let rec apply m sub = match m with
-      | Variable id ->
+      | Inference_variable id ->
         Id.Map.find_default m id sub
       | Function (arg, res) ->
         func (apply arg sub) (apply res sub)
@@ -139,20 +139,20 @@ end = struct
     scheme tp.quants body
 
   let register state tp = match tp.body with
-    | Variable id -> Pools.register id state
+    | Inference_variable id -> Pools.register id state
     | _ -> error "register" "expected variable"
 
   let unify state tp1 tp2 =
 
     let rec occurs : Id.t -> mono -> bool = fun id tp -> match tp with
-      | Variable id' -> id = id'
+      | Inference_variable id' -> id = id'
       | Function (arg, res) -> occurs id arg || occurs id res
     in
 
     let rec update_ranks : state -> Id.t -> mono -> state =
         fun state id tp ->
       match tp with
-        | Variable id' ->
+        | Inference_variable id' ->
           Pools.update id' id state
         | Function (arg, res) ->
           update_ranks (update_ranks state id arg) id res
@@ -169,18 +169,19 @@ end = struct
       let m2' = Sub.apply m2 state in
       match m1', m2' with
 
-        | _, Variable id when not @@ Pools.is_mono id state ->
+        | _, Inference_variable id when not @@ Pools.is_mono id state ->
           expected_mono "unify"
-        | Variable id, _ when not @@ Pools.is_mono id state ->
+        | Inference_variable id, _ when not @@ Pools.is_mono id state ->
           expected_mono "unify"
 
-        | Variable id1, Variable id2 when id1 = id2 ->
+        | Inference_variable id1, Inference_variable id2
+            when id1 = id2 ->
           state
 
-        | _, Variable id ->
+        | _, Inference_variable id ->
           if occurs id m1' then raise_occurs id (scheme tp2.quants m1');
           merge state id m1'
-        | Variable id, _ ->
+        | Inference_variable id, _ ->
           if occurs id m2' then raise_occurs id (scheme tp2.quants m2');
           merge state id m2'
 
@@ -200,17 +201,17 @@ end = struct
 
   let gen_exit state tp =
 
-    let free_vars tp =
-      let rec free_vars (seen, fvs) tp = match tp with
-        | Variable id ->
+    let free_inf_vars tp =
+      let rec free_inf_vars (seen, fvs) tp = match tp with
+        | Inference_variable id ->
           if Id.Set.mem id seen then
             seen, fvs
           else
             Id.Set.add id seen, id :: fvs
         | Function (arg, res) ->
-          free_vars (free_vars (seen, fvs) arg) res
+          free_inf_vars (free_inf_vars (seen, fvs) arg) res
       in
-      List.rev @@ snd @@ free_vars (Id.Set.empty, []) tp
+      List.rev @@ snd @@ free_inf_vars (Id.Set.empty, []) tp
     in
 
     let tp = apply state tp in
@@ -221,7 +222,7 @@ end = struct
     let qvs = Pools.peek state in
     let state' = Pools.pop state in
     let pred id = Id.Set.mem id qvs in
-    let incl, _ = List.partition pred @@ free_vars tp.body in
+    let incl, _ = List.partition pred @@ free_inf_vars tp.body in
     let tp' = { quants = incl; body = tp.body } in
 
     state', qvs, tp'
@@ -229,13 +230,13 @@ end = struct
   let inst state tp =
 
     let rec inst env m = match m with
-      | Variable id -> Id.Map.find_default m id env
+      | Inference_variable id -> Id.Map.find_default m id env
       | Function (arg, res) -> func (inst env arg) (inst env res)
     in
 
     let make_var _ (state, tvs) =
       let tv = Id.gen_upper () in
-      Pools.register tv state, var tv :: tvs
+      Pools.register tv state, inf_var tv :: tvs
     in
 
     let tp = apply state tp in
@@ -252,7 +253,7 @@ let to_intl_repr tp =
 
   let module IR = Universal_types.Type in
   let rec to_ir tp = match tp with
-    | Variable id -> IR.var id
+    | Inference_variable id -> IR.var id
     | Function (arg, res) -> IR.func (to_ir arg) (to_ir res)
   in
 
@@ -283,8 +284,8 @@ let simplify { quants; body } =
   in
 
   let rec simplify tp = match tp with
-    | Variable id ->
-      var @@ simplify_id id
+    | Inference_variable id ->
+      inf_var @@ simplify_id id
     | Function (arg, res) ->
       let arg' = simplify arg in
       let res' = simplify res in
@@ -300,11 +301,11 @@ let to_string ?no_simp ?show_quants tp =
   let rec to_string tp =
     let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
     match tp with
-      | Variable id ->
+      | Inference_variable id ->
         Id.to_string id
       | Function (arg, res) ->
         let arg_to_string tp = match tp with
-          | Variable _ -> to_string tp
+          | Inference_variable _ -> to_string tp
           | Function _ -> to_paren_string tp
         in
         Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
@@ -320,7 +321,7 @@ let to_string ?no_simp ?show_quants tp =
 
 (* External functions *)
 
-let var id = scheme [] @@ var id
+let inf_var id = scheme [] @@ inf_var id
 
 let func arg res = match arg.quants, res.quants with
   | [], [] -> scheme [] @@ func arg.body res.body

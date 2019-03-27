@@ -92,13 +92,13 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
 
   let quant_to_ir (q, kn) = q, Kind.to_intl_repr kn in
 
-  let fresh_type_var state kn =
-    let tv = Type.var @@ Id.gen_upper () in
+  let fresh_inf_var state kn =
+    let tv = Type.inf_var @@ Id.gen_upper () in
     Infer.register state tv kn, tv
   in
 
-  let fresh_type_var_list state n kn =
-    let init_fn _ = Type.var @@ Id.gen_upper () in
+  let fresh_inf_var_list state n kn =
+    let init_fn _ = Type.inf_var @@ Id.gen_upper () in
     let tvs = List.init n init_fn in
     let fold_fn tv state = Infer.register state tv kn in
     let state = List.fold_right fold_fn tvs state in
@@ -140,8 +140,8 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
               (IR.Term.var ~loc id)
               (List.map (type_to_ir state) tvs) )
       | Abstraction (arg, body) ->
-        let state, arg_tp = fresh_type_var state Kind.prop in
-        let state, body_tp = fresh_type_var state Kind.prop in
+        let state, arg_tp = fresh_inf_var state Kind.prop in
+        let state, body_tp = fresh_inf_var state Kind.prop in
         let env' = Type_env.Term.add arg arg_tp env in
         let state, body_k = infer env' state body_tp body in
         ( unify loc state exp_tp @@ Type.func arg_tp body_tp,
@@ -149,14 +149,14 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
             let arg_tp' = type_to_ir state arg_tp in
             IR.Term.abs ~loc arg arg_tp' (body_k state) )
       | Application (fn, arg) ->
-        let state, tp = fresh_type_var state Kind.prop in
+        let state, tp = fresh_inf_var state Kind.prop in
         let state, fn_k = infer env state (Type.func tp exp_tp) fn in
         let state, arg_k = infer env state tp arg in
         ( state,
           fun state -> IR.Term.app ~loc (fn_k state) (arg_k state) )
       | Binding (id, value, body) ->
         let state = Infer.gen_enter state in
-        let state, tp = fresh_type_var state Kind.prop in
+        let state, tp = fresh_inf_var state Kind.prop in
         let state, value_k = infer env state tp value in
         let state, tvs, tp' = Infer.gen_exit state tp in
         let qs = Type.get_quants tp' in
@@ -176,7 +176,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
           state, (id, k) :: ks
         in
         let state, tps =
-          fresh_type_var_list state (List.length fields) Kind.prop
+          fresh_inf_var_list state (List.length fields) Kind.prop
         in
         let state, field_ks =
           (* TODO: Use `fold_right2` here. *)
@@ -194,13 +194,13 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
             IR.Term.rcrd ~loc @@
               List.map (fun (id, k) -> id, k state) field_ks )
       | Projection (rcrd, field) ->
-        let state, rest_tp = fresh_type_var state Kind.row in
+        let state, rest_tp = fresh_inf_var state Kind.row in
         let tp = Type.rcrd [(field, exp_tp)] @@ Some rest_tp in
         let state, k = infer env state tp rcrd in
         ( state, fun state -> IR.Term.proj ~loc (k state) field)
       | Variant (case, data) ->
-        let state, data_tp = fresh_type_var state Kind.prop in
-        let state, rest_tp = fresh_type_var state Kind.row in
+        let state, data_tp = fresh_inf_var state Kind.prop in
+        let state, rest_tp = fresh_inf_var state Kind.row in
         let state, data_k = infer env state data_tp data in
         let tp = Type.vrnt [(case, data_tp)] @@ Some rest_tp in
         let state = unify loc state exp_tp tp in
@@ -218,12 +218,12 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
           state, (case, id, k) :: ks
         in
         let state, tps =
-          fresh_type_var_list state (List.length cases) Kind.prop
+          fresh_inf_var_list state (List.length cases) Kind.prop
         in
         let case_tps =
           List.combine (List.map Misc.fst_of_3 cases) tps
         in
-        let state, res_tp = fresh_type_var state Kind.prop in
+        let state, res_tp = fresh_inf_var state Kind.prop in
         let state, vrnt_k =
           infer env state (Type.vrnt case_tps None) vrnt
         in
@@ -243,7 +243,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
   in
 
   let state = Infer.gen_enter Infer.initial in
-  let state, tp = fresh_type_var state Kind.prop in
+  let state, tp = fresh_inf_var state Kind.prop in
   let state, k = infer env state tp tm in
   let state, tvs, tp' = Infer.gen_exit state tp in
   let qs = List.map quant_to_ir @@ Type.get_quants tp' in

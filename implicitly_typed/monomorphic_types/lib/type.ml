@@ -2,7 +2,7 @@ module Id = Identifier
 module Misc = Miscellaneous
 
 type t =
-  | Variable of Id.t
+  | Inference_variable of Id.t
   | Function of t * t
 
 module Environment = Type_environment.Make (struct
@@ -20,7 +20,7 @@ let raise_occurs : Id.t -> t -> 'a = fun id tp ->
 
 (* Constructors *)
 
-let var id = Variable id
+let inf_var id = Inference_variable id
 
 let func arg res = Function (arg, res)
 
@@ -47,7 +47,7 @@ end = struct
   let singleton : Id.t -> t -> s = Id.Map.singleton
 
   let rec apply : s -> t -> t = fun sub tp -> match tp with
-    | Variable id -> Id.Map.find_default tp id sub
+    | Inference_variable id -> Id.Map.find_default tp id sub
     | Function (arg, res) -> func (apply sub arg) (apply sub res)
 
   let extend id tp sub =
@@ -65,7 +65,7 @@ let unify sub tp1 tp2 =
   let module Sub = Substitution in
 
   let rec occurs id tp = match tp with
-    | Variable id' -> id = id'
+    | Inference_variable id' -> id = id'
     | Function (arg, res) -> occurs id arg || occurs id res
   in
 
@@ -73,12 +73,12 @@ let unify sub tp1 tp2 =
     let tp1' = Sub.apply tp1 sub in
     let tp2' = Sub.apply tp2 sub in
     match tp1', tp2' with
-      | Variable id1, Variable id2 when id1 = id2->
+      | Inference_variable id1, Inference_variable id2 when id1 = id2->
         sub
-      | _, Variable id ->
+      | _, Inference_variable id ->
         if occurs id tp1' then raise_occurs id tp1';
         Sub.extend id tp1' sub
-      | Variable id, _ ->
+      | Inference_variable id, _ ->
         if occurs id tp2' then raise_occurs id tp2';
         Sub.extend id tp2' sub
       | Function (arg1, res1), Function (arg2, res2) ->
@@ -111,8 +111,8 @@ let simplify tp =
   in
 
   let rec simplify tp = match tp with
-    | Variable id ->
-      var @@ simplify_id id
+    | Inference_variable id ->
+      inf_var @@ simplify_id id
     | Function (arg, res) ->
       let arg' = simplify arg in
       let res' = simplify res in
@@ -125,11 +125,11 @@ let to_string ?no_simp tp =
   let rec to_string tp =
     let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
     match tp with
-      | Variable id ->
+      | Inference_variable id ->
         Id.to_string id
       | Function (arg, res) ->
         let arg_to_string tp = match tp with
-          | Variable _ -> to_string tp
+          | Inference_variable _ -> to_string tp
           | Function _ -> to_paren_string tp
         in
         Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)

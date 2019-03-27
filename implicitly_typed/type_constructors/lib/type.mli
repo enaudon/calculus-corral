@@ -11,8 +11,8 @@ module Environment : Type_environment.Output with type value := t
 (** {1 Exceptions} *)
 
 (**
-  [Occurs (id, tp)] indicates that unification failed because the type
-  variable identified by [id] occurs in the type [tp].
+  [Occurs (id, tp)] indicates that unification failed because the
+  inference variable identified by [id] occurs in the type [tp].
  *)
 exception Occurs of Identifier.t * t
 
@@ -24,8 +24,11 @@ exception Cannot_unify of t * t
 
 (** {1 Constructors and Destructors} *)
 
-(** [var id] constructs a variable with the identifier [id]. *)
-val var : Identifier.t -> t
+(**
+  [inf_var id] constructs an inference variable with the identifier
+  [id].
+ *)
+val inf_var : Identifier.t -> t
 
 (**
   [func arg res] constructs a function from [arg] to [res].  If either
@@ -40,7 +43,7 @@ val func : t -> t -> t
  *)
 val func' : t list -> t -> t
 
-(** [get_forall' tp] computes the variable quantifier of [tp]. *)
+(** [get_forall' tp] computes the variable quantifiers of [tp]. *)
 val get_quants : t -> (Identifier.t * Kind.t) list
 
 (** {1 Inference} *)
@@ -61,8 +64,8 @@ module Inferencer : sig
   val initial : state
 
   (**
-    [register state tv kn] registers the type variable, [tv], of kind
-    [kn], with the inference engine.
+    [register state tv kn] registers the inference variable, [tv], of
+    kind [kn], with the inference engine.
    *)
   val register : state -> t -> Kind.t -> state
 
@@ -75,9 +78,9 @@ module Inferencer : sig
 
   (**
     [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
-    [tp2].  In cases where both [tp1] and [tp2] are variables, and either
-    identifier may be kept in the substitution, [tp1]'s identifier is
-    kept.
+    [tp2].  In cases where both [tp1] and [tp2] are inference variables,
+    and either identifier may be kept in the substitution, [tp1]'s
+    identifier is kept.
    *)
   val unify : state -> t -> t -> state
 
@@ -109,9 +112,9 @@ module Inferencer : sig
 
   (**
     [apply tp state] applies the substitution in [state] to [tp],
-    replacing any variables in [tp] which occur in the domain of the
-    substitution with their corresponding concrete types in the range of
-    the substitution.
+    replacing any inference variables in [tp] which occur in the domain
+    of the substitution with their corresponding concrete types in the
+    range of the substitution.
    *)
   val apply : state -> t -> t
 
@@ -126,7 +129,7 @@ end
 val to_intl_repr : t -> Type_operators.Type.t
 
 (**
-  [simplify tp] replaces each variable in [tp] with the
+  [simplify tp] replaces each inference variable in [tp] with the
   lexicographically lowest unused variable.
 
   NOTE: [simplify]'d types cannot be used with inference functions.

@@ -19,7 +19,7 @@ module Type = struct
 
   include Type
 
-  let var id = var @@ Id.define id
+  let inf_var id = inf_var @@ Id.define id
 
 end
 
@@ -102,7 +102,7 @@ comp_typo :
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
   | O_PAREN typo error            { error "unclosed parenthesis" }
-  | UPPER_ID                      { Type.var $1 }
+  | UPPER_ID                      { Type.inf_var $1 }
 
 annot :
   | FOR_ALL upper_id_list PERIOD typo  { Annot.forall $2 $4 }
