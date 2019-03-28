@@ -2,6 +2,7 @@ module Annot = Type_annotation
 module Id = Identifier
 module Infer = Type.Inferencer
 module IR = Type_operators
+module Kind_env = Kind.Environment
 module Loc = Location
 module Type_env = Type.Environment
 
@@ -155,7 +156,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
         (unify loc state exp_tp tp, k)
   in
 
-  let state = Infer.gen_enter Infer.initial in
+  let state = Infer.gen_enter @@ Infer.make_state Kind_env.initial in
   let state, tp = fresh_inf_var state Kind.prop in
   let state, k = infer env state tp tm in
   let state, tvs, tp' = Infer.gen_exit state tp in

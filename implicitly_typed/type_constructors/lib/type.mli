@@ -60,8 +60,8 @@ module Inferencer : sig
   (** The type of inference engine state. *)
   type state
 
-  (** [initial] is the initial state. *)
-  val initial : state
+  (** [make_state env] constructs a state from [env]. *)
+  val make_state : Kind.Environment.t -> state
 
   (**
     [register state tv kn] registers the inference variable, [tv], of

@@ -1,6 +1,7 @@
 module Id = Identifier
 module Infer = Type.Inferencer
 module IR = Records_and_variants
+module Kind_env = Kind.Environment
 module Loc = Location
 module Misc = Miscellaneous
 module Type_env = Type.Environment
@@ -242,7 +243,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
             IR.Term.case ~loc (vrnt_k state) cases' )
   in
 
-  let state = Infer.gen_enter Infer.initial in
+  let state = Infer.gen_enter @@ Infer.make_state Kind_env.initial in
   let state, tp = fresh_inf_var state Kind.prop in
   let state, k = infer env state tp tm in
   let state, tvs, tp' = Infer.gen_exit state tp in

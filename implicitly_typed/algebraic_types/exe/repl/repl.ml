@@ -10,26 +10,15 @@ module Repl = Language.Repl (struct
 
   module Value = Records_and_variants.Term
 
-  module Kind = struct
-
-    include Algebraic_types.Kind
-
-    module Environment = Environment.Make (struct
-      type value = t
-      let initial = initial_env
-    end)
-
-  end
+  module Kind = Algebraic_types.Kind
 
   module Type = struct
 
     include Algebraic_types.Type
 
-    let to_kind env =
-      let open Inferencer in
-      let register id kn state = register state (inf_var id) kn in
-      let state = Kind.Environment.fold register env initial in
-      to_kind state
+    let to_kind env tp =
+      let module Infer = Inferencer in
+      Infer.to_kind (Infer.make_state env) tp
 
     let beta_reduce ?deep:_ _ _ = assert false
 

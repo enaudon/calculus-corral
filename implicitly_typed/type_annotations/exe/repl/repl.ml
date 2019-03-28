@@ -10,26 +10,15 @@ module Repl = Language.Repl (struct
 
   module Value = Type_operators.Term
 
-  module Kind = struct
-
-    include Type_annotations.Kind
-
-    module Environment = Environment.Make (struct
-      type value = t
-      let initial = initial_env
-    end)
-
-  end
+  module Kind = Type_annotations.Kind
 
   module Type = struct
 
     include Type_annotations.Type
 
-    let to_kind env =
-      let open Inferencer in
-      let register id kn state = register state (inf_var id) kn in
-      let state = Kind.Environment.fold register env initial in
-      to_kind state
+    let to_kind env tp =
+      let module Infer = Inferencer in
+      Infer.to_kind (Infer.make_state env) tp
 
     let beta_reduce ?deep:_ _ _ = assert false
 

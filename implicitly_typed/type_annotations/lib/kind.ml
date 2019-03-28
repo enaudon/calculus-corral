@@ -4,6 +4,27 @@ type t =
   | Proper
   | Operator of t * t
 
+(* Constructors *)
+
+let prop = Proper
+
+let oper arg res = Operator (arg, res)
+
+let oper' args res = List.fold_right oper args res
+
+(* Destructors *)
+
+let get_oper kn = match kn with
+  | Operator (arg, res) -> arg, res
+  | _ -> invalid_arg "Kind.get_oper: expected operator"
+
+(* Containers *)
+
+module Environment = Environment.Make (struct
+  type value = t
+  let initial = [ (Id.func, oper' [prop; prop] prop) ]
+end)
+
 (* Utilities *)
 
 let rec to_intl_repr kn =
@@ -34,22 +55,3 @@ let rec to_string kn =
         (arg_to_string arg)
         (Id.to_string Id.oper)
         (to_string res)
-
-(* Constructors *)
-
-let prop = Proper
-
-let oper arg res = Operator (arg, res)
-
-let oper' args res = List.fold_right oper args res
-
-(* Destructors *)
-
-let get_oper kn = match kn with
-  | Operator (arg, res) -> arg, res
-  | _ -> invalid_arg "Kind.get_oper: expected operator"
-
-(* Environment *)
-
-let initial_env =
-  [ (Id.func, oper' [prop; prop] prop) ]
