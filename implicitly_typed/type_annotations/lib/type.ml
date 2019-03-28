@@ -111,7 +111,6 @@ end = struct
     val insert : Id.t -> Kind.t -> bool -> state -> state
     val remove : Id.t -> state -> state
     val update : Id.t -> Id.t -> state -> state
-    val is_mono : Id.t -> state -> bool
     val get_kind : Id.t -> state -> Kind.t
     val is_rigid : Id.t -> state -> bool
 
@@ -132,8 +131,6 @@ end = struct
 
     let update id1 id2 state =
       {state with pools = IVE.update id1 id2 state.pools}
-
-    let is_mono id state = IVE.is_mono id state.pools
 
     let get_kind id state = fst @@ IVE.find id state.pools
 
@@ -235,11 +232,6 @@ end = struct
       let m1' = Sub.apply m1 state in
       let m2' = Sub.apply m2 state in
       match m1', m2' with
-
-        | _, Inference_variable id when not @@ Pools.is_mono id state ->
-          expected_mono "unify"
-        | Inference_variable id, _ when not @@ Pools.is_mono id state ->
-          expected_mono "unify"
 
         | Inference_variable id1, Inference_variable id2
         | Variable id1, Variable id2

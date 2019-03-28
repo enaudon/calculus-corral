@@ -40,9 +40,3 @@ val find : Identifier.t -> 'a t -> 'a
   is a member, if [id2]'s rank is lower than [id1]'s.
  *)
 val update : Identifier.t -> Identifier.t -> 'a t -> 'a t
-
-(**
-  [is_mono id pools] evaluates to [true] if [id] has a monomorphic
-  rank, or [false] otherwise.
- *)
-val is_mono : Identifier.t -> 'a t -> bool

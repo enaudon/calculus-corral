@@ -2,8 +2,6 @@ module Id = Identifier
 
 type rank = int
 
-let mono = 0
-
 type 'a t = {
   pools : 'a Id.Map.t Stack.t;
   ranks : rank Id.Map.t;
@@ -64,6 +62,3 @@ let remove id ps =
 
 let find id ps =
   pools_find (ranks_find id ps) id ps
-
-let is_mono id ps =
-  ranks_find id ps >= mono
