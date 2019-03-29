@@ -75,13 +75,6 @@ module Inferencer : sig
    *)
   val register : state -> t -> Kind.t -> state
 
-  (** {2 Kinding} *)
-
-  (** [to_kind state tp] computes the kind of [tp]. *)
-  val to_kind : state -> t -> Kind.t
-
-  (** {2 Typing} *)
-
   (**
     [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
     [tp2].  In cases where both [tp1] and [tp2] are inference variables,
@@ -125,6 +118,11 @@ module Inferencer : sig
   val apply : state -> t -> t
 
 end
+
+(** {1 Kinding} *)
+
+(** [to_kind env tp] computes the kind of [tp] under [env]. *)
+val to_kind : Kind.Environment.t -> t -> Kind.t
 
 (** {1 Utilities} *)
 

@@ -16,10 +16,6 @@ module Repl = Language.Repl (struct
 
     include Type_annotations.Type
 
-    let to_kind env tp =
-      let module Infer = Inferencer in
-      Infer.to_kind (Infer.make_state env) tp
-
     let beta_reduce ?deep:_ _ _ = assert false
 
     let to_string tp = to_string tp

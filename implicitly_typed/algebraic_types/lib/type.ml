@@ -427,6 +427,11 @@ end = struct
 
 end
 
+(* Kinding *)
+
+let to_kind env tp =
+  Inferencer.to_kind (Inferencer.make_state env) tp
+
 (* Utilities *)
 
 let to_intl_repr tp =
