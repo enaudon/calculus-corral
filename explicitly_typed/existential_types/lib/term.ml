@@ -136,110 +136,100 @@ let rec to_type (kn_env, tp_env) tm =
 
 (* Transformations *)
 
-(** [free_vars tm] computes the free term variables in [tm]. *)
-let free_vars : t -> Id.Set.t =
-  let rec free_vars fvs tm = match tm.desc with
-    | Variable id ->
-      Id.Set.add id fvs
-    | Abstraction (arg, _, body) ->
-      Id.Set.del arg @@ free_vars fvs body
-    | Application (fn, arg) ->
-      free_vars (free_vars fvs fn) arg
-    | Pack (_, tm, _) ->
-      free_vars fvs tm
-    | Unpack (_, tm_id, pack, body) ->
-      Id.Set.del tm_id @@ free_vars (free_vars fvs pack) body
-  in
-  free_vars Id.Set.empty
-
-(**
-  [subst_tp tm id tp'] replaces occurences of [id] in [tm] with [tp'].
+(*
+  [subst_tp fvs sub tp] applies [sub] to [tp], replacing any variable in
+  the domain of [sub] with the corresponding type the range of [sub].
+  [fvs] is any superset of the variables which appear in the range of
+  [sub].
 
   [subst_tp] avoids name capture by renaming binders in [tp] to follow
   the Barendregt convention--i.e. the names of bound variable are chosen
   distinct from those of free variables.
  *)
-let subst_tp : t -> Id.t -> Type.t -> t = fun tm id tp' ->
-  let rec subst fvs sub tm =
-    let loc = tm.loc in
-    match tm.desc with
-      | Variable _ ->
-        tm
-      | Abstraction (arg, tp, body) ->
-        abs loc arg (Type.subst fvs sub tp) (subst fvs sub body)
-      | Application (fn, arg) ->
-        app loc (subst fvs sub fn) (subst fvs sub arg)
-      | Pack (tp1, tm, tp2) ->
-        pack loc
-          (Type.subst fvs sub tp1)
-          (subst fvs sub tm)
-          (Type.subst fvs sub tp2)
-      | Unpack (tp_id, tm_id, pack, body) when Id.Set.mem tp_id fvs ->
-        let tp_id' = Id.gen_upper () in
-        let fvs' = Id.Set.add tp_id' fvs in
-        let sub' =
-          Type_env.Type.add tp_id (Type.var tp_id') sub
-        in
-        unpack loc tp_id' tm_id
-          (subst fvs' sub' pack)
-          (subst fvs' sub' body)
-      | Unpack (tp_id, tm_id, pack, body) ->
-        let fvs' = Id.Set.add tp_id fvs in
-        let sub' = Type_env.Type.del tp_id sub in
-        unpack loc tp_id tm_id
-          (subst fvs' sub' pack)
-          (subst fvs' sub' body)
-  in
-  subst (Type.free_vars tp') (Type_env.Type.singleton id tp') tm
+let rec subst_tp : Id.Set.t -> Type_env.t -> t -> t = fun fvs sub tm ->
+  let loc = tm.loc in
+  match tm.desc with
+    | Variable _ ->
+      tm
+    | Abstraction (arg, tp, body) ->
+      abs loc arg (Type.subst fvs sub tp) (subst_tp fvs sub body)
+    | Application (fn, arg) ->
+      app loc (subst_tp fvs sub fn) (subst_tp fvs sub arg)
+    | Pack (tp1, tm, tp2) ->
+      pack loc
+        (Type.subst fvs sub tp1)
+        (subst_tp fvs sub tm)
+        (Type.subst fvs sub tp2)
+    | Unpack (tp_id, tm_id, pack, body) when Id.Set.mem tp_id fvs ->
+      let tp_id' = Id.gen_upper () in
+      let fvs' = Id.Set.add tp_id' fvs in
+      let sub' =
+        Type_env.Type.add tp_id (Type.var tp_id') sub
+      in
+      unpack loc tp_id' tm_id
+        (subst_tp fvs' sub' pack)
+        (subst_tp fvs' sub' body)
+    | Unpack (tp_id, tm_id, pack, body) ->
+      let fvs' = Id.Set.add tp_id fvs in
+      let sub' = Type_env.Type.del tp_id sub in
+      unpack loc tp_id tm_id
+        (subst_tp fvs' sub' pack)
+        (subst_tp fvs' sub' body)
 
 (**
-  [subst_tm tm id tm'] replaces occurences of [id] in [tm] with [tm'].
-
   As with [subst_tp], [subst_tm] avoids name capture by following the
   Barendregt convention.
  *)
-let subst_tm : t -> Id.t -> t -> t = fun tm id tm' ->
-  let rec subst fvs sub tm =
-    let loc = tm.loc in
-    match tm.desc with
-      | Variable id ->
-        Env.find_default tm id sub
-      | Abstraction (arg, tp, body) when Id.Set.mem arg fvs ->
-        let arg' = Id.gen_lower () in
-        let sub' = Env.add arg (var Loc.dummy arg') sub in
-        abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
-      | Abstraction (arg, tp, body) ->
-        abs loc arg tp @@
-          subst (Id.Set.add arg fvs) (Env.del arg sub) body
-      | Application (fn, arg) ->
-        app loc (subst fvs sub fn) (subst fvs sub arg)
-      | Pack (tp1, tm, tp2) ->
-        pack loc tp1 (subst fvs sub tm) tp2
-      | Unpack (tp_id, tm_id, pack, body) when Id.Set.mem tm_id fvs ->
-        let tm_id' = Id.gen_lower () in
-        let fvs' = Id.Set.add tm_id' fvs in
-        let sub' = Env.add tp_id (var Loc.dummy tm_id') sub in
-        unpack loc tp_id tm_id
-          (subst fvs' sub' pack)
-          (subst fvs' sub' body)
-      | Unpack (tp_id, tm_id, pack, body) ->
-        let fvs' = Id.Set.add tp_id fvs in
-        let sub' = Env.del tp_id sub in
-        unpack loc tp_id tm_id
-          (subst fvs' sub' pack)
-          (subst fvs' sub' body)
-  in
-  subst (free_vars tm') (Env.singleton id tm') tm
+let rec subst_tm : Id.Set.t -> Env.t -> t -> t = fun fvs sub tm ->
+  let loc = tm.loc in
+  match tm.desc with
+    | Variable id ->
+      Env.find_default tm id sub
+    | Abstraction (arg, tp, body) when Id.Set.mem arg fvs ->
+      let arg' = Id.gen_lower () in
+      let sub' = Env.add arg (var Loc.dummy arg') sub in
+      abs loc arg' tp @@ subst_tm (Id.Set.add arg' fvs) sub' body
+    | Abstraction (arg, tp, body) ->
+      abs loc arg tp @@
+        subst_tm (Id.Set.add arg fvs) (Env.del arg sub) body
+    | Application (fn, arg) ->
+      app loc (subst_tm fvs sub fn) (subst_tm fvs sub arg)
+    | Pack (tp1, tm, tp2) ->
+      pack loc tp1 (subst_tm fvs sub tm) tp2
+    | Unpack (tp_id, tm_id, pack, body) when Id.Set.mem tm_id fvs ->
+      let tm_id' = Id.gen_lower () in
+      let fvs' = Id.Set.add tm_id' fvs in
+      let sub' = Env.add tp_id (var Loc.dummy tm_id') sub in
+      unpack loc tp_id tm_id
+        (subst_tm fvs' sub' pack)
+        (subst_tm fvs' sub' body)
+    | Unpack (tp_id, tm_id, pack, body) ->
+      let fvs' = Id.Set.add tp_id fvs in
+      let sub' = Env.del tp_id sub in
+      unpack loc tp_id tm_id
+        (subst_tm fvs' sub' pack)
+        (subst_tm fvs' sub' body)
 
 let rec beta_reduce ?deep env tm =
+
   let beta_reduce = beta_reduce ?deep in
+
+  let subst_tp env tm id tp =
+    let fvs = Id.Set.of_list @@ Env.keys env in
+    subst_tp fvs (Type_env.Type.singleton id tp) tm
+  in
+
+  let subst_tm env tm id tm' =
+    subst_tm (Id.Set.of_list @@ Env.keys env) (Env.singleton id tm') tm
+  in
+
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
       Env.find_default tm id env
     | Abstraction (arg, tp, body) ->
       if deep <> None then
-        let env' = Env.del arg env in
+        let env' = Env.add arg (var Loc.dummy arg) env in
         abs loc arg tp @@ beta_reduce env' body
       else
         tm
@@ -248,9 +238,8 @@ let rec beta_reduce ?deep env tm =
       let act_arg' = beta_reduce env act_arg in
       begin match fn'.desc with
         | Abstraction (fml_arg, _, body) ->
-          let body' = subst_tm body fml_arg act_arg' in
-          let env' = Env.del fml_arg env in
-          beta_reduce env' body'
+          let body' = subst_tm env body fml_arg act_arg' in
+          beta_reduce env body'
         | _ ->
           app loc fn' act_arg'
       end
@@ -261,9 +250,8 @@ let rec beta_reduce ?deep env tm =
       let body' = beta_reduce env body in
       begin match pack'.desc with
         | Pack (tp, tm, _) ->
-          let env' = Env.del tp_id (Env.del tm_id env) in
-          beta_reduce env' @@
-            subst_tp (subst_tm body' tm_id tm) tp_id tp
+          beta_reduce env @@
+            subst_tp env (subst_tm env body' tm_id tm) tp_id tp
         | _ ->
           unpack loc tp_id tm_id pack' body'
       end

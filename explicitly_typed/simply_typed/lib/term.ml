@@ -71,49 +71,46 @@ let rec to_type env tm = match tm.desc with
 
 (* Transformations *)
 
-(** [free_vars tm] computes the free variables in [tm]. *)
-let free_vars : t -> Id.Set.t =
-  let rec free_vars fvs tm = match tm.desc with
-    | Variable id -> Id.Set.add id fvs
-    | Abstraction (arg, _, body) -> Id.Set.del arg @@ free_vars fvs body
-    | Application (fn, arg) -> free_vars (free_vars fvs fn) arg
-  in
-  free_vars Id.Set.empty
-
-(**
-  [subst tm id tm'] replaces occurences of [id] in [tm] with [tm'].
+(*
+  [subst fvs sub tm] applies [sub] to [tm], replacing any variable in
+  the domain of [sub] with the corresponding term the range of [sub].
+  [fvs] is any superset of the variables which appear in the range of
+  [sub].
 
   [subst] avoids name capture by renaming binders in [tm] to follow the
   Barendregt convention--i.e. the names of bound variable are chosen
   distinct from those of free variables.
  *)
-let subst : t -> Id.t -> t -> t = fun tm id tm' ->
-  let rec subst fvs sub tm =
-    let loc = tm.loc in
-    match tm.desc with
-      | Variable id ->
-        Env.find_default tm id sub
-      | Abstraction (arg, tp, body) when Id.Set.mem arg fvs ->
-        let arg' = Id.gen_lower () in
-        let sub' = Env.add arg (var Loc.dummy arg') sub in
-        abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
-      | Abstraction (arg, tp, body) ->
-        abs loc arg tp @@
-          subst (Id.Set.add arg fvs) (Env.del arg sub) body
-      | Application (fn, arg) ->
-        app loc (subst fvs sub fn) (subst fvs sub arg)
-  in
-  subst (free_vars tm') (Env.singleton id tm') tm
+let rec subst : Id.Set.t -> Env.t -> t -> t = fun fvs sub tm ->
+  let loc = tm.loc in
+  match tm.desc with
+    | Variable id ->
+      Env.find_default tm id sub
+    | Abstraction (arg, tp, body) when Id.Set.mem arg fvs ->
+      let arg' = Id.gen_lower () in
+      let sub' = Env.add arg (var Loc.dummy arg') sub in
+      abs loc arg' tp @@ subst (Id.Set.add arg' fvs) sub' body
+    | Abstraction (arg, tp, body) ->
+      abs loc arg tp @@
+        subst (Id.Set.add arg fvs) (Env.del arg sub) body
+    | Application (fn, arg) ->
+      app loc (subst fvs sub fn) (subst fvs sub arg)
 
 let rec beta_reduce ?deep env tm =
+
   let beta_reduce = beta_reduce ?deep in
+
+  let subst env tm id tm' =
+    subst (Id.Set.of_list @@ Env.keys env) (Env.singleton id tm') tm
+  in
+
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
       Env.find_default tm id env
     | Abstraction (arg, tp, body) ->
       if deep <> None then
-        let env' = Env.del arg env in
+        let env' = Env.add arg (var Loc.dummy arg) env in
         abs loc arg tp @@ beta_reduce env' body
       else
         tm
@@ -122,9 +119,8 @@ let rec beta_reduce ?deep env tm =
       let act_arg' = beta_reduce env act_arg in
       match fn'.desc with
         | Abstraction (fml_arg, _, body) ->
-          let body' = subst body fml_arg act_arg' in
-          let env' = Env.del fml_arg env in
-          beta_reduce env' body'
+          let body' = subst env body fml_arg act_arg' in
+          beta_reduce env body'
         | _ ->
           app loc fn' act_arg'
 

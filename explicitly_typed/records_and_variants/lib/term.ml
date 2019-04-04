@@ -223,32 +223,6 @@ let rec to_type (kn_env, tp_env) tm =
 
 (* Transformations *)
 
-let free_vars =
-  let rec free_vars fvs tm = match tm.desc with
-    | Variable id ->
-      Id.Set.add id fvs
-    | Term_abs (arg, _, body) ->
-      Id.Set.del arg @@ free_vars fvs body
-    | Term_app (fn, arg) ->
-      free_vars (free_vars fvs fn) arg
-    | Type_abs (_, _, body) ->
-      free_vars fvs body
-    | Type_app (fn, _) ->
-      free_vars fvs fn
-    | Record fields ->
-      List.fold_left (fun fvs (_, tm) -> free_vars fvs tm) fvs fields
-    | Projection (rcrd, _) ->
-      free_vars fvs rcrd
-    | Variant (_, data, _) ->
-      free_vars fvs data
-    | Case (vrnt, cases) ->
-      List.fold_left
-        (fun fvs (_, _, tm) -> free_vars fvs tm)
-        (free_vars fvs vrnt)
-        cases
-  in
-  free_vars Id.Set.empty
-
 (*
   [subst_tp] avoids name capture by renaming binders in [tp] to follow
   the Barendregt convention--i.e. the names of bound variable are chosen
@@ -283,7 +257,7 @@ let rec subst_tp fvs sub tm =
       let subst_case (case, id, tm) = case, id, subst_tp fvs sub tm in
       case loc (subst_tp fvs sub vrnt) (List.map subst_case cases)
 
-(**
+(*
   As with [subst_tp], [subst_tm] avoids name capture by following the
   Barendregt convention.
  *)
@@ -327,12 +301,13 @@ let rec beta_reduce ?deep env tm =
 
   let beta_reduce = beta_reduce ?deep in
 
-  let subst_tp tm id tp =
-    subst_tp (Type.free_vars tp) (Type_env.Type.singleton id tp) tm
+  let subst_tp env tm id tp =
+    let fvs = Id.Set.of_list @@ Env.keys env in
+    subst_tp fvs (Type_env.Type.singleton id tp) tm
   in
 
-  let subst_tm tm id tm' =
-    subst_tm (free_vars tm') (Env.singleton id tm') tm
+  let subst_tm env tm id tm' =
+    subst_tm (Id.Set.of_list @@ Env.keys env) (Env.singleton id tm') tm
   in
 
   let loc = tm.loc in
@@ -341,7 +316,7 @@ let rec beta_reduce ?deep env tm =
       Env.find_default tm id env
     | Term_abs (arg, tp, body) ->
       if deep <> None then
-        let env' = Env.del arg env in
+        let env' = Env.add arg (var Loc.dummy arg) env in
         abs loc arg tp @@ beta_reduce env' body
       else
         tm
@@ -350,15 +325,14 @@ let rec beta_reduce ?deep env tm =
       let act_arg' = beta_reduce env act_arg in
       begin match fn'.desc with
         | Term_abs (fml_arg, _, body) ->
-          let body' = subst_tm body fml_arg act_arg' in
-          let env' = Env.del fml_arg env in
-          beta_reduce env' body'
+          let body' = subst_tm env body fml_arg act_arg' in
+          beta_reduce env body'
         | _ ->
           app loc fn' act_arg'
       end
     | Type_abs (arg, kn, body) ->
       if deep <> None then
-        let env' = Env.del arg env in
+        let env' = Env.add arg (var Loc.dummy arg) env in
         tp_abs loc arg kn @@ beta_reduce env' body
       else
         tm
@@ -366,9 +340,8 @@ let rec beta_reduce ?deep env tm =
       let fn' = beta_reduce env fn in
       begin match fn'.desc with
         | Type_abs (fml_arg, _, body) ->
-          let body' = subst_tp body fml_arg act_arg in
-          let env' = Env.del fml_arg env in
-          beta_reduce env' body'
+          let body' = subst_tp env body fml_arg act_arg in
+          beta_reduce env body'
         | _ ->
           tp_app loc fn' act_arg
       end
@@ -408,7 +381,7 @@ let rec beta_reduce ?deep env tm =
                   "'%s' is not a case of this variant"
                   (Id.to_string case)
           in
-          beta_reduce (Env.del id env) (subst_tm tm id data)
+          beta_reduce env @@ subst_tm env tm id data
         | _ ->
           case loc vrnt' @@ List.map beta_reduce_case cases
 

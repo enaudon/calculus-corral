@@ -115,24 +115,6 @@ let rec to_kind env tp = match tp with
 
 (* Transformations *)
 
-let free_vars : t -> Id.Set.t =
-  let rec free_vars fvs tp = match tp with
-    | Variable id ->
-      Id.Set.add id fvs
-    | Abstraction (arg, _, body) ->
-      Id.Set.del arg @@ free_vars fvs body
-    | Application (fn, arg) ->
-      free_vars (free_vars fvs fn) arg
-    | Universal (quant, _, body) | Recursive (quant, _, body) ->
-      Id.Set.del quant @@ free_vars fvs body
-    | Row_nil ->
-      fvs
-    | Row_cons (_, tp, rest) ->
-      free_vars (free_vars fvs tp) rest
-  in
-  (* TODO: Think, would [Kind.initial_env] be safe here? *)
-  free_vars Id.Set.empty
-
 (**
   [subst] avoids name capture by renaming binders in [tp] to follow the
   Barendregt convention--i.e. the names of bound variable are chosen
@@ -170,13 +152,20 @@ let rec subst fvs sub tp = match tp with
     row_cons id (subst fvs sub tp) (subst fvs sub rest)
 
 let rec beta_reduce ?deep env tp =
+
   let beta_reduce = beta_reduce ?deep in
+
+  let subst env tp id tp' =
+    let fvs = Id.Set.of_list @@ Env.Type.keys env in
+    subst fvs (Env.Type.singleton id tp') tp
+  in
+
   match tp with
     | Variable id ->
       Env.Type.find_default tp id env
     | Abstraction (arg, kn, body) ->
       if deep <> None then
-        abs arg kn @@ beta_reduce env body
+        abs arg kn @@ beta_reduce (Env.Type.add arg (var arg) env) body
       else
         tp
     | Application (fn, act_arg) ->
@@ -184,20 +173,21 @@ let rec beta_reduce ?deep env tp =
       let act_arg' = beta_reduce env act_arg in
       begin match fn' with
         | Abstraction (fml_arg, _, body) ->
-          let sub = Env.Type.singleton fml_arg act_arg' in
-          let body' = subst (free_vars act_arg') sub body in
+          let body' = subst env body fml_arg act_arg' in
           beta_reduce env body'
         | _ ->
           app fn' act_arg'
       end
     | Universal (quant, kn, body) ->
       if deep <> None then
-        forall quant kn @@ beta_reduce (Env.Type.del quant env) body
+        forall quant kn @@
+          beta_reduce (Env.Type.add quant (var quant) env) body
       else
         tp
     | Recursive (quant, kn, body) ->
       if deep <> None then
-        mu quant kn @@ beta_reduce (Env.Type.del quant env) body
+        mu quant kn @@
+          beta_reduce (Env.Type.add quant (var quant) env) body
       else
         tp
     | Row_nil ->

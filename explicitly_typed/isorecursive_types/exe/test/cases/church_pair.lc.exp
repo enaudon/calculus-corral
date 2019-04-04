@@ -21,7 +21,7 @@ snd Bool Bool p
   = \A :: * . \t : A . \f : A . t ;
 p
   : forall C :: * . ((forall A :: * . (A -> A) -> A -> A) -> (forall A :: * . (A -> A) -> A -> A) -> C) -> C
-  = \C :: * . \p : Nat -> Nat -> C . p (\A :: * . \s : A -> A . \z : A . z) (\A :: * . \s : A -> A . \z : A . s z) ;
+  = \C :: * . \n1 : Nat -> Nat -> C . n1 (\A :: * . \s : A -> A . \z : A . z) (\A :: * . \s : A -> A . \z : A . s z) ;
 fst Nat Nat p
   : forall A :: * . (A -> A) -> A -> A
   = \A :: * . \s : A -> A . \z : A . z ;
@@ -30,7 +30,7 @@ snd Nat Nat p
   = \A :: * . \s : A -> A . \z : A . s z ;
 p
   : forall C :: * . ((forall A :: * . A -> A -> A) -> (forall A :: * . (A -> A) -> A -> A) -> C) -> C
-  = \C :: * . \p : Bool -> Nat -> C . p (\A :: * . \t : A . \f : A . f) (\A :: * . \s : A -> A . \z : A . z) ;
+  = \C :: * . \o1 : Bool -> Nat -> C . o1 (\A :: * . \t : A . \f : A . f) (\A :: * . \s : A -> A . \z : A . z) ;
 fst Bool Nat p
   : forall A :: * . A -> A -> A
   = \A :: * . \t : A . \f : A . f ;

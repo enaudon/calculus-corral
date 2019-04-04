@@ -18,7 +18,7 @@ snd p
   = \A . \B . \t : A . \f : B . t ;
 p
   : ((A -> B -> B) -> ((C -> D) -> C -> D) -> E) -> E
-  = \A . \B . \C . \D . \E . \p : (A -> B -> B) -> ((C -> D) -> C -> D) -> E . p (\s : A . \z : B . z) (\s : C -> D . \z : C . s z) ;
+  = \A . \B . \C . \D . \E . \n1 : (A -> B -> B) -> ((C -> D) -> C -> D) -> E . n1 (\s : A . \z : B . z) (\s : C -> D . \z : C . s z) ;
 fst p
   : A -> B -> B
   = \A . \B . \s : A . \z : B . z ;
@@ -27,7 +27,7 @@ snd p
   = \A . \B . \s : A -> B . \z : A . s z ;
 p
   : ((A -> B -> B) -> (C -> D -> D) -> E) -> E
-  = \A . \B . \C . \D . \E . \p : (A -> B -> B) -> (C -> D -> D) -> E . p (\t : A . \f : B . f) (\s : C . \z : D . z) ;
+  = \A . \B . \C . \D . \E . \o1 : (A -> B -> B) -> (C -> D -> D) -> E . o1 (\t : A . \f : B . f) (\s : C . \z : D . z) ;
 fst p
   : A -> B -> B
   = \A . \B . \t : A . \f : B . f ;

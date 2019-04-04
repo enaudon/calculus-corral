@@ -84,18 +84,19 @@ val beta_reduce : ?deep : unit -> Environment.t -> t -> t
  *)
 val alpha_equivalent : t -> t -> bool
 
-(* [free_vars tm] computes the free term variables in [tm]. *)
-val free_vars : t -> Identifier.Set.t
-
 (**
-  [subst_tp tm sub] applies the substitution [sub], which maps
-  identifiers to terms, to [tp].
+  [subst_tp fvs sub tp] applies [sub] to [tp], replacing any variable in
+  the domain of [sub] with the corresponding type the range of [sub].
+  [fvs] is any superset of the variables which appear in the range of
+  [sub].
 *)
 val subst_tp : Identifier.Set.t -> Type.Environment.t -> t -> t
 
 (**
-  [subst_tm tm sub] applies the substitution [sub], which maps
-  identifiers to terms, to [tm].
+  [subst_tm fvs sub tm] applies [sub] to [tm], replacing any variable in
+  the domain of [sub] with the corresponding term the range of [sub].
+  [fvs] is any superset of the variables which appear in the range of
+  [sub].
 *)
 val subst_tm : Identifier.Set.t -> Environment.t -> t -> t
 

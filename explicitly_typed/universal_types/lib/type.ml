@@ -93,14 +93,6 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env=[]) tp1 tp2 =
     (beta_reduce ~deep:() beta_env tp1)
     (beta_reduce ~deep:() beta_env tp2)
 
-let free_vars =
-  let rec free_vars fvs tp = match tp with
-    | Variable id -> Id.Set.add id fvs
-    | Function (arg, res) -> free_vars (free_vars fvs arg) res
-    | Universal (quant, body) -> Id.Set.del quant @@ free_vars fvs body
-  in
-  free_vars Id.Set.empty
-
 let rec subst fvs sub tp = match tp with
   | Variable id ->
     Env.Type.find_default tp id sub

@@ -74,12 +74,11 @@ val alpha_equivalent :
   t ->
   bool
 
-(** [free_vars tp] computes the free variables in [tp]. *)
-val free_vars : t -> Identifier.Set.t
-
 (**
-  [subst fvars tp sub] applies the substitution [sub] to [tp], assuming
-  that the identifiers in [fvars] may occur free in the range of [sub].
+  [subst fvs sub tp] applies [sub] to [tp], replacing any variable in
+  the domain of [sub] with the corresponding type the range of [sub].
+  [fvs] is any superset of the variables which appear in the range of
+  [sub].
 *)
 val subst : Identifier.Set.t -> Environment.t -> t -> t
 
