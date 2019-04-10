@@ -1,57 +1,57 @@
 fls
-  : A -> B -> B
-  = \A :: * . \B :: * . \t : A . \f : B . f ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . f ;
 tru
-  : A -> B -> A
-  = \A :: * . \B :: * . \t : A . \f : B . t ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . t ;
 not
-  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
-  = \A :: * . \B :: * . \C :: * . \D :: * . \E :: * . \p : (A -> B -> B) -> (C -> D -> C) -> E . p (\t : A . \f : B . f) (\t : C . \f : D . t) ;
+  : ((A -> A -> A) -> (B -> B -> B) -> C) -> C
+  = \A :: * . \B :: * . \C :: * . \p : (A -> A -> A) -> (B -> B -> B) -> C . p (\t : A . \f : A . f) (\t : B . \f : B . t) ;
 and
-  : (A -> (B -> C -> C) -> D) -> A -> D
-  = \A :: * . \B :: * . \C :: * . \D :: * . \p : A -> (B -> C -> C) -> D . \q : A . p q (\t : B . \f : C . f) ;
+  : (A -> (B -> B -> B) -> C) -> A -> C
+  = \A :: * . \B :: * . \C :: * . \p : A -> (B -> B -> B) -> C . \q : A . p q (\t : B . \f : B . f) ;
 or
-  : ((A -> B -> A) -> C -> D) -> C -> D
-  = \A :: * . \B :: * . \C :: * . \D :: * . \p : (A -> B -> A) -> C -> D . \q : C . p (\t : A . \f : B . t) q ;
+  : ((A -> A -> A) -> B -> C) -> B -> C
+  = \A :: * . \B :: * . \C :: * . \p : (A -> A -> A) -> B -> C . \q : B . p (\t : A . \f : A . t) q ;
 if
   : (A -> B -> C) -> A -> B -> C
   = \A :: * . \B :: * . \C :: * . \p : A -> B -> C . \t : A . \e : B . p t e ;
 not fls
-  : A -> B -> A
-  = \A :: * . \B :: * . \t : A . \f : B . t ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . t ;
 not tru
-  : A -> B -> B
-  = \A :: * . \B :: * . \t : A . \f : B . f ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . f ;
 and fls fls
-  : A -> B -> B
-  = \A :: * . \B :: * . \t : A . \f : B . f ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . f ;
 and fls tru
-  : A -> B -> B
-  = \A :: * . \B :: * . \t : A . \f : B . f ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . f ;
 and tru fls
-  : A -> B -> B
-  = \A :: * . \B :: * . \t : A . \f : B . f ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . f ;
 and tru tru
-  : A -> B -> A
-  = \A :: * . \B :: * . \t : A . \f : B . t ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . t ;
 or fls fls
-  : A -> B -> B
-  = \A :: * . \B :: * . \t : A . \f : B . f ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . f ;
 or fls tru
-  : A -> B -> A
-  = \A :: * . \B :: * . \t : A . \f : B . t ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . t ;
 or tru fls
-  : A -> B -> A
-  = \A :: * . \B :: * . \t : A . \f : B . t ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . t ;
 or tru tru
-  : A -> B -> A
-  = \A :: * . \B :: * . \t : A . \f : B . t ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . t ;
 if fls fls tru
-  : A -> B -> A
-  = \A :: * . \B :: * . \t : A . \f : B . t ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . t ;
 if tru fls tru
-  : A -> B -> B
-  = \A :: * . \B :: * . \t : A . \f : B . f ;
+  : A -> A -> A
+  = \A :: * . \t : A . \f : A . f ;
 if fls (\x . x) (\y . y)
   : A -> A
   = \A :: * . \y : A . y ;

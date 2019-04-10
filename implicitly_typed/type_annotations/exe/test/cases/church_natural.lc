@@ -1,6 +1,6 @@
-zero = \s . \z . z ;
+zero = (\s . \z . z) : forall A . (A -> A) -> A -> A ;
 
-one = \s . \z . s z ;
+one = (\s . \z . s z) : forall A . (A -> A) -> A -> A ;
 
 two = \s . \z . s (s z) ;
 

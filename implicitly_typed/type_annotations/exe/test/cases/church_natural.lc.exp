@@ -1,9 +1,9 @@
 zero
-  : A -> B -> B
-  = \A :: * . \B :: * . \s : A . \z : B . z ;
+  : (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . z ;
 one
-  : (A -> B) -> A -> B
-  = \A :: * . \B :: * . \s : A -> B . \z : A . s z ;
+  : (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s z ;
 two
   : (A -> A) -> A -> A
   = \A :: * . \s : A -> A . \z : A . s (s z) ;
@@ -32,8 +32,8 @@ succ one
   : (A -> A) -> A -> A
   = \A :: * . \s : A -> A . \z : A . s (s z) ;
 add one zero
-  : (A -> B) -> A -> B
-  = \A :: * . \B :: * . \s : A -> B . \z : A . s z ;
+  : (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s z ;
 add one two
   : (A -> A) -> A -> A
   = \A :: * . \s : A -> A . \z : A . s (s (s z)) ;
@@ -41,8 +41,8 @@ mul two two
   : (A -> A) -> A -> A
   = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;
 mul two zero
-  : A -> B -> B
-  = \A :: * . \B :: * . \s : A . \z : B . z ;
+  : (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . z ;
 mul two (mul two two)
   : (A -> A) -> A -> A
   = \A :: * . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
