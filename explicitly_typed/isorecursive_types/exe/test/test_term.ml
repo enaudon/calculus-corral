@@ -8,6 +8,8 @@ module Type = struct
 
   include Isorecursive_types.Type
 
+  module Env = Environment
+
   let var id = var @@ Id.define id
 
   let forall quant kn body = forall (Id.define quant) kn body
@@ -37,7 +39,7 @@ let assert_beta_reduce tm exp_shallow exp_deep =
   let assert_beta_reduce ?deep tm exp =
     let act =
       try
-        Term.beta_reduce ?deep Term.Env.initial tm
+        Term.beta_reduce ?deep (Type.Env.initial, Term.Env.initial) tm
       with Failure msg ->
         assert_failure @@
           Printf.sprintf "Failure beta-reducing '%s'\n%s"

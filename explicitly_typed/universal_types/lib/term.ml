@@ -145,12 +145,12 @@ let rec subst_tm fvs sub tm =
     | Type_app (fn, arg) ->
       tp_app loc (subst_tm fvs sub fn) arg
 
-let rec beta_reduce ?deep env tm =
+let rec beta_reduce ?deep (tp_env, tm_env) tm =
 
-  let beta_reduce = beta_reduce ?deep in
+  let beta_reduce tp_env tm_env = beta_reduce ?deep (tp_env, tm_env) in
 
   let subst_tp env tm id tp =
-    let fvs = Id.Set.of_list @@ Env.keys env in
+    let fvs = Id.Set.of_list @@ Type_env.Type.keys env in
     subst_tp fvs (Type_env.Type.singleton id tp) tm
   in
 
@@ -161,35 +161,35 @@ let rec beta_reduce ?deep env tm =
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
-      Env.find_default tm id env
+      Env.find_default tm id tm_env
     | Term_abs (arg, tp, body) ->
       if deep <> None then
-        let env' = Env.add arg (var Loc.dummy arg) env in
-        abs loc arg tp @@ beta_reduce env' body
+        let tm_env' = Env.add arg (var Loc.dummy arg) tm_env in
+        abs loc arg tp @@ beta_reduce tp_env tm_env' body
       else
         tm
     | Term_app (fn, act_arg) ->
-      let fn' = beta_reduce env fn in
-      let act_arg' = beta_reduce env act_arg in
+      let fn' = beta_reduce tp_env tm_env fn in
+      let act_arg' = beta_reduce tp_env tm_env act_arg in
       begin match fn'.desc with
         | Term_abs (fml_arg, _, body) ->
-          let body' = subst_tm env body fml_arg act_arg' in
-          beta_reduce env body'
+          let body' = subst_tm tm_env body fml_arg act_arg' in
+          beta_reduce tp_env tm_env body'
         | _ ->
           app loc fn' act_arg'
       end
     | Type_abs (arg, body) ->
       if deep <> None then
-        let env' = Env.add arg (var Loc.dummy arg) env in
-        tp_abs loc arg @@ beta_reduce env' body
+        let tp_env' = Type_env.Type.add arg (Type.var arg) tp_env in
+        tp_abs loc arg @@ beta_reduce tp_env' tm_env body
       else
         tm
     | Type_app (fn, act_arg) ->
-      let fn' = beta_reduce env fn in
+      let fn' = beta_reduce tp_env tm_env fn in
       match fn'.desc with
         | Type_abs (fml_arg, body) ->
-          let body' = subst_tp env body fml_arg act_arg in
-          beta_reduce env body'
+          let body' = subst_tp tp_env body fml_arg act_arg in
+          beta_reduce tp_env tm_env body'
         | _ ->
           tp_app loc fn' act_arg
 

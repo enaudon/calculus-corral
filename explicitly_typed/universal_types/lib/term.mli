@@ -58,7 +58,8 @@ val to_type : (Identifier.Set.t * Type.Environment.t) -> t -> Type.t
   [env]. If the [deep] argument is passed, then [beta_reduce] will
   evaluate the body of abstractions.
  *)
-val beta_reduce : ?deep : unit -> Environment.t -> t -> t
+val beta_reduce :
+  ?deep : unit -> (Type.Environment.t * Environment.t) -> t -> t
 
 (** {1 Utilities} *)
 

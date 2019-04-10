@@ -37,7 +37,8 @@ module Repl = Language.Repl (struct
       let kn_env' = Id.Set.of_list @@ Kind.Environment.keys kn_env in
       to_type (kn_env', tp_env) tm
 
-    let to_value ?deep env tm = beta_reduce ?deep (Misc.fst_of_3 env) tm
+    let to_value ?deep (vl_env, _, tp_env) tm =
+      beta_reduce ?deep (tp_env, vl_env) tm
 
   end
 

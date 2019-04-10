@@ -297,12 +297,12 @@ let rec subst_tm fvs sub tm =
       in
       case loc (subst_tm fvs sub vrnt) (List.map subst_case cases)
 
-let rec beta_reduce ?deep env tm =
+let rec beta_reduce ?deep (tp_env, tm_env) tm =
 
-  let beta_reduce = beta_reduce ?deep in
+  let beta_reduce tp_env tm_env = beta_reduce ?deep (tp_env, tm_env) in
 
   let subst_tp env tm id tp =
-    let fvs = Id.Set.of_list @@ Env.keys env in
+    let fvs = Id.Set.of_list @@ Type_env.Type.keys env in
     subst_tp fvs (Type_env.Type.singleton id tp) tm
   in
 
@@ -313,47 +313,49 @@ let rec beta_reduce ?deep env tm =
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
-      Env.find_default tm id env
+      Env.find_default tm id tm_env
     | Term_abs (arg, tp, body) ->
       if deep <> None then
-        let env' = Env.add arg (var Loc.dummy arg) env in
-        abs loc arg tp @@ beta_reduce env' body
+        let tm_env' = Env.add arg (var Loc.dummy arg) tm_env in
+        abs loc arg tp @@ beta_reduce tp_env tm_env' body
       else
         tm
     | Term_app (fn, act_arg) ->
-      let fn' = beta_reduce env fn in
-      let act_arg' = beta_reduce env act_arg in
+      let fn' = beta_reduce tp_env tm_env fn in
+      let act_arg' = beta_reduce tp_env tm_env act_arg in
       begin match fn'.desc with
         | Term_abs (fml_arg, _, body) ->
-          let body' = subst_tm env body fml_arg act_arg' in
-          beta_reduce env body'
+          let body' = subst_tm tm_env body fml_arg act_arg' in
+          beta_reduce tp_env tm_env body'
         | _ ->
           app loc fn' act_arg'
       end
     | Type_abs (arg, kn, body) ->
       if deep <> None then
-        let env' = Env.add arg (var Loc.dummy arg) env in
-        tp_abs loc arg kn @@ beta_reduce env' body
+        let tp_env' = Type_env.Type.add arg (Type.var arg) tp_env in
+        tp_abs loc arg kn @@ beta_reduce tp_env' tm_env body
       else
         tm
     | Type_app (fn, act_arg) ->
-      let fn' = beta_reduce env fn in
+      let fn' = beta_reduce tp_env tm_env fn in
       begin match fn'.desc with
         | Type_abs (fml_arg, _, body) ->
-          let body' = subst_tp env body fml_arg act_arg in
-          beta_reduce env body'
+          let body' = subst_tp tp_env body fml_arg act_arg in
+          beta_reduce tp_env tm_env body'
         | _ ->
           tp_app loc fn' act_arg
       end
     | Record fields ->
-      rcrd loc @@
-        List.map (fun (id, tm) -> id, beta_reduce env tm) fields
+      let beta_reduce_field (id, tm) =
+        (id, beta_reduce tp_env tm_env tm)
+      in
+      rcrd loc @@ List.map beta_reduce_field fields
     | Projection (rcrd, field) ->
-      let rcrd' = beta_reduce env rcrd in
+      let rcrd' = beta_reduce tp_env tm_env rcrd in
       begin match rcrd'.desc with
         | Record fields ->
           begin try
-            beta_reduce env @@ List.assoc field fields
+            beta_reduce tp_env tm_env @@ List.assoc field fields
           with Not_found ->
             error tm.loc "beta_reduce" @@
               Printf.sprintf
@@ -364,12 +366,18 @@ let rec beta_reduce ?deep env tm =
           proj loc rcrd' field
       end
     | Variant (case, data, tp) ->
-      vrnt loc case (beta_reduce env data) tp
+      vrnt loc case (beta_reduce tp_env tm_env data) tp
     | Case (vrnt, cases) ->
       let beta_reduce_case (case, id, tm) =
-        case, id, if deep <> None then beta_reduce env tm else tm 
+        let tm' =
+          if deep <> None then
+            beta_reduce tp_env tm_env tm
+          else
+            tm
+        in
+        (case, id, tm')
       in
-      let vrnt' = beta_reduce env vrnt in
+      let vrnt' = beta_reduce tp_env tm_env vrnt in
       match vrnt'.desc with
         | Variant (case, data, _) ->
           let _, id, tm =
@@ -381,7 +389,7 @@ let rec beta_reduce ?deep env tm =
                   "'%s' is not a case of this variant"
                   (Id.to_string case)
           in
-          beta_reduce env @@ subst_tm env tm id data
+          beta_reduce tp_env tm_env @@ subst_tm tm_env tm id data
         | _ ->
           case loc vrnt' @@ List.map beta_reduce_case cases
 

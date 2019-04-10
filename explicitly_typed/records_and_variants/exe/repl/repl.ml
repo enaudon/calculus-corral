@@ -12,8 +12,8 @@ module Repl = Language.Repl (struct
 
     include Records_and_variants.Term
 
-    let to_value ?deep env tm =
-      simplify @@ beta_reduce ?deep (Misc.fst_of_3 env) tm
+    let to_value ?deep (vl_env, _, tp_env) tm =
+      simplify @@ beta_reduce ?deep (tp_env, vl_env) tm
 
   end
 

@@ -2,7 +2,13 @@ module Id = Identifier
 
 open OUnit
 
-module Type = Existential_types.Type
+module Type = struct
+
+  include Existential_types.Type
+
+  module Env = Environment
+
+end
 
 module Term = struct
 
@@ -23,7 +29,7 @@ let assert_beta_reduce tm exp_shallow exp_deep =
   let assert_beta_reduce ?deep tm exp =
     let act =
       try
-        Term.beta_reduce ?deep Term.Env.initial tm
+        Term.beta_reduce ?deep (Type.Env.initial, Term.Env.initial) tm
       with Failure msg ->
         assert_failure @@
           Printf.sprintf "Failure beta-reducing '%s'\n%s"

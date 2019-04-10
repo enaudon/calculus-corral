@@ -68,7 +68,7 @@ module Repl = Language.Repl (struct
           IR_env.empty
       in
       ignore @@ Value.to_type (kn_env', tp_env') vl;
-      Value.simplify @@ Value.beta_reduce ?deep vl_env vl
+      Value.simplify @@ Value.beta_reduce ?deep (tp_env', vl_env) vl
 
   end
 

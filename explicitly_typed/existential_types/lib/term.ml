@@ -210,12 +210,12 @@ let rec subst_tm : Id.Set.t -> Env.t -> t -> t = fun fvs sub tm ->
         (subst_tm fvs' sub' pack)
         (subst_tm fvs' sub' body)
 
-let rec beta_reduce ?deep env tm =
+let rec beta_reduce ?deep (tp_env, tm_env) tm =
 
-  let beta_reduce = beta_reduce ?deep in
+  let beta_reduce tp_env tm_env = beta_reduce ?deep (tp_env, tm_env) in
 
   let subst_tp env tm id tp =
-    let fvs = Id.Set.of_list @@ Env.keys env in
+    let fvs = Id.Set.of_list @@ Type_env.Type.keys env in
     subst_tp fvs (Type_env.Type.singleton id tp) tm
   in
 
@@ -226,32 +226,32 @@ let rec beta_reduce ?deep env tm =
   let loc = tm.loc in
   match tm.desc with
     | Variable id ->
-      Env.find_default tm id env
+      Env.find_default tm id tm_env
     | Abstraction (arg, tp, body) ->
       if deep <> None then
-        let env' = Env.add arg (var Loc.dummy arg) env in
-        abs loc arg tp @@ beta_reduce env' body
+        let tm_env' = Env.add arg (var Loc.dummy arg) tm_env in
+        abs loc arg tp @@ beta_reduce tp_env tm_env' body
       else
         tm
     | Application (fn, act_arg) ->
-      let fn' = beta_reduce env fn in
-      let act_arg' = beta_reduce env act_arg in
+      let fn' = beta_reduce tp_env tm_env fn in
+      let act_arg' = beta_reduce tp_env tm_env act_arg in
       begin match fn'.desc with
         | Abstraction (fml_arg, _, body) ->
-          let body' = subst_tm env body fml_arg act_arg' in
-          beta_reduce env body'
+          let body' = subst_tm tm_env body fml_arg act_arg' in
+          beta_reduce tp_env tm_env body'
         | _ ->
           app loc fn' act_arg'
       end
     | Pack (tp1, tm, tp2) ->
-      pack loc tp1 (beta_reduce env tm) tp2
+      pack loc tp1 (beta_reduce tp_env tm_env tm) tp2
     | Unpack (tp_id, tm_id, pack, body) ->
-      let pack' = beta_reduce env pack in
-      let body' = beta_reduce env body in
+      let pack' = beta_reduce tp_env tm_env pack in
+      let body' = beta_reduce tp_env tm_env body in
       begin match pack'.desc with
         | Pack (tp, tm, _) ->
-          beta_reduce env @@
-            subst_tp env (subst_tm env body' tm_id tm) tp_id tp
+          beta_reduce tp_env tm_env @@
+            subst_tp tp_env (subst_tm tm_env body' tm_id tm) tp_id tp
         | _ ->
           unpack loc tp_id tm_id pack' body'
       end
