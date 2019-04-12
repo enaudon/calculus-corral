@@ -1,27 +1,27 @@
 pair
-  : A -> B -> {fst : A; snd : B}
+  : 'A -> 'B -> {fst : 'A; snd : 'B}
   = \A :: * . \B :: * . \f : A . \s : B . {fst : f; snd : s} ;
 fst
-  : {fst : A | B} -> A
+  : {fst : 'A | 'B} -> 'A
   = \A :: * . \B :: <> . \p : {fst : A | B} . p.fst ;
 snd
-  : {snd : A | B} -> A
+  : {snd : 'A | 'B} -> 'A
   = \A :: * . \B :: <> . \p : {snd : A | B} . p.snd ;
 p
-  : {fst : [False : {} | A]; snd : [True : {} | B]}
+  : {fst : [False : {} | 'A]; snd : [True : {} | 'B]}
   = \A :: <> . \B :: <> . {fst : [False {} of [False : {} | A]]; snd : [True {} of [True : {} | B]]} ;
 fst p
-  : [False : {} | A]
+  : [False : {} | 'A]
   = \A :: <> . [False {} of [False : {} | A]] ;
 snd p
-  : [True : {} | A]
+  : [True : {} | 'A]
   = \A :: <> . [True {} of [True : {} | A]] ;
 p
-  : {fst : [False : {} | A]; snd : B -> B}
+  : {fst : [False : {} | 'A]; snd : 'B -> 'B}
   = \A :: <> . \B :: * . {fst : [False {} of [False : {} | A]]; snd : \x : B . x} ;
 fst p
-  : [False : {} | A]
+  : [False : {} | 'A]
   = \A :: <> . [False {} of [False : {} | A]] ;
 snd p
-  : A -> A
+  : 'A -> 'A
   = \A :: * . \x : A . x ;

@@ -54,7 +54,7 @@ end
 
 /* Literals and identifiers */
 %token <string> LOWER_ID
-%token <string> UPPER_ID
+%token <string> TICK_UPPER_ID
 
 /* Keywords */
 %token EXISTS
@@ -102,16 +102,16 @@ comp_typo :
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
   | O_PAREN typo error            { error "unclosed parenthesis" }
-  | UPPER_ID                      { Type.inf_var $1 }
+  | TICK_UPPER_ID                 { Type.inf_var $1 }
 
 annot :
-  | FOR_ALL upper_id_list PERIOD typo  { Annot.forall $2 $4 }
-  | EXISTS upper_id_list PERIOD typo   { Annot.exists $2 $4 }
+  | FOR_ALL tick_upper_id_list PERIOD typo  { Annot.forall $2 $4 }
+  | EXISTS tick_upper_id_list PERIOD typo   { Annot.exists $2 $4 }
   | typo                          { Annot.typo $1 }
 
-upper_id_list :
-  | UPPER_ID                      { [$1] }
-  | UPPER_ID upper_id_list        { $1 :: $2 }
+tick_upper_id_list :
+  | TICK_UPPER_ID                 { [$1] }
+  | TICK_UPPER_ID tick_upper_id_list  { $1 :: $2 }
 
 /* Terms */
 

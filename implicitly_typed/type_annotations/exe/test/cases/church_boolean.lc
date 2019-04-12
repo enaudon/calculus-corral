@@ -1,6 +1,6 @@
-fls = (\t . \f . f) : forall A . A -> A -> A ;
+fls = (\t . \f . f) : forall 'A . 'A -> 'A -> 'A ;
 
-tru = (\t . \f . t) : forall A . A -> A -> A ;
+tru = (\t . \f . t) : forall 'A . 'A -> 'A -> 'A ;
 
 not = \p . p fls tru ;
 

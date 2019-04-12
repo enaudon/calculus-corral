@@ -294,7 +294,7 @@ let to_string ?no_simp ?show_quants tp =
     let to_paren_string tp = Printf.sprintf "(%s)" (to_string tp) in
     match tp with
       | Inference_variable id ->
-        Id.to_string id
+        Printf.sprintf "'%s" (Id.to_string id)
       | Function (arg, res) ->
         let arg_to_string tp = match tp with
           | Inference_variable _ -> to_string tp

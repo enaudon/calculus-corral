@@ -1,27 +1,27 @@
 fls
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = <value> ;
 tru
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = <value> ;
 not
-  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
+  : (('A -> 'B -> 'B) -> ('C -> 'D -> 'C) -> 'E) -> 'E
   = <value> ;
 and
-  : (A -> (B -> C -> C) -> D) -> A -> D
+  : ('A -> ('B -> 'C -> 'C) -> 'D) -> 'A -> 'D
   = <value> ;
 or
-  : ((A -> B -> A) -> C -> D) -> C -> D
+  : (('A -> 'B -> 'A) -> 'C -> 'D) -> 'C -> 'D
   = <value> ;
 if
-  : (A -> B -> C) -> A -> B -> C
+  : ('A -> 'B -> 'C) -> 'A -> 'B -> 'C
   = <value> ;
 pair fls tru
-  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
+  : (('A -> 'B -> 'B) -> ('C -> 'D -> 'C) -> 'E) -> 'E
   = <value> ;
 fst (pair fls tru)
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = <value> ;
 snd (pair fls tru)
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = <value> ;

@@ -59,10 +59,10 @@ let to_string an = match an with
   | Type tp ->
     Type.to_string tp
   | Universal (quants, tp) ->
-    Printf.sprintf "forall %s . %s"
+    Printf.sprintf "forall '%s . %s"
       (String.concat " " @@ List.map Id.to_string quants)
       (Type.to_string tp)
   | Existential (quants, tp) ->
-    Printf.sprintf "exists %s . %s"
+    Printf.sprintf "exists '%s . %s"
       (String.concat " " @@ List.map Id.to_string quants)
       (Type.to_string tp)

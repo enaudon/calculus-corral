@@ -1,24 +1,24 @@
 get_x
-  : {x : A | B} -> A
+  : {x : 'A | 'B} -> 'A
   = \A :: * . \B :: <> . \r : {x : A | B} . r.x ;
 get_x {x = \x . x}
-  : A -> A
+  : 'A -> 'A
   = \A :: * . \x : A . x ;
 get_x {x = \x . x; y = \y . y}
-  : A -> A
+  : 'A -> 'A
   = \A :: * . \x : A . x ;
 get_x {y = \y . y; x = \x . x}
-  : A -> A
+  : 'A -> 'A
   = \A :: * . \x : A . x ;
 get_foo_bar
-  : [Foo : A; Bar : A] -> A
+  : [Foo : 'A; Bar : 'A] -> 'A
   = \A :: * . \x : [Foo : A; Bar : A] . case x of [Foo x -> x; Bar x -> x] ;
 get_foo_bar (Foo (\x . x))
-  : A -> A
+  : 'A -> 'A
   = \A :: * . \x : A . x ;
 get_bar_foo
-  : [Bar : A; Foo : A] -> A
+  : [Bar : 'A; Foo : 'A] -> 'A
   = \A :: * . \x : [Bar : A; Foo : A] . case x of [Bar x -> x; Foo x -> x] ;
 get_foo_bar (Foo (\x . x))
-  : A -> A
+  : 'A -> 'A
   = \A :: * . \x : A . x ;

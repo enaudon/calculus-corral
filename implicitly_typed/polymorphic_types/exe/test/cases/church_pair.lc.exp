@@ -1,36 +1,36 @@
 pair
-  : A -> B -> (A -> B -> C) -> C
+  : 'A -> 'B -> ('A -> 'B -> 'C) -> 'C
   = \A . \B . \C . \f : A . \s : B . \p : A -> B -> C . p f s ;
 fst
-  : ((A -> B -> A) -> C) -> C
+  : (('A -> 'B -> 'A) -> 'C) -> 'C
   = \A . \B . \C . \p : (A -> B -> A) -> C . p (\f : A . \s : B . f) ;
 snd
-  : ((A -> B -> B) -> C) -> C
+  : (('A -> 'B -> 'B) -> 'C) -> 'C
   = \A . \B . \C . \p : (A -> B -> B) -> C . p (\f : A . \s : B . s) ;
 p
-  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
+  : (('A -> 'B -> 'B) -> ('C -> 'D -> 'C) -> 'E) -> 'E
   = \A . \B . \C . \D . \E . \p : (A -> B -> B) -> (C -> D -> C) -> E . p (\t : A . \f : B . f) (\t : C . \f : D . t) ;
 fst p
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \t : A . \f : B . f ;
 snd p
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = \A . \B . \t : A . \f : B . t ;
 p
-  : ((A -> B -> B) -> ((C -> D) -> C -> D) -> E) -> E
+  : (('A -> 'B -> 'B) -> (('C -> 'D) -> 'C -> 'D) -> 'E) -> 'E
   = \A . \B . \C . \D . \E . \n1 : (A -> B -> B) -> ((C -> D) -> C -> D) -> E . n1 (\s : A . \z : B . z) (\s : C -> D . \z : C . s z) ;
 fst p
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \s : A . \z : B . z ;
 snd p
-  : (A -> B) -> A -> B
+  : ('A -> 'B) -> 'A -> 'B
   = \A . \B . \s : A -> B . \z : A . s z ;
 p
-  : ((A -> B -> B) -> (C -> D -> D) -> E) -> E
+  : (('A -> 'B -> 'B) -> ('C -> 'D -> 'D) -> 'E) -> 'E
   = \A . \B . \C . \D . \E . \o1 : (A -> B -> B) -> (C -> D -> D) -> E . o1 (\t : A . \f : B . f) (\s : C . \z : D . z) ;
 fst p
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \t : A . \f : B . f ;
 snd p
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \s : A . \z : B . z ;

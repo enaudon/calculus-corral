@@ -78,6 +78,11 @@ let scheme_to_mono : t -> mono = fun tp ->
   else
     tp.body
 
+let var_to_string : mono -> string = fun tv -> match tv with
+  | Inference_variable (_, id) -> "'" ^ Id.to_string id
+  | Variable id -> Id.to_string id
+  | _ -> error "var_to_string" "expected variable"
+
 (* Inference *)
 
 
@@ -195,22 +200,19 @@ end = struct
 
   let to_kind state tp =
 
+    let undefined_id m =
+      error "to_kind" @@
+        Printf.sprintf "undefined identifier '%s'" (var_to_string m)
+    in
+
     let rec to_kind state m = match m with
       | Inference_variable (Mono, id) ->
         begin try Pools.get_kind id state with
-          | Id.Unbound id ->
-            error "to_kind" @@
-              Printf.sprintf
-                "undefined identifier '%s'"
-                (Id.to_string id)
+          | Id.Unbound _ -> undefined_id m
         end
       | Inference_variable (Poly, id) | Variable id ->
         begin try Kind_env.find id state.kind_env with
-          | Id.Unbound id ->
-            error "to_kind" @@
-              Printf.sprintf
-                "undefined identifier '%s'"
-                (Id.to_string id)
+          | Id.Unbound _ -> undefined_id m
         end
       | Application (fn, arg) ->
         let fn_kn = to_kind state fn in
@@ -533,13 +535,13 @@ let to_string ?no_simp ?show_quants tp =
     in
 
     match tp with
-      | Inference_variable (_, id) | Variable id ->
-        Id.to_string id
-      | Application (Application (Variable id, arg), res)
+      | Inference_variable _ | Variable _ ->
+        var_to_string tp
+      | Application (Application (Variable id as tv, arg), res)
           when id = Id.func ->
         Printf.sprintf "%s %s %s"
           (arg_to_string arg)
-          (Id.to_string id)
+          (var_to_string tv)
           (to_string res)
       | Application (Variable id, row) when id = Id.rcrd ->
         Printf.sprintf "{%s}" (row_to_string row)
@@ -556,7 +558,7 @@ let to_string ?no_simp ?show_quants tp =
     to_string body
   else
     let quant_to_string (q, kn) =
-      Printf.sprintf "%s :: %s" (Id.to_string q) (Kind.to_string kn)
+      Printf.sprintf "'%s :: %s" (Id.to_string q) (Kind.to_string kn)
     in
     Printf.sprintf "forall %s . %s"
       (String.concat " . forall " @@ List.map quant_to_string quants)

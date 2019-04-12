@@ -1,18 +1,18 @@
 pair
-  : A -> B -> (A -> B -> C) -> C
+  : 'A -> 'B -> ('A -> 'B -> 'C) -> 'C
   = <value> ;
 fst
-  : ((A -> B -> A) -> C) -> C
+  : (('A -> 'B -> 'A) -> 'C) -> 'C
   = <value> ;
 snd
-  : ((A -> B -> B) -> C) -> C
+  : (('A -> 'B -> 'B) -> 'C) -> 'C
   = <value> ;
 p
-  : ((A -> A) -> (B -> C -> B) -> D) -> D
+  : (('A -> 'A) -> ('B -> 'C -> 'B) -> 'D) -> 'D
   = <value> ;
 fst p
-  : A -> A
+  : 'A -> 'A
   = <value> ;
 snd p
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = <value> ;

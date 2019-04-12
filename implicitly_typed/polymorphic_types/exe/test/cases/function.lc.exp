@@ -1,33 +1,33 @@
 id
-  : A -> A
+  : 'A -> 'A
   = \A . \x : A . x ;
 app
-  : (A -> B) -> A -> B
+  : ('A -> 'B) -> 'A -> 'B
   = \A . \B . \f : A -> B . \x : A . f x ;
 rev_app
-  : A -> (A -> B) -> B
+  : 'A -> ('A -> 'B) -> 'B
   = \A . \B . \x : A . \f : A -> B . f x ;
 compose
-  : (A -> B) -> (C -> A) -> C -> B
+  : ('A -> 'B) -> ('C -> 'A) -> 'C -> 'B
   = \A . \B . \C . \f : A -> B . \g : C -> A . \x : C . f (g x) ;
 arg_swap
-  : (A -> B -> C) -> B -> A -> C
+  : ('A -> 'B -> 'C) -> 'B -> 'A -> 'C
   = \A . \B . \C . \f : A -> B -> C . \x : B . \y : A . f y x ;
 id'
-  : A -> A
+  : 'A -> 'A
   = \A . \x : A . x ;
 rev_app'
-  : A -> (A -> B) -> B
+  : 'A -> ('A -> 'B) -> 'B
   = \A . \B . \x : A . \y : A -> B . y x ;
 id id
-  : A -> A
+  : 'A -> 'A
   = \A . \x : A . x ;
 app id id'
-  : A -> A
+  : 'A -> 'A
   = \A . \x : A . x ;
 rev_app app id
-  : (A -> B) -> A -> B
+  : ('A -> 'B) -> 'A -> 'B
   = \A . \B . \f : A -> B . \x : A . f x ;
 rev_app' compose id
-  : (A -> B) -> (C -> A) -> C -> B
+  : ('A -> 'B) -> ('C -> 'A) -> 'C -> 'B
   = \A . \B . \C . \f : A -> B . \g : C -> A . \x : C . f (g x) ;

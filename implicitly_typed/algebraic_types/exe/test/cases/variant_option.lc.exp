@@ -1,15 +1,15 @@
 none
-  : [None : {} | A]
+  : [None : {} | 'A]
   = \A :: <> . [None {} of [None : {} | A]] ;
 some
-  : A -> [Some : A | B]
+  : 'A -> [Some : 'A | 'B]
   = \A :: * . \B :: <> . \x : A . [Some x of [Some : A | B]] ;
 default
-  : A -> [None : B; Some : A] -> A
+  : 'A -> [None : 'B; Some : 'A] -> 'A
   = \A :: * . \B :: * . \x : A . \opt : [None : B; Some : A] . case opt of [None _ -> x; Some x -> x] ;
 map
-  : (A -> B) -> [None : C; Some : A] -> [None : {}; Some : B | D]
+  : ('A -> 'B) -> [None : 'C; Some : 'A] -> [None : {}; Some : 'B | 'D]
   = \A :: * . \B :: * . \C :: * . \D :: <> . \fn : A -> B . \opt : [None : C; Some : A] . case opt of [None _ -> [None {} of [None : {}; Some : B | D]]; Some x -> [Some (fn x) of [Some : B; None : {} | D]]] ;
 fold
-  : (A -> B -> A) -> A -> [None : C; Some : B] -> A
+  : ('A -> 'B -> 'A) -> 'A -> [None : 'C; Some : 'B] -> 'A
   = \A :: * . \B :: * . \C :: * . \fn : A -> B -> A . \init : A . \opt : [None : C; Some : B] . case opt of [None _ -> init; Some x -> fn init x] ;

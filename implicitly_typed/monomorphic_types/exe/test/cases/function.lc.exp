@@ -1,15 +1,15 @@
 id
-  : A -> A
+  : 'A -> 'A
   = <value> ;
 app
-  : (A -> B) -> A -> B
+  : ('A -> 'B) -> 'A -> 'B
   = <value> ;
 rev_app
-  : A -> (A -> B) -> B
+  : 'A -> ('A -> 'B) -> 'B
   = <value> ;
 compose
-  : (A -> B) -> (C -> A) -> C -> B
+  : ('A -> 'B) -> ('C -> 'A) -> 'C -> 'B
   = <value> ;
 arg_swap
-  : (A -> B -> C) -> B -> A -> C
+  : ('A -> 'B -> 'C) -> 'B -> 'A -> 'C
   = <value> ;

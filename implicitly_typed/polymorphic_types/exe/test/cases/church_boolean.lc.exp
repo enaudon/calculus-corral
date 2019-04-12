@@ -1,57 +1,57 @@
 fls
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \t : A . \f : B . f ;
 tru
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = \A . \B . \t : A . \f : B . t ;
 not
-  : ((A -> B -> B) -> (C -> D -> C) -> E) -> E
+  : (('A -> 'B -> 'B) -> ('C -> 'D -> 'C) -> 'E) -> 'E
   = \A . \B . \C . \D . \E . \p : (A -> B -> B) -> (C -> D -> C) -> E . p (\t : A . \f : B . f) (\t : C . \f : D . t) ;
 and
-  : (A -> (B -> C -> C) -> D) -> A -> D
+  : ('A -> ('B -> 'C -> 'C) -> 'D) -> 'A -> 'D
   = \A . \B . \C . \D . \p : A -> (B -> C -> C) -> D . \q : A . p q (\t : B . \f : C . f) ;
 or
-  : ((A -> B -> A) -> C -> D) -> C -> D
+  : (('A -> 'B -> 'A) -> 'C -> 'D) -> 'C -> 'D
   = \A . \B . \C . \D . \p : (A -> B -> A) -> C -> D . \q : C . p (\t : A . \f : B . t) q ;
 if
-  : (A -> B -> C) -> A -> B -> C
+  : ('A -> 'B -> 'C) -> 'A -> 'B -> 'C
   = \A . \B . \C . \p : A -> B -> C . \t : A . \e : B . p t e ;
 not fls
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = \A . \B . \t : A . \f : B . t ;
 not tru
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \t : A . \f : B . f ;
 and fls fls
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \t : A . \f : B . f ;
 and fls tru
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \t : A . \f : B . f ;
 and tru fls
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \t : A . \f : B . f ;
 and tru tru
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = \A . \B . \t : A . \f : B . t ;
 or fls fls
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \t : A . \f : B . f ;
 or fls tru
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = \A . \B . \t : A . \f : B . t ;
 or tru fls
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = \A . \B . \t : A . \f : B . t ;
 or tru tru
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = \A . \B . \t : A . \f : B . t ;
 if fls fls tru
-  : A -> B -> A
+  : 'A -> 'B -> 'A
   = \A . \B . \t : A . \f : B . t ;
 if tru fls tru
-  : A -> B -> B
+  : 'A -> 'B -> 'B
   = \A . \B . \t : A . \f : B . f ;
 if fls (\x . x) (\y . y)
-  : A -> A
+  : 'A -> 'A
   = \A . \y : A . y ;
