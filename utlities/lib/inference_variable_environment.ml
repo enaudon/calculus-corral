@@ -52,7 +52,9 @@ let update id1 id2 (ps : 'a t) : 'a t =
   let rank = ranks_find id1 ps in
   let rank' = min rank @@ ranks_find id2 ps in
   let data = pools_find rank id1 ps in
-  ps |> remove rank id1 |> insert rank' id1 data
+  ps
+    |> remove rank id1
+    |> insert rank' id1 data
 
 let insert id data ps =
   insert (top ps) id data ps

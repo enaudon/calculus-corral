@@ -92,9 +92,9 @@ module Make (Input : Input) = struct
   end
 
   let of_list tps tms =
-    empty |>
-      List.fold_right (fun (id, v) -> Type.add id v) tps |>
-      List.fold_right (fun (id, v) -> Term.add id v) tms
+    empty
+      |> List.fold_right (fun (id, v) -> Type.add id v) tps
+      |> List.fold_right (fun (id, v) -> Term.add id v) tms
 
   let bindings env = Type.bindings env @ Term.bindings env
 
