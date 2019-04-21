@@ -16,8 +16,6 @@ module Repl = Language.Repl (struct
 
     include Type_annotations.Type
 
-    let beta_reduce ?deep:_ _ _ = assert false
-
     let to_string tp = to_string tp
 
   end
@@ -31,7 +29,7 @@ module Repl = Language.Repl (struct
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      to_type (snd env) tm
+      to_type env tm
 
     let to_value ?deep (vl_env, kn_env, tp_env) tm =
 
@@ -45,7 +43,7 @@ module Repl = Language.Repl (struct
         | Pottier_remy -> to_intl_repr_pr
       in
 
-      let vl = to_intl_repr tp_env tm in
+      let vl = to_intl_repr (kn_env, tp_env) tm in
       let kn_env' =
         Kind_env.fold
           (fun id kn -> IR_kind_env.add id @@ Kind.to_intl_repr kn)

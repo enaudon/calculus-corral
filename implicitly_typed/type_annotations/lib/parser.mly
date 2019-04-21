@@ -21,6 +21,10 @@ module Type = struct
 
   let inf_var id = inf_var @@ Id.define id
 
+  let var id = var @@ Id.define id
+
+  let abs arg kn body = abs (Id.define arg) kn body
+
 end
 
 module Annot = struct
@@ -54,6 +58,7 @@ end
 
 /* Literals and identifiers */
 %token <string> LOWER_ID
+%token <string> UPPER_ID
 %token <string> TICK_UPPER_ID
 
 /* Keywords */
@@ -62,10 +67,11 @@ end
 %token LET IN
 
 /* Symbols */
+%token ASTERIKS
 %token B_SLASH
-%token S_ARROW
+%token S_ARROW D_ARROW
 %token PERIOD
-%token COLON
+%token COLON COL_COL
 %token SEMICOLON
 %token EQ
 %token O_PAREN C_PAREN
@@ -87,22 +93,43 @@ commands :
   | command SEMICOLON commands    { $1 :: $3 }
 
 command :
+  | UPPER_ID EQ typo              { Command.bind_type $1 $3 }
   | LOWER_ID EQ term              { Command.bind_term $1 $3 }
   | term                          { Command.eval_term $1 }
+
+/* Kinds */
+
+kind :
+  | comp_kind                     { $1 }
+
+comp_kind :
+  | atom_kind                     { $1 }
+  | atom_kind D_ARROW comp_kind   { Kind.oper $1 $3 }
+
+atom_kind :
+  | O_PAREN kind C_PAREN          { $2 }
+  | O_PAREN kind error            { error "unclosed parenthesis" }
+  | ASTERIKS                      { Kind.prop }
 
 /* Types */
 
 typo :
-  | comp_typo                     { $1 }
+  | arrow_typo                    { $1 }
+  | B_SLASH UPPER_ID COL_COL kind PERIOD typo   { Type.abs $2 $4 $6 }
 
-comp_typo :
+arrow_typo :
+  | app_typo                      { $1 }
+  | app_typo S_ARROW arrow_typo   { Type.func $1 $3 }
+
+app_typo :
   | atom_typo                     { $1 }
-  | atom_typo S_ARROW comp_typo   { Type.func $1 $3 }
+  | app_typo atom_typo            { Type.app $1 $2 }
 
 atom_typo :
   | O_PAREN typo C_PAREN          { $2 }
   | O_PAREN typo error            { error "unclosed parenthesis" }
   | TICK_UPPER_ID                 { Type.inf_var $1 }
+  | UPPER_ID                      { Type.var $1 }
 
 annot :
   | FOR_ALL tick_upper_id_list PERIOD typo  { Annot.forall $2 $4 }

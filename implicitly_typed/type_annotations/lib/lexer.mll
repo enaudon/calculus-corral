@@ -31,10 +31,13 @@ let upper_id = ['A'-'Z'] id_char*
 rule prog = parse
   | whitespace                        { skip_char lexbuf; prog lexbuf }
   | newline                           { skip_line lexbuf; prog lexbuf }
+  | "=>"                              { Parser.D_ARROW }
   | "->"                              { Parser.S_ARROW }
+  | "*"                               { Parser.ASTERIKS }
   | "\\"                              { Parser.B_SLASH }
   | "."                               { Parser.PERIOD }
   | ":"                               { Parser.COLON }
+  | "::"                              { Parser.COL_COL }
   | ";"                               { Parser.SEMICOLON }
   | "="                               { Parser.EQ }
   | "("                               { Parser.O_PAREN }
@@ -45,6 +48,7 @@ rule prog = parse
   | "in"                              { Parser.IN }
   | lower_id as id                    { Parser.LOWER_ID id }
   | "'" (upper_id as id)              { Parser.TICK_UPPER_ID id }
+  | upper_id as id                    { Parser.UPPER_ID id }
   | eof                               { Parser.EOF }
   | _ as c                            { error lexbuf @@
                                           Printf.sprintf

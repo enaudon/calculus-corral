@@ -32,13 +32,18 @@ val get_exists : t -> Identifier.t list * Type.t
 val get_typo : t -> Type.t
 
 (** TODO: Comment. *)
-val infer : Type.Inferencer.state -> t -> Type.Inferencer.state * Type.t
+val infer :
+  Type.Environment.t ->
+  Type.Inferencer.state ->
+  t ->
+  Type.Inferencer.state * Type.t
 
 (**
   [constrain annot term_co_fn] constructs a constraint which ensures
   that [annot] holds.
  *)
 val constrain :
+  Type.Environment.t ->
   t ->
   (Type.t -> 'a Type_constraint.t * 'b Type_constraint.t) ->
   'a Type_constraint.t

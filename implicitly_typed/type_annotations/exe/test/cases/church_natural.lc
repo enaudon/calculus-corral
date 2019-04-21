@@ -1,6 +1,8 @@
-zero = (\s . \z . z) : forall 'A . ('A -> 'A) -> 'A -> 'A ;
+Nat = \A :: * . (A -> A) -> A -> A ;
 
-one = (\s . \z . s z) : forall 'A . ('A -> 'A) -> 'A -> 'A ;
+zero = (\s . \z . z) : forall 'A . Nat 'A ;
+
+one = (\s . \z . s z) : forall 'A . Nat 'A ;
 
 two = \s . \z . s (s z) ;
 

@@ -1,6 +1,5 @@
 module Id = Identifier
 module Infer = Type.Inferencer
-module Kind_env = Kind.Environment
 module Loc = Location
 
 type co =
@@ -62,7 +61,7 @@ let let_
 
 (* Solving *)
 
-let solve (c, k) =
+let solve kind_env (c, k) =
 
   let rec solve env state c = match c with
     | True ->
@@ -110,7 +109,7 @@ let solve (c, k) =
                 (Id.to_string id)
   in
 
-  k @@ solve Id.Map.empty (Infer.make_state Kind_env.initial) c
+  k @@ solve Id.Map.empty (Infer.make_state kind_env) c
 
 (* Utilities *)
 

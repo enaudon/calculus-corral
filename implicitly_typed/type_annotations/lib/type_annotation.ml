@@ -27,31 +27,31 @@ let get_typo an = match an with
   | Type tp -> tp
   | _ -> invalid_arg "get_typo" "expected Type"
 
-let infer state an = match an with
+let infer env state an = match an with
   | Type tp -> state, tp
   | Universal (quants, tp) ->
     let tvs = List.map Type.inf_var quants in
     let register state tp = Infer.register ~rigid:() state tp Kind.prop in
     let state' = List.fold_left register state tvs in
-    state', tp
+    state', Type.beta_reduce ~deep:() env tp
   | Existential (quants, tp) ->
     let tvs = List.map Type.inf_var quants in
     let register state tp = Infer.register state tp Kind.prop in
     let state' = List.fold_left register state tvs in
-    state', tp
+    state', Type.beta_reduce ~deep:() env tp
 
-let constrain an term_co_fn =
+let constrain env an term_co_fn =
   let module TC = Type_constraint in
   match an with
     | Type tp ->
       let c1, c2 = term_co_fn tp in
       TC.conj_left c1 c2
     | Universal (quants, tp) ->
-      let c1, c2 = term_co_fn tp in
+      let c1, c2 = term_co_fn @@ Type.beta_reduce ~deep:() env tp in
       let quants' = List.map (fun q -> q, Kind.prop) quants in
       TC.conj_left (TC.forall_list quants' c1) (TC.exists_list quants' c2)
     | Existential (quants, tp) ->
-      let c1, c2 = term_co_fn tp in
+      let c1, c2 = term_co_fn @@ Type.beta_reduce ~deep:() env tp in
       let quants' = List.map (fun q -> q, Kind.prop) quants in
       TC.exists_list quants' (TC.conj_left c1 c2)
 

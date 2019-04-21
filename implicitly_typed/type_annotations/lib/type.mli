@@ -30,6 +30,26 @@ exception Cannot_unify of t * t
  *)
 val inf_var : Identifier.t -> t
 
+(** [var id] constructs a type variable with the identifier [id]. *)
+val var : Identifier.t -> t
+
+(**
+  [abs arg kn body] constructs the abstraction of [arg] of kind [kn]
+  from [body].
+ *)
+val abs : Identifier.t -> Kind.t -> t -> t
+
+(**
+  [abs' args body] constructs the abstraction of [args] from [body].
+ *)
+val abs' : (Identifier.t * Kind.t) list -> t -> t
+
+(** [app fn arg] constructs the application of [fn] to [arg]. *)
+val app : t -> t -> t
+
+(** [app' fn arg] constructs the application of [fn] to [args]. *)
+val app' : t -> t list -> t
+
 (**
   [func arg res] constructs a function from [arg] to [res].  If either
   [arg] or [res] is polymoprhic, [func] will raise [Expected_mono].
@@ -118,6 +138,15 @@ end
 
 (** [to_kind env tp] computes the kind of [tp] under [env]. *)
 val to_kind : Kind.Environment.t -> t -> Kind.t
+
+(** {1 Transformations} *)
+
+(**
+  [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
+  [env].  If the [deep] argument is passed, then [beta_reduce] will
+  reduce the body of abstractions.
+ *)
+val beta_reduce : ?deep : unit -> Environment.t -> t -> t
 
 (** {1 Utilities} *)
 
