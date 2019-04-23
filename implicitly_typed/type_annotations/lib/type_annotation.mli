@@ -5,31 +5,14 @@ type t
 val typo : Type.t -> t
 
 (**
-  [forall ids tp] constructs a universally quantified type annotation.
+  [forall id kn tp] constructs a universally quantified type annotation.
  *)
-val forall : Identifier.t list -> Type.t -> t
+val forall : Identifier.t -> Kind.t -> t -> t
 
 (**
-  [exists ids tp] constructs a existentially quantified type annotation.
+  [exists id kn tp] constructs a existentially quantified type annotation.
  *)
-val exists : Identifier.t list -> Type.t -> t
-
-(**
-  [get_forall annot] computes the universal quantifiers and type of
-  [annot].
- *)
-val get_forall : t -> Identifier.t list * Type.t
-
-(**
-  [get_exists annot] computes the existential quantifiers and type of
-  [annot].
- *)
-val get_exists : t -> Identifier.t list * Type.t
-
-(**
-  [get_typo annot] computes the type making up the body of [annot].
- *)
-val get_typo : t -> Type.t
+val exists : Identifier.t -> Kind.t -> t -> t
 
 (** TODO: Comment. *)
 val infer :

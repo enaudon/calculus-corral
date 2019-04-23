@@ -1,8 +1,8 @@
 Nat = \A :: * . (A -> A) -> A -> A ;
 
-zero = (\s . \z . z) : forall 'A . Nat 'A ;
+zero = (\s . \z . z) : forall 'A :: * . Nat 'A ;
 
-one = (\s . \z . s z) : forall 'A . Nat 'A ;
+one = (\s . \z . s z) : forall 'A :: * . Nat 'A ;
 
 two = \s . \z . s (s z) ;
 

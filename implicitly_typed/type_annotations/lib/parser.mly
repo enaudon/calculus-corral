@@ -31,9 +31,9 @@ module Annot = struct
 
   include Type_annotation
 
-  let forall quants body = forall (List.map Id.define quants) body
+  let forall quant kn body = forall (Id.define quant) kn body
 
-  let exists quants body = exists (List.map Id.define quants) body
+  let exists quant kn body = exists (Id.define quant) kn body
 
 end
 
@@ -132,13 +132,12 @@ atom_typo :
   | UPPER_ID                      { Type.var $1 }
 
 annot :
-  | FOR_ALL tick_upper_id_list PERIOD typo  { Annot.forall $2 $4 }
-  | EXISTS tick_upper_id_list PERIOD typo   { Annot.exists $2 $4 }
-  | typo                          { Annot.typo $1 }
-
-tick_upper_id_list :
-  | TICK_UPPER_ID                 { [$1] }
-  | TICK_UPPER_ID tick_upper_id_list  { $1 :: $2 }
+  | FOR_ALL TICK_UPPER_ID COL_COL kind PERIOD annot
+    { Annot.forall $2 $4 $6 }
+  | EXISTS TICK_UPPER_ID COL_COL kind PERIOD annot
+    { Annot.exists $2 $4 $6 }
+  | typo
+    { Annot.typo $1 }
 
 /* Terms */
 

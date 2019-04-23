@@ -3,66 +3,64 @@ module Infer = Type.Inferencer
 
 type t =
   | Type of Type.t
-  | Universal of Id.t list * Type.t
-  | Existential of Id.t list * Type.t
+  | Universal of Id.t * Kind.t * t
+  | Existential of Id.t * Kind.t * t
 
-let invalid_arg : string -> string -> 'a = fun fn_name msg ->
-  invalid_arg @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
+let rec infer env state an = match an with
+  | Type tp ->
+    (state, Type.beta_reduce ~deep:() env tp)
+  | Universal (quant, kn, an) ->
+    let tv = Type.inf_var quant in
+    let state' = Infer.register ~rigid:() state tv kn in
+    infer env state' an
+  | Existential (quant, kn, an) ->
+    let tv = Type.inf_var quant in
+    let state' = Infer.register state tv kn in
+    infer env state' an
+
+let constrain env an term_co_fn =
+
+  let rec get_typo an = match an with
+    | Type tp -> tp
+    | Universal (_, _, an) | Existential (_, _, an) -> get_typo an
+  in
+
+  let rec get_universals an = match an with
+    | Type _ -> []
+    | Universal (quant, kn, an) -> (quant, kn) :: get_universals an
+    | Existential (_, _, an) -> get_universals an
+  in
+
+  let rec get_existentials an = match an with
+    | Type _ -> []
+    | Universal (_, _, an) -> get_universals an
+    | Existential (quant, kn, an) -> (quant, kn) :: get_existentials an
+  in
+
+  let module TC = Type_constraint in
+  let e_qs = get_existentials an in
+  let u_qs = get_universals an in
+  let tp = Type.beta_reduce ~deep:() env @@ get_typo an in
+  let c1, c2 = term_co_fn tp in
+  TC.exists_list e_qs @@
+    TC.conj_left (TC.forall_list u_qs c1) (TC.exists_list u_qs c2)
+
+let rec to_string an = match an with
+  | Type tp ->
+    Type.to_string tp
+  | Universal (quant, kn, an) ->
+    Printf.sprintf "forall '%s :: %s . %s"
+      (Id.to_string quant)
+      (Kind.to_string kn)
+      (to_string an)
+  | Existential (quant, kn, an) ->
+    Printf.sprintf "exists '%s :: %s . %s"
+      (Id.to_string quant)
+      (Kind.to_string kn)
+      (to_string an)
 
 let typo tp = Type tp
 
-let forall quants tp = Universal (quants, tp)
+let forall quant kn body = Universal (quant, kn, body)
 
-let exists quants tp = Existential (quants, tp)
-
-let get_forall an = match an with
-  | Universal (quants, tp) -> quants, tp
-  | _ -> invalid_arg "get_forall" "expected Universal"
-
-let get_exists an = match an with
-  | Existential (quants, tp) -> quants, tp
-  | _ -> invalid_arg "get_exists" "expected Existential"
-
-let get_typo an = match an with
-  | Type tp -> tp
-  | _ -> invalid_arg "get_typo" "expected Type"
-
-let infer env state an = match an with
-  | Type tp -> state, tp
-  | Universal (quants, tp) ->
-    let tvs = List.map Type.inf_var quants in
-    let register state tp = Infer.register ~rigid:() state tp Kind.prop in
-    let state' = List.fold_left register state tvs in
-    state', Type.beta_reduce ~deep:() env tp
-  | Existential (quants, tp) ->
-    let tvs = List.map Type.inf_var quants in
-    let register state tp = Infer.register state tp Kind.prop in
-    let state' = List.fold_left register state tvs in
-    state', Type.beta_reduce ~deep:() env tp
-
-let constrain env an term_co_fn =
-  let module TC = Type_constraint in
-  match an with
-    | Type tp ->
-      let c1, c2 = term_co_fn tp in
-      TC.conj_left c1 c2
-    | Universal (quants, tp) ->
-      let c1, c2 = term_co_fn @@ Type.beta_reduce ~deep:() env tp in
-      let quants' = List.map (fun q -> q, Kind.prop) quants in
-      TC.conj_left (TC.forall_list quants' c1) (TC.exists_list quants' c2)
-    | Existential (quants, tp) ->
-      let c1, c2 = term_co_fn @@ Type.beta_reduce ~deep:() env tp in
-      let quants' = List.map (fun q -> q, Kind.prop) quants in
-      TC.exists_list quants' (TC.conj_left c1 c2)
-
-let to_string an = match an with
-  | Type tp ->
-    Type.to_string tp
-  | Universal (quants, tp) ->
-    Printf.sprintf "forall '%s . %s"
-      (String.concat " " @@ List.map Id.to_string quants)
-      (Type.to_string tp)
-  | Existential (quants, tp) ->
-    Printf.sprintf "exists '%s . %s"
-      (String.concat " " @@ List.map Id.to_string quants)
-      (Type.to_string tp)
+let exists quant kn body = Existential (quant, kn, body)

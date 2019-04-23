@@ -1,8 +1,8 @@
 Bool = \A :: * . A -> A -> A ;
 
-fls = (\t . \f . f) : forall 'A . Bool 'A ;
+fls = (\t . \f . f) : forall 'A :: * . Bool 'A ;
 
-tru = (\t . \f . t) : forall 'A . Bool 'A ;
+tru = (\t . \f . t) : forall 'A :: * . Bool 'A ;
 
 not = \p . p fls tru ;
 
