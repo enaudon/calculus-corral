@@ -27,9 +27,12 @@ exception Cannot_unify of t * t
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
-let expected_mono : string -> 'a = fun fn_name ->
+let raise_poly : string -> 'a = fun fn_name ->
   invalid_arg @@
-    Printf.sprintf "%s.%s: expected monomorphic type" __MODULE__ fn_name
+    Printf.sprintf
+      "%s.%s: unexpected polymorphic type"
+      __MODULE__
+      fn_name
 
 let var_to_string : t -> string = fun tv -> match tv with
   | Inference_variable (_, id) -> "'" ^ Id.to_string id
@@ -230,7 +233,7 @@ end = struct
       | Inference_variable (_, id') -> id = id'
       | Variable _ -> false
       | Application (fn, arg) -> occurs id fn || occurs id arg
-      | Universal _ -> expected_mono "Inferencer.unify.occurs"
+      | Universal _ -> raise_poly "Inferencer.unify.occurs"
     in
 
     let rec update_ranks : state -> Id.t -> t -> state =
@@ -243,7 +246,7 @@ end = struct
         | Application (fn, arg) ->
           update_ranks (update_ranks state id fn) id arg
         | Universal _ ->
-          expected_mono "Inferencer.unify.update_ranks"
+          raise_poly "Inferencer.unify.update_ranks"
     in
 
     let merge : state -> Id.t -> t -> state =
@@ -261,7 +264,7 @@ end = struct
         | Inference_variable (Poly, _), _
         | _, Universal _
         | Universal _, _ ->
-          expected_mono "unify";
+          raise_poly "unify";
 
         | Inference_variable (_, id1), Inference_variable (_, id2)
         | Variable id1, Variable id2
@@ -311,7 +314,7 @@ end = struct
         | Application (fn, arg) ->
           free_inf_vars (free_inf_vars (seen, fvs) fn) arg
         | Universal _ ->
-          expected_mono "Inferencer.gen_exit.free_inf_vars"
+          raise_poly "Inferencer.gen_exit.free_inf_vars"
       in
 
       tp
@@ -331,7 +334,7 @@ end = struct
       | Application (fn, arg) ->
         app (gen env fn) (gen env arg)
       | Universal _ ->
-        expected_mono "Inferencer.gen_exit.gen"
+        raise_poly "Inferencer.gen_exit.gen"
     in
 
     let tp' = Sub.apply tp state in
@@ -356,7 +359,7 @@ end = struct
       | Application (fn, arg) ->
         app (inst env fn) (inst env arg)
       | Universal _ ->
-        expected_mono "Inferencer.inst"
+        raise_poly "Inferencer.inst"
     in
 
     let make_var kn (state, tvs) =

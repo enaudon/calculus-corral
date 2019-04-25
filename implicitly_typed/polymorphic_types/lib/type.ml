@@ -18,9 +18,12 @@ exception Occurs of Id.t * t
 
 (* Internal utilities *)
 
-let expected_mono : string -> 'a = fun fn_name ->
+let raise_poly : string -> 'a = fun fn_name ->
   invalid_arg @@
-    Printf.sprintf "%s.%s: expected monomorphic type" __MODULE__ fn_name
+    Printf.sprintf
+      "%s.%s: unexpected polymorphic type"
+      __MODULE__
+      fn_name
 
 (* Constructors *)
 
@@ -151,7 +154,7 @@ end = struct
     let rec occurs : Id.t -> t -> bool = fun id tp -> match tp with
       | Inference_variable id' -> id = id'
       | Function (arg, res) -> occurs id arg || occurs id res
-      | Universal _ -> expected_mono "Inferencer.unify.occurs"
+      | Universal _ -> raise_poly "Inferencer.unify.occurs"
     in
 
     let rec update_ranks : state -> Id.t -> t -> state =
@@ -162,7 +165,7 @@ end = struct
         | Function (arg, res) ->
           update_ranks (update_ranks state id arg) id res
         | Universal _ ->
-          expected_mono "Inferencer.unify.update_ranks"
+          raise_poly "Inferencer.unify.update_ranks"
     in
 
     let merge : state -> Id.t -> t -> state =
@@ -177,7 +180,7 @@ end = struct
       match tp1', tp2' with
 
         | _, Universal _ | Universal _, _ ->
-          expected_mono "unify";
+          raise_poly "unify";
 
         | Inference_variable id1, Inference_variable id2
             when id1 = id2 ->
@@ -213,7 +216,7 @@ end = struct
         | Function (arg, res) ->
           free_inf_vars (free_inf_vars (seen, fvs) arg) res
         | Universal _ ->
-          expected_mono "Inferencer.gen_exit.free_inf_vars"
+          raise_poly "Inferencer.gen_exit.free_inf_vars"
       in
 
       tp
@@ -235,7 +238,7 @@ end = struct
     let rec inst env tp = match tp with
       | Inference_variable id -> Id.Map.find_default tp id env
       | Function (arg, res) -> func (inst env arg) (inst env res)
-      | Universal _ -> expected_mono "Inferencer.inst"
+      | Universal _ -> raise_poly "Inferencer.inst"
     in
 
     let make_var _ (state, tvs) =
