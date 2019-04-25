@@ -1,4 +1,4 @@
-module Misc = Miscellaneous
+module IR = Type_operators_exp
 
 type type_inference_algorithm =
   | Hindley_milner
@@ -8,7 +8,7 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Value = Type_operators_exp.Term
+  module Value = IR.Term
 
   module Kind = Type_annotations.Kind
 
@@ -33,8 +33,8 @@ module Repl = Language.Repl (struct
 
     let to_value ?deep (vl_env, kn_env, tp_env) tm =
 
-      let module IR_kind_env = Type_operators_exp.Kind.Environment in
-      let module IR_type_env = Type_operators_exp.Type.Environment in
+      let module IR_kind_env = IR.Kind.Environment in
+      let module IR_type_env = IR.Type.Environment in
       let module Type_env = Type.Environment in
       let module Kind_env = Kind.Environment in
 

@@ -1,4 +1,4 @@
-module Misc = Miscellaneous
+module IR = Algebraic_types_exp
 
 type type_inference_algorithm =
   | Hindley_milner
@@ -8,7 +8,7 @@ let type_inference_algorithm = ref Pottier_remy
 
 module Repl = Language.Repl (struct
 
-  module Value = Algebraic_types_exp.Term
+  module Value = IR.Term
 
   module Kind = Algebraic_types_imp.Kind
 
@@ -35,8 +35,8 @@ module Repl = Language.Repl (struct
 
     let to_value ?deep (vl_env, kn_env, tp_env) tm =
 
-      let module IR_kind_env = Algebraic_types_exp.Kind.Environment in
-      let module IR_type_env = Algebraic_types_exp.Type.Environment in
+      let module IR_kind_env = IR.Kind.Environment in
+      let module IR_type_env = IR.Type.Environment in
       let module Type_env = Type.Environment in
       let module Kind_env = Kind.Environment in
 

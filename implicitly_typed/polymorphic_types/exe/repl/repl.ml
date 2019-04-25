@@ -1,5 +1,4 @@
 module Id = Identifier
-module Misc = Miscellaneous
 
 type type_inference_algorithm =
   | Hindley_milner
