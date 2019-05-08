@@ -83,10 +83,10 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 (** {1 Solving} *)
 
 (**
-  [solve c] solves [c] and, if [c] is satisfiable, produces a result
+  [solve env c] solves [c] and, if [c] is satisfiable, produces a result
   value.
  *)
-val solve : 'a t -> 'a
+val solve : Type.Environment.t -> 'a t -> 'a
 
 (** {1 Utilities} *)
 

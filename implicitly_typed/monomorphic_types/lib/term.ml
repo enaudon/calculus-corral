@@ -108,8 +108,7 @@ let infer_pr : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
             (constrain arg_tp arg)
   in
 
-  TC.solve @@
-    Type_env.Term.fold (fun id -> TC.def id) env (constrain exp_tp tm)
+  TC.solve env @@ constrain exp_tp tm
 
 let to_type_pr env tm =
   let tp = Type.inf_var @@ Id.gen_upper () in

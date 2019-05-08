@@ -233,7 +233,7 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
         let qs = fst @@ IR.Type.get_forall' @@ Type.to_intl_repr tp in
         tp, coerce tvs qs @@ IR.Term.tp_abs' ~loc qs tm'
   in
-  TC.solve kn_env @@ Type_env.Term.fold (fun id -> TC.def id) tp_env c
+  TC.solve (kn_env, tp_env) c
 
 let to_type_pr env tm = fst @@ infer_pr env tm
 

@@ -22,11 +22,13 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
 
 (* Solving *)
 
-let solve c =
+let solve env c =
+
+  let module Type_env = Type.Environment in
 
   let rec solve env sub c = match c with
     | Variable_equality (id, tp) ->
-      Type.unify sub tp @@ Id.Map.find id env
+      Type.unify sub tp @@ Type_env.Term.find id env
     | Type_equality (lhs, rhs) ->
       Type.unify sub lhs rhs
     | Conjunction (lhs, rhs) ->
@@ -34,7 +36,7 @@ let solve c =
     | Existential (_, c) ->
       solve env sub c
     | Definition (id, tp, c) ->
-      solve (Id.Map.add id tp env) sub c
+      solve (Type_env.Term.add id tp env) sub c
     | Localized (loc, c) ->
       try solve env sub c with
         | Type.Occurs (id, tp) ->
@@ -48,7 +50,7 @@ let solve c =
             Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
   in
 
-  solve Id.Map.empty Sub.identity c
+  solve env Sub.identity c
 
 (* Utilities *)
 

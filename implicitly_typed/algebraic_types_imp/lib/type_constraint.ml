@@ -59,13 +59,16 @@ let let_
 
 (* Solving *)
 
-let solve (c, k) =
+let solve env (c, k) =
+
+  let module Type_env = Type.Environment in
 
   let rec solve env state c = match c with
     | True ->
       state
     | Instance (id, tp, tvs_ref) ->
-      let state, tvs, tp' = Infer.inst state @@ Id.Map.find id env in
+      let tp' = Type_env.Term.find id env in
+      let state, tvs, tp' = Infer.inst state tp' in
       tvs_ref := tvs;
       Infer.unify state tp tp'
     | Equality (lhs, rhs) ->
@@ -75,14 +78,14 @@ let solve (c, k) =
     | Existential (tv, kn, c) ->
       solve env (Infer.register state tv kn) c
     | Def_binding (id, tp, c) ->
-      solve (Id.Map.add id tp env) state c
+      solve (Type_env.Term.add id tp env) state c
     | Let_binding (id_opt, tp_ref, kn, lhs, rhs, tvs_ref) ->
       let state = Infer.gen_enter state in
       let state = solve env (Infer.register state !tp_ref kn) lhs in
       let state, tvs, tp = Infer.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
-      let fn id env = Id.Map.add id tp env in
+      let fn id env = Type_env.Term.add id tp env in
       solve (Option.fold fn id_opt env) state rhs
     | Localized (loc, c) ->
       try solve env state c with
@@ -105,7 +108,7 @@ let solve (c, k) =
                 (Id.to_string id)
   in
 
-  k @@ solve Id.Map.empty (Infer.make_state Kind_env.initial) c
+  k @@ solve env (Infer.make_state Kind_env.initial) c
 
 (* Utilities *)
 

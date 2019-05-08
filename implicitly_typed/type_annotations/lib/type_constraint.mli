@@ -97,10 +97,10 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 (** {1 Solving} *)
 
 (**
-  [solve env c] solves [c] and, if [c] is satisfiable, produces a result
-  value.
+  [solve (kn_env, tp_env) c] solves [c] and, if [c] is satisfiable,
+  produces a result value.
  *)
-val solve : Kind.Environment.t -> 'a t -> 'a
+val solve : (Kind.Environment.t * Type.Environment.t) -> 'a t -> 'a
 
 (** {1 Utilities} *)
 
