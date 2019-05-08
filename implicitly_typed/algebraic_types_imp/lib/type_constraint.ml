@@ -26,6 +26,8 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
       fn_name
       msg
 
+let fresh_inf_var () = Type.inf_var @@ Id.gen_upper ()
+
 let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
   | Some p -> fun c -> Localized (p, c)
   | None -> fun c -> c
@@ -43,10 +45,10 @@ let let_
       Id.t option ->
       Kind.t ->
       (Type.t -> 'a t) ->
-      ('b t) ->
+      'b t ->
       (Type.t * Kind.t Id.Map.t * 'a * 'b) t
     = fun loc_opt id_opt kn fn (rhs_c, rhs_k) ->
-  let tv = Type.inf_var @@ Id.gen_upper () in
+  let tv = fresh_inf_var () in
   let lhs_c, lhs_k = fn tv in
   let tvs_ref = ref Id.Map.empty in
   let tp_ref = ref tv in
@@ -182,18 +184,16 @@ let conj_list ?loc cs =
   let conj_cons c cs = map (fun (x, xs) -> x :: xs) (conj ?loc c cs) in
   List.fold_right conj_cons cs @@ yield []
 
-let exists_list ?loc kns (fn : Type.t list -> 'a t) =
+let exists_list ?loc kns fn =
   let exists_cons (tv, kn) c =
     map (fun (tp, (tps, x)) -> (tp :: tps, x)) @@ exists loc tv kn c
   in
-  let tvs =
-    List.map (fun kn -> Type.inf_var @@ Id.gen_upper (), kn) kns
-  in
-  List.fold_right exists_cons tvs @@
-    map (fun x -> [], x) (fn @@ List.map fst tvs)
+  let tvs = List.init (List.length kns) (fun _ -> fresh_inf_var ()) in
+  List.fold_right exists_cons (List.combine tvs kns) @@
+    map (fun x -> [], x) (fn tvs)
 
 let exists ?loc kn fn =
-  let tv = Type.inf_var @@ Id.gen_upper () in
+  let tv = fresh_inf_var () in
   exists loc tv kn @@ fn tv
 
 let def ?loc id tp (c, k) =

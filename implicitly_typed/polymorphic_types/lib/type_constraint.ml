@@ -24,6 +24,8 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
       fn_name
       msg
 
+let fresh_inf_var () = Type.inf_var @@ Id.gen_upper ()
+
 let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
   | Some p -> fun c -> Localized (p, c)
   | None -> fun c -> c
@@ -34,10 +36,10 @@ let let_
     : Loc.t option ->
       Id.t option ->
       (Type.t -> 'a t) ->
-      ('b t) ->
+      'b t ->
       (Type.t * Id.Set.t * 'a * 'b) t
     = fun loc_opt id_opt fn (rhs_c, rhs_k) ->
-  let tv = Type.inf_var @@ Id.gen_upper () in
+  let tv = fresh_inf_var () in
   let lhs_c, lhs_k = fn tv in
   let tvs_ref = ref Id.Set.empty in
   let tp_ref = ref tv in
@@ -161,7 +163,7 @@ let conj_left ?loc lhs rhs = map fst @@ conj ?loc lhs rhs
 let conj_right ?loc lhs rhs = map snd @@ conj ?loc lhs rhs
 
 let exists ?loc fn =
-  let tv = Type.inf_var @@ Id.gen_upper () in
+  let tv = fresh_inf_var () in
   let c, k = fn tv in
   ( loc_wrap loc @@ Existential (tv, c),
     fun state -> Infer.apply state tv, k state )

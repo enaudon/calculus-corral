@@ -113,6 +113,14 @@ atom_kind :
 
 /* Types */
 
+annot :
+  | FOR_ALL TICK_UPPER_ID COL_COL kind PERIOD annot
+    { Annot.forall $2 $4 $6 }
+  | EXISTS TICK_UPPER_ID COL_COL kind PERIOD annot
+    { Annot.exists $2 $4 $6 }
+  | typo
+    { Annot.typo $1 }
+
 typo :
   | arrow_typo                    { $1 }
   | B_SLASH UPPER_ID COL_COL kind PERIOD typo   { Type.abs $2 $4 $6 }
@@ -130,14 +138,6 @@ atom_typo :
   | O_PAREN typo error            { error "unclosed parenthesis" }
   | TICK_UPPER_ID                 { Type.inf_var $1 }
   | UPPER_ID                      { Type.var $1 }
-
-annot :
-  | FOR_ALL TICK_UPPER_ID COL_COL kind PERIOD annot
-    { Annot.forall $2 $4 $6 }
-  | EXISTS TICK_UPPER_ID COL_COL kind PERIOD annot
-    { Annot.exists $2 $4 $6 }
-  | typo
-    { Annot.typo $1 }
 
 /* Terms */
 

@@ -26,20 +26,24 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
       fn_name
       msg
 
+let fresh_inf_var () = Type.inf_var @@ Id.gen_upper ()
+
 let loc_wrap : Loc.t option -> co -> co = fun p -> match p with
   | Some p -> fun c -> Localized (p, c)
   | None -> fun c -> c
 
 let pure = True, fun _ -> ()
 
-let forall : Loc.t option -> Kind.t -> Type.t -> 'a t -> (Type.t * 'a) t =
-    fun loc kn tv (c, k) ->
-  ( loc_wrap loc @@ Universal (tv, kn, c),
+let forall
+    : Loc.t option -> Type.t -> Kind.t -> 'a t -> (Type.t * 'a) t
+    = fun loc_opt tv kn (c, k) ->
+  ( loc_wrap loc_opt @@ Universal (tv, kn, c),
     fun state -> Infer.apply state tv, k state )
 
-let exists : Loc.t option -> Kind.t -> Type.t -> 'a t -> (Type.t * 'a) t =
-    fun loc kn tv (c, k) ->
-  ( loc_wrap loc @@ Existential (tv, kn, c),
+let exists
+    : Loc.t option -> Type.t -> Kind.t -> 'a t -> (Type.t * 'a) t
+    = fun loc_opt tv kn (c, k) ->
+  ( loc_wrap loc_opt @@ Existential (tv, kn, c),
     fun state -> Infer.apply state tv, k state )
 
 let let_
@@ -47,10 +51,10 @@ let let_
       Id.t option ->
       Kind.t ->
       (Type.t -> 'a t) ->
-      ('b t) ->
+      'b t ->
       (Type.t * Kind.t Id.Map.t * 'a * 'b) t
     = fun loc_opt id_opt kn fn (rhs_c, rhs_k) ->
-  let tv = Type.inf_var @@ Id.gen_upper () in
+  let tv = fresh_inf_var () in
   let lhs_c, lhs_k = fn tv in
   let tvs_ref = ref Id.Map.empty in
   let tp_ref = ref tv in
@@ -190,25 +194,29 @@ let conj_left ?loc lhs rhs = map fst @@ conj ?loc lhs rhs
 
 let conj_right ?loc lhs rhs = map snd @@ conj ?loc lhs rhs
 
-let forall_list ?loc id_kns co =
-  List.fold_right
-    (fun (id, kn) co -> map snd @@ forall loc kn (Type.inf_var id) co)
-    id_kns
-    co
+let forall_list ?loc id_kns fn =
+  let forall_cons (tv, kn) c =
+    map (fun (tp, (tps, x)) -> (tp :: tps, x)) @@ forall loc tv kn c
+  in
+  let tv_kns = List.map (fun (id, kn) -> Type.inf_var id, kn) id_kns in
+  List.fold_right forall_cons tv_kns @@
+    map (fun x -> [], x) (fn @@ List.map fst tv_kns)
 
 let forall ?loc kn fn =
-  let tv = Type.inf_var @@ Id.gen_upper () in
-  forall loc kn tv @@ fn tv
+  let tv = fresh_inf_var () in
+  forall loc tv kn @@ fn tv
 
-let exists_list ?loc id_kns co =
-  List.fold_right
-    (fun (id, kn) co -> map snd @@ exists loc kn (Type.inf_var id) co)
-    id_kns
-    co
+let exists_list ?loc id_kns fn =
+  let exists_cons (tv, kn) c =
+    map (fun (tp, (tps, x)) -> (tp :: tps, x)) @@ exists loc tv kn c
+  in
+  let tv_kns = List.map (fun (id, kn) -> Type.inf_var id, kn) id_kns in
+  List.fold_right exists_cons tv_kns @@
+    map (fun x -> [], x) (fn @@ List.map fst tv_kns)
 
 let exists ?loc kn fn =
-  let tv = Type.inf_var @@ Id.gen_upper () in
-  exists loc kn tv @@ fn tv
+  let tv = fresh_inf_var () in
+  exists loc tv kn @@ fn tv
 
 let def ?loc id tp (c, k) =
   ( loc_wrap loc @@ Def_binding (id, tp, c), k )

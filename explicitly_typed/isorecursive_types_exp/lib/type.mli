@@ -78,7 +78,7 @@ val get_forall' : t -> (Identifier.t * Kind.t) list * t
 
 (**
   [get_mu tp] computes the variable quantifier and body of [tp], if
-  [tp] is a universally quantified type.  Otherwise, [get_mu] raises
+  [tp] is a recursive type.  Otherwise, [get_mu] raises
   [Invalid_argument].
  *)
 val get_mu : t -> Identifier.t *  Kind.t * t

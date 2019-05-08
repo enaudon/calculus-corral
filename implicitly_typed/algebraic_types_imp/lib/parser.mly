@@ -55,13 +55,12 @@ end
 %token <string> UPPER_ID
 
 /* Keywords */
-%token CASE
-%token OF
+%token CASE OF
 %token LET IN
 
 /* Symbols */
-%token S_ARROW
 %token B_SLASH
+%token S_ARROW
 %token PERIOD
 %token SEMICOLON
 %token EQ

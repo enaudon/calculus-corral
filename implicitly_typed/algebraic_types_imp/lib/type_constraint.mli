@@ -29,7 +29,7 @@ val conj_left : ?loc : Location.t -> 'a t -> 'b t -> 'a t
 *)
 val conj_right : ?loc : Location.t -> 'a t -> 'b t -> 'b t
 
-(** [conj_list cs] conjoins of the constraints in [cs]. *)
+(** [conj_list cs] conjoins the constraints in [cs]. *)
 val conj_list : ?loc : Location.t -> 'a t list -> 'a list t
 
 (**

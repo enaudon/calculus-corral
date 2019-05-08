@@ -38,12 +38,16 @@ let constrain env an term_co_fn =
   in
 
   let module TC = Type_constraint in
+  let open TC.Operators in
   let e_qs = get_existentials an in
   let u_qs = get_universals an in
   let tp = Type.beta_reduce ~deep:() env @@ get_typo an in
   let c1, c2 = term_co_fn tp in
-  TC.exists_list e_qs @@
-    TC.conj_left (TC.forall_list u_qs c1) (TC.exists_list u_qs c2)
+  TC.exists_list e_qs (fun _ ->
+    TC.conj_left
+      (TC.forall_list u_qs (fun _ -> c1) <$> snd)
+      (TC.exists_list u_qs (fun _ -> c2) <$> snd)) <$>
+    snd
 
 let rec to_string an = match an with
   | Type tp ->

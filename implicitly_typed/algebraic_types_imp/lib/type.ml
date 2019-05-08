@@ -68,15 +68,6 @@ let row_of_list : (Id.t * t) list -> t option -> t =
   let nil = Option.default row_nil rest_opt in
   List.fold_right cons fields nil
 
-let row_to_list : t -> (Id.t * t) list * t option = fun row ->
-  let rec to_list acc m = match m with
-    | Row_nil -> acc, None
-    | Row_cons (id, m, rest) -> to_list ((id, m) :: acc) rest
-    | _ -> acc, Some m
-  in
-  let fields, rest = to_list [] row in
-  List.rev fields, rest
-
 (* Destructors *)
 
 let get_forall' : t -> (Identifier.t * Kind.t) list * t = fun tp ->
@@ -88,6 +79,15 @@ let get_forall' : t -> (Identifier.t * Kind.t) list * t = fun tp ->
   in
   let quants, tp = get_forall [] tp in
   List.rev quants, tp
+
+let row_to_list : t -> (Id.t * t) list * t option = fun row ->
+  let rec to_list acc m = match m with
+    | Row_nil -> acc, None
+    | Row_cons (id, m, rest) -> to_list ((id, m) :: acc) rest
+    | _ -> acc, Some m
+  in
+  let fields, rest = to_list [] row in
+  List.rev fields, rest
 
 (* Inference *)
 
@@ -271,9 +271,9 @@ end = struct
       | Inference_variable (_, id') -> id = id'
       | Variable _ -> false
       | Application (fn, arg) -> occurs id fn || occurs id arg
+      | Universal _ -> raise_poly "Inferencer.unify.occurs"
       | Row_nil -> false
       | Row_cons (_, m, rest) -> occurs id m || occurs id rest
-      | Universal _ -> raise_poly "Inferencer.unify.occurs"
     in
 
     let rec update_ranks : state -> Id.t -> t -> state =
@@ -285,12 +285,12 @@ end = struct
           state
         | Application (fn, arg) ->
           update_ranks (update_ranks state id fn) id arg
+        | Universal _ ->
+          raise_poly "Inferencer.unify.update_ranks"
         | Row_nil ->
           state
         | Row_cons (_, m, rest) ->
           update_ranks (update_ranks state id m) id rest
-        | Universal _ ->
-          raise_poly "Inferencer.unify.update_ranks"
     in
 
     let merge : state -> Id.t -> t -> state =
@@ -370,12 +370,12 @@ end = struct
           (seen, fvs)
         | Application (fn, arg) ->
           free_inf_vars (free_inf_vars (seen, fvs) fn) arg
+        | Universal _ ->
+          raise_poly "Inferencer.gen_exit.free_inf_vars"
         | Row_nil ->
           seen, fvs
         | Row_cons (_, tp, rest) ->
           free_inf_vars (free_inf_vars (seen, fvs) tp) rest
-        | Universal _ ->
-          raise_poly "Inferencer.gen_exit.free_inf_vars"
       in
 
       tp
@@ -394,12 +394,12 @@ end = struct
         tp
       | Application (fn, arg) ->
         app (gen env fn) (gen env arg)
+      | Universal _ ->
+        raise_poly "Inferencer.gen_exit.gen"
       | Row_nil ->
         tp
       | Row_cons (id, tp, rest) ->
         row_cons id (gen env tp) (gen env rest)
-      | Universal _ ->
-        raise_poly "Inferencer.gen_exit.gen"
     in
 
     let tp' = Sub.apply tp state in
@@ -423,12 +423,12 @@ end = struct
         tp
       | Application (fn, arg) ->
         app (inst env fn) (inst env arg)
+      | Universal _ ->
+        raise_poly "Inferencer.inst"
       | Row_nil ->
         tp
       | Row_cons (id, tp, rest) ->
         row_cons id (inst env tp) (inst env rest)
-      | Universal _ ->
-        raise_poly "Inferencer.inst"
     in
 
     let make_var kn (state, tvs) =
@@ -463,13 +463,13 @@ let rec to_intl_repr tp =
       IR.var id
     | Application (fn, arg) ->
       IR.app (to_intl_repr fn) (to_intl_repr arg)
+    | Universal (quant, kn, body) ->
+      IR.forall quant (Kind.to_intl_repr kn) (to_intl_repr body)
     | Row_nil | Row_cons _ ->
       let fields, rest = row_to_list tp in
       IR.row
         (List.map (fun (id, tp) -> id, to_intl_repr tp) fields)
         (Option.map to_intl_repr rest)
-    | Universal (quant, kn, body) ->
-      IR.forall quant (Kind.to_intl_repr kn) (to_intl_repr body)
 
 (*
   NOTE: [simplify] does not register the new variables that it creates

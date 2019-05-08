@@ -37,11 +37,14 @@ val forall :
   ?loc : Location.t -> Kind.t -> (Type.t -> 'a t) -> (Type.t * 'a) t
 
 (**
-  [forall_list id c] behaves as [forall], but it allows the caller to
-  specify a list of universally quantified type variables and their kinds.
+  [forall_list id_kns (fun tps -> cs)] universally quantifies [tps],
+  whose identifiers and kinds come from [id_kns], in [cs].
  *)
 val forall_list :
-  ?loc : Location.t -> (Identifier.t * Kind.t) list -> 'a t -> 'a t
+  ?loc : Location.t ->
+  (Identifier.t * Kind.t) list ->
+  (Type.t list -> 'a t) ->
+  (Type.t list * 'a) t
 
 (**
   [exists kn (fun tp -> c)] existentially quantifies [tp] of kind [kn]
@@ -51,11 +54,14 @@ val exists :
   ?loc : Location.t -> Kind.t -> (Type.t -> 'a t) -> (Type.t * 'a) t
 
 (**
-  [exists_list id c] behaves as [exists], but it allows the caller to
-  specify a list of existentially quantified type variables and their kinds.
+  [exists_list id_kns (fun tps -> cs)] existentially quantifies [tps],
+  whose identifiers and kinds come from [id_kns], in [cs].
  *)
 val exists_list :
-  ?loc : Location.t -> (Identifier.t * Kind.t) list -> 'a t -> 'a t
+  ?loc : Location.t ->
+  (Identifier.t * Kind.t) list ->
+  (Type.t list -> 'a t) ->
+  (Type.t list * 'a) t
 
 (** [def id tp c] binds [id] to [tp] within [c]. *)
 val def : ?loc : Location.t -> Identifier.t -> Type.t -> 'a t -> 'a t

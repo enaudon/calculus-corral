@@ -54,7 +54,6 @@ rule prog = parse
   | "forall"                          { Parser.FOR_ALL }
   | "mu"                              { Parser.MU }
   | "of"                              { Parser.OF }
-  | "mu"                              { Parser.MU }
   | "roll"                            { Parser.ROLL }
   | "unroll"                          { Parser.UNROLL }
   | lower_id as id                    { Parser.LOWER_ID id }
