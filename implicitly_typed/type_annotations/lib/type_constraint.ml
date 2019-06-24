@@ -116,7 +116,7 @@ let solve (kn_env, tp_env) (c, k) =
                 (Id.to_string id)
   in
 
-  k @@ solve tp_env (Infer.make_state kn_env) c
+  k @@ solve tp_env (Infer.make_state kn_env tp_env) c
 
 (* Utilities *)
 

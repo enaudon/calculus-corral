@@ -6,19 +6,19 @@ type t =
   | Universal of Id.t * Kind.t * t
   | Existential of Id.t * Kind.t * t
 
-let rec infer env state an = match an with
+let rec infer state an = match an with
   | Type tp ->
-    (state, Type.beta_reduce ~deep:() env tp)
+    (state, tp)
   | Universal (quant, kn, an) ->
     let tv = Type.inf_var quant in
     let state' = Infer.register ~rigid:() state tv kn in
-    infer env state' an
+    infer state' an
   | Existential (quant, kn, an) ->
     let tv = Type.inf_var quant in
     let state' = Infer.register state tv kn in
-    infer env state' an
+    infer state' an
 
-let constrain env an term_co_fn =
+let constrain an term_co_fn =
 
   let rec get_typo an = match an with
     | Type tp -> tp
@@ -41,8 +41,7 @@ let constrain env an term_co_fn =
   let open TC.Operators in
   let e_qs = get_existentials an in
   let u_qs = get_universals an in
-  let tp = Type.beta_reduce ~deep:() env @@ get_typo an in
-  let c1, c2 = term_co_fn tp in
+  let c1, c2 = term_co_fn @@ get_typo an in
   TC.exists_list e_qs (fun _ ->
     TC.conj_left
       (TC.forall_list u_qs (fun _ -> c1) <$> snd)

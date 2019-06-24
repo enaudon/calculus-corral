@@ -80,8 +80,11 @@ module Inferencer : sig
   (** The type of inference engine state. *)
   type state
 
-  (** [make_state env] constructs a state from [env]. *)
-  val make_state : Kind.Environment.t -> state
+  (**
+    [make_state kn_env tp_env] constructs a state from [kn_env] and
+    [tp_env].
+   *)
+  val make_state : Kind.Environment.t -> Environment.t -> state
 
   (**
     [register ~rigid:() state tv] registers the inference variable,
@@ -138,15 +141,6 @@ end
 
 (** [to_kind env tp] computes the kind of [tp] under [env]. *)
 val to_kind : Kind.Environment.t -> t -> Kind.t
-
-(** {1 Transformations} *)
-
-(**
-  [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
-  [env].  If the [deep] argument is passed, then [beta_reduce] will
-  reduce the body of abstractions.
- *)
-val beta_reduce : ?deep : unit -> Environment.t -> t -> t
 
 (** {1 Utilities} *)
 

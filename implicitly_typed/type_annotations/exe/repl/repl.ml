@@ -16,6 +16,8 @@ module Repl = Language.Repl (struct
 
     include Type_annotations.Type
 
+    let beta_reduce ?deep:_ _ tp = tp
+
     let to_string tp = to_string tp
 
   end

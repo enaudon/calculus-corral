@@ -152,12 +152,12 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
               (coerce tvs qs' @@
                 IR.Term.tp_abs' ~loc qs' @@ value_k state) )
       | Annotation (tm, an) ->
-        let state, tp = Annot.infer env state an in
+        let state, tp = Annot.infer state an in
         let state, k = infer env state tp tm in
         (unify loc state exp_tp tp, k)
   in
 
-  let state = Infer.gen_enter @@ Infer.make_state kn_env in
+  let state = Infer.gen_enter @@ Infer.make_state kn_env tp_env in
   let state, tp = fresh_inf_var state Kind.prop in
   let state, k = infer tp_env state tp tm in
   let state, tvs, tp' = Infer.gen_exit state tp in
@@ -219,7 +219,7 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
               (IR.Term.abs ~loc id tp' body')
               (coerce tvs qs @@ IR.Term.tp_abs' ~loc qs value')
       | Annotation (tm, an) ->
-        Annot.constrain tp_env an @@ fun tp ->
+        Annot.constrain an @@ fun tp ->
           (constrain tp tm, TC.equals exp_tp tp)
 
   in

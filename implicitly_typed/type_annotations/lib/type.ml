@@ -77,7 +77,7 @@ let get_forall' : t -> (Identifier.t * Kind.t) list * t = fun tp ->
   let quants, tp = get_forall [] tp in
   List.rev quants, tp
 
-(* Transformations *)
+(* Reduction *)
 
 (**
   [subst tp id tp'] replaces occurences of [id] in [tp] with [tp'].
@@ -109,9 +109,7 @@ let rec subst : Id.Set.t -> Env.t -> t -> t = fun fvs sub tp ->
       forall quant kn @@
         subst (Id.Set.add quant fvs) (Env.Type.del quant sub) body
 
-let rec beta_reduce ?deep env tp =
-
-  let beta_reduce = beta_reduce ?deep in
+let rec beta_reduce env tp =
 
   let subst env tp id tp' =
     let fvs = Id.Set.of_list @@ Env.Type.keys env in
@@ -119,38 +117,24 @@ let rec beta_reduce ?deep env tp =
   in
 
   match tp with
-    | Inference_variable _ ->
-      tp
     | Variable id ->
       Env.Type.find_default tp id env
-    | Abstraction (arg, kn, body) ->
-      if deep <> None then
-        abs arg kn @@ beta_reduce (Env.Type.add arg (var arg) env) body
-      else
-        tp
     | Application (fn, act_arg) ->
-      let fn' = beta_reduce env fn in
-      let act_arg' = beta_reduce env act_arg in
-      begin match fn' with
+      begin match beta_reduce env fn with
         | Abstraction (fml_arg, _, body) ->
-          let body' = subst env body fml_arg act_arg' in
-          beta_reduce env body'
+          subst env body fml_arg act_arg
         | _ ->
-          app fn' act_arg'
+          tp
       end
-    | Universal (quant, kn, body) ->
-      if deep <> None then
-        forall quant kn @@
-          beta_reduce (Env.Type.add quant (var quant) env) body
-      else
-        tp
+    | _ ->
+      tp
 
 (* Inference *)
 
 module Inferencer : sig
 
   type state
-  val make_state : Kind.Environment.t -> state
+  val make_state : Kind_env.t -> Env.t -> state
   val register : ?rigid : unit -> state -> t -> Kind.t -> state
   val to_kind : state -> t -> Kind.t
   val unify : state -> t -> t -> state
@@ -173,6 +157,7 @@ end = struct
     sub : sub ;
     pools : (Kind.t * rigidity) IVE.t ;
     kind_env : Kind_env.t ;
+    type_env : Env.t ;
   }
 
   module Sub : sig
@@ -254,8 +239,8 @@ end = struct
   let raise_unify : t -> t -> 'a = fun tp1 tp2 ->
     raise @@ Cannot_unify (tp1, tp2)
 
-  let make_state kind_env =
-    {sub = Sub.identity; pools = IVE.empty; kind_env}
+  let make_state kind_env type_env =
+    {sub = Sub.identity; pools = IVE.empty; kind_env; type_env}
 
   let add_kind id kn state =
     {state with kind_env = Kind_env.add id kn state.kind_env}
@@ -353,8 +338,8 @@ end = struct
     in
 
     let rec unify state tp1 tp2 =
-      let tp1' = Sub.apply tp1 state in
-      let tp2' = Sub.apply tp2 state in
+      let tp1' = Sub.apply (beta_reduce state.type_env tp1) state in
+      let tp2' = Sub.apply (beta_reduce state.type_env tp2) state in
       match tp1', tp2' with
 
         | _, Inference_variable (Poly, _)
@@ -498,7 +483,11 @@ end
 (* Kinding *)
 
 let to_kind env tp =
-  Inferencer.to_kind (Inferencer.make_state env) tp
+  (*
+    [Env.initial] is ok here, because kinding does not use the type
+    environment.
+   *)
+  Inferencer.to_kind (Inferencer.make_state env Env.initial) tp
 
 (* Utilities *)
 
