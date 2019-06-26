@@ -14,7 +14,7 @@
   : 'C -> 'C
   = \C :: * . \x : C . x ;
 let app = \x . \f . f x in \x . app (x : exists 'A :: * . 'A -> 'A)
-  : ('A -> 'A) -> (('A -> 'A) -> 'B) -> 'B
+  : ('A -> 'A) -> (('A -> 'A) -> 'A) -> 'A
   = \A :: * . \A :: * . \x : A -> A . \f : (A -> A) -> A . f x ;
 let id = \x . x in \x . id x : exists 'A :: * . 'A -> 'A
   : ('A -> 'A) -> 'A -> 'A

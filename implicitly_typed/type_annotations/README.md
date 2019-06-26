@@ -1,18 +1,39 @@
 # Known issues
 
-## Type variable naming
+## Generated inference variable naming
 
-Distinct type variables with the same name and overlapping scope are
-incorrectly treated as a single type variable.
+Generated inference variables are named without consideration of
+in-scope user-defined inference variables, and may therefore share
+the same name.
+
+```
+let app = \x . \f . f x in
+\x . app (x : exists 'A :: * . 'A -> 'A) ;
+
+(*
+  Type as: ('A -> 'A) -> (('A -> 'A) -> 'A) -> 'A
+  Instead of: ('A -> 'A) -> (('A -> 'A) -> 'B) -> 'B
+*)
+```
+
+Since generated and user-defined inference variables are internally
+distinct, the returned type is correct.  However, this is not clear from
+the way it's printed.
+
+## User-defined inference variable scoping
+
+Distinct user-defined inference variables with the same name and
+overlapping scope are incorrectly treated as a single inference
+variable.
 
 ```
 > \x . x : exists A . A -> A : exists A . (A -> A) -> A -> A ;
 (* Results in "type variable 'A' occurs in 'A -> A' *)
 ```
 
-## Rigid type variables scoping
+## Rigid inference variables scoping
 
-The scoping of rigid type variables is not checked, so they may escape
+The scoping of rigid inference variables is not checked, so they may escape
 their scope.
 
 ```

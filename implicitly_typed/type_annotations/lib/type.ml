@@ -524,15 +524,20 @@ let simplify tp =
       inf_var morph @@ Id.Map.find id env
     | Inference_variable _ | Variable _ ->
       tp
+    | Abstraction (arg, kn, body) when Id.is_generated arg ->
+      let arg' = fresh () in
+      abs arg' kn @@ simplify (Id.Map.add arg arg' env) body
     | Abstraction (arg, kn, body) ->
       abs arg kn @@ simplify env body
     | Application (fn, arg) ->
       let fn' = simplify env fn in
       let arg' = simplify env arg in
       app fn' arg'
-    | Universal (quant, kn, body) ->
+    | Universal (quant, kn, body) when Id.is_generated quant ->
       let quant' = fresh () in
       forall quant' kn @@ simplify (Id.Map.add quant quant' env) body
+    | Universal (quant, kn, body) ->
+      forall quant kn @@ simplify env body
   in
 
   simplify (Id.Map.empty) tp

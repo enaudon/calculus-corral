@@ -420,9 +420,11 @@ let simplify tp =
       let fn' = simplify env fn in
       let arg' = simplify env arg in
       app fn' arg'
-    | Universal (quant, kn, body) ->
+    | Universal (quant, kn, body) when Id.is_generated quant ->
       let quant' = fresh () in
       forall quant' kn @@ simplify (Id.Map.add quant quant' env) body
+    | Universal (quant, kn, body) ->
+      forall quant kn @@ simplify env body
   in
 
   simplify (Id.Map.empty) tp
