@@ -24,7 +24,7 @@ val app' : ?loc : Location.t -> t -> t list -> t
 
 (**
   [bind id value body] constructs the binding of [id] to [value] within
-  [body].  Note that [value] is not generalized--it is monomorphic!
+  [body].
  *)
 val bind : ?loc : Location.t -> Identifier.t -> t -> t -> t
 

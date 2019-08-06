@@ -137,18 +137,18 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
           fun state -> IR.Term.app ~loc (fn_k state) (arg_k state) )
       | Binding (id, value, body) ->
         let state = Infer.gen_enter state in
-        let state, tp = fresh_inf_var state Kind.prop in
-        let state, value_k = infer env state tp value in
-        let state, tvs, tp' = Infer.gen_exit state tp in
-        let qs = Type.get_quants tp' in
-        let env' = Type_env.Term.add id tp' env in
+        let state, mono_tp = fresh_inf_var state Kind.prop in
+        let state, value_k = infer env state mono_tp value in
+        let state, tvs, poly_tp = Infer.gen_exit state mono_tp in
+        let qs = Type.get_quants poly_tp in
+        let env' = Type_env.Term.add id poly_tp env in
         let state, body_k = infer env' state exp_tp body in
         ( state,
           fun state ->
-            let tp'' = type_to_ir state tp' in
+            let poly_tp' = type_to_ir state poly_tp in
             let qs' = List.map quant_to_ir qs in
             IR.Term.app ~loc
-              (IR.Term.abs ~loc id tp'' (body_k state))
+              (IR.Term.abs ~loc id poly_tp' (body_k state))
               (coerce tvs qs' @@
                 IR.Term.tp_abs' ~loc qs' @@ value_k state) )
       | Annotation (tm, an) ->
@@ -158,15 +158,15 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
   in
 
   let state = Infer.gen_enter @@ Infer.make_state kn_env tp_env in
-  let state, tp = fresh_inf_var state Kind.prop in
-  let state, k = infer tp_env state tp tm in
-  let state, tvs, tp' = Infer.gen_exit state tp in
-  let qs = List.map quant_to_ir @@ Type.get_quants tp' in
+  let state, mono_tp = fresh_inf_var state Kind.prop in
+  let state, k = infer tp_env state mono_tp tm in
+  let state, tvs, poly_tp = Infer.gen_exit state mono_tp in
+  let qs = List.map quant_to_ir @@ Type.get_quants poly_tp in
   let tm' =
     coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs @@ k state
   in
 
-  tp', tm'
+  poly_tp, tm'
 
 let to_type_hm env tm = fst @@ infer_hm env tm
 

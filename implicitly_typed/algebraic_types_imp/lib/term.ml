@@ -157,18 +157,18 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
           fun state -> IR.Term.app ~loc (fn_k state) (arg_k state) )
       | Binding (id, value, body) ->
         let state = Infer.gen_enter state in
-        let state, tp = fresh_inf_var state Kind.prop in
-        let state, value_k = infer env state tp value in
-        let state, tvs, tp' = Infer.gen_exit state tp in
-        let qs = Type.get_quants tp' in
-        let env' = Type_env.Term.add id tp' env in
+        let state, mono_tp = fresh_inf_var state Kind.prop in
+        let state, value_k = infer env state mono_tp value in
+        let state, tvs, poly_tp = Infer.gen_exit state mono_tp in
+        let qs = Type.get_quants poly_tp in
+        let env' = Type_env.Term.add id poly_tp env in
         let state, body_k = infer env' state exp_tp body in
         ( state,
           fun state ->
-            let tp'' = type_to_ir state tp' in
+            let poly_tp' = type_to_ir state poly_tp in
             let qs' = List.map quant_to_ir qs in
             IR.Term.app ~loc
-              (IR.Term.abs ~loc id tp'' (body_k state))
+              (IR.Term.abs ~loc id poly_tp' (body_k state))
               (coerce tvs qs' @@
                 IR.Term.tp_abs' ~loc qs' @@ value_k state) )
       | Record fields ->
@@ -186,11 +186,8 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
           in
           s, List.rev ks
         in
-        let state =
-          unify loc state exp_tp @@
-            Type.rcrd (List.combine (List.map fst fields) tps) None
-        in
-        ( state,
+        ( unify loc state exp_tp @@
+            Type.rcrd (List.combine (List.map fst fields) tps) None,
           fun state ->
             IR.Term.rcrd ~loc @@
               List.map (fun (id, k) -> id, k state) field_ks )
@@ -204,8 +201,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
         let state, rest_tp = fresh_inf_var state Kind.row in
         let state, data_k = infer env state data_tp data in
         let tp = Type.vrnt [(case, data_tp)] @@ Some rest_tp in
-        let state = unify loc state exp_tp tp in
-        ( state,
+        ( unify loc state exp_tp tp,
           fun state ->
             let data_tp' = type_to_ir state data_tp in
             let rest_tp' = type_to_ir state rest_tp in
@@ -244,15 +240,15 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
   in
 
   let state = Infer.gen_enter @@ Infer.make_state Kind_env.initial in
-  let state, tp = fresh_inf_var state Kind.prop in
-  let state, k = infer env state tp tm in
-  let state, tvs, tp' = Infer.gen_exit state tp in
-  let qs = List.map quant_to_ir @@ Type.get_quants tp' in
+  let state, mono_tp = fresh_inf_var state Kind.prop in
+  let state, k = infer env state mono_tp tm in
+  let state, tvs, poly_tp = Infer.gen_exit state mono_tp in
+  let qs = List.map quant_to_ir @@ Type.get_quants poly_tp in
   let tm' =
     coerce tvs qs @@ IR.Term.tp_abs' ~loc:tm.loc qs @@ k state
   in
 
-  tp', tm'
+  poly_tp, tm'
 
 let to_type_hm env tm = fst @@ infer_hm env tm
 
@@ -336,15 +332,14 @@ let infer_pr : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
           TC.def id tp @@ constrain res_tp body <$>
             fun body' -> case, id, body'
         in
+        let ids = List.map Misc.fst_of_3 cases in
         let kns = List.init (List.length cases) (fun _ -> Kind.prop) in
         TC.exists_list ~loc kns (fun tps ->
-          let case_tps =
-            List.combine (List.map Misc.fst_of_3 cases) tps
-          in
+          let vrnt_tp = Type.vrnt (List.combine ids tps) None in
           TC.exists ~loc Kind.prop @@ fun res_tp ->
             TC.conj_left
               (TC.conj
-                (constrain (Type.vrnt case_tps None) vrnt)
+                (constrain vrnt_tp vrnt)
                 (TC.conj_list
                   (List.map2 (constrain_case res_tp) tps cases)))
               (TC.equals exp_tp res_tp)) <$>
