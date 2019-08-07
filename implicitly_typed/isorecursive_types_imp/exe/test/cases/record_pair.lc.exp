@@ -1,0 +1,39 @@
+Pair
+  : * => * => *
+  = \A :: * . \B :: * . {fst : A; snd : B} ;
+pair
+  : 'A -> 'B -> {fst : 'A; snd : 'B}
+  = \A :: * . \B :: * . \f : A . \s : B . {fst : f; snd : s} ;
+fst
+  : {fst : 'A; snd : 'B} -> 'A
+  = \A :: * . \B :: * . \p : {fst : A; snd : B} . p.fst ;
+snd
+  : {fst : 'A; snd : 'B} -> 'B
+  = \A :: * . \B :: * . \p : {fst : A; snd : B} . p.snd ;
+p
+  : {fst : [False : {}; True : {}]; snd : [False : {}; True : {}]}
+  = {fst : [False {} of [False : {}; True : {}]]; snd : [True {} of [True : {}; False : {}]]} ;
+fst p
+  : [False : {}; True : {}]
+  = [False {} of [False : {}; True : {}]] ;
+snd p
+  : [False : {}; True : {}]
+  = [True {} of [True : {}; False : {}]] ;
+p
+  : {fst : mu A :: * . [Zero : {}; Succ : A]; snd : mu A :: * . [Zero : {}; Succ : A]}
+  = {fst : roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]; snd : roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]} ;
+fst p
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]] ;
+snd p
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+p
+  : {fst : [False : {}; True : {}]; snd : mu A :: * . [Zero : {}; Succ : A]}
+  = {fst : [False {} of [False : {}; True : {}]]; snd : roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]} ;
+fst p
+  : [False : {}; True : {}]
+  = [False {} of [False : {}; True : {}]] ;
+snd p
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]] ;

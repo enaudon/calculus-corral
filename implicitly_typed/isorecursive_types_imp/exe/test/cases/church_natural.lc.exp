@@ -1,0 +1,63 @@
+Nat
+  : * => *
+  = \A :: * . (A -> A) -> A -> A ;
+zero
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . z ;
+one
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s z ;
+two
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s z) ;
+three
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s (s z)) ;
+four
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;
+eight
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
+succ
+  : (('A -> 'B) -> 'C -> 'A) -> ('A -> 'B) -> 'C -> 'B
+  = \A :: * . \B :: * . \C :: * . \n : (A -> B) -> C -> A . \s : A -> B . \z : C . s (n s z) ;
+add
+  : ('A -> 'B -> 'C) -> ('A -> 'D -> 'B) -> 'A -> 'D -> 'C
+  = \A :: * . \B :: * . \C :: * . \D :: * . \m : A -> B -> C . \n : A -> D -> B . \s : A . \z : D . m s (n s z) ;
+mul
+  : ('A -> 'B) -> ('C -> 'A) -> 'C -> 'B
+  = \A :: * . \B :: * . \C :: * . \m : A -> B . \n : C -> A . \s : C . m (n s) ;
+if_zero
+  : (('A -> 'B) -> 'C -> 'D) -> ('E -> 'F -> 'C) -> ('E -> 'F -> 'B) -> 'E -> 'F -> 'D
+  = \A :: * . \B :: * . \C :: * . \D :: * . \E :: * . \F :: * . \m : (A -> B) -> C -> D . \n : E -> F -> C . \o : E -> F -> B . \s : E . \z : F . m (\x : A . o s z) (n s z) ;
+succ one
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s z) ;
+add one zero
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s z ;
+add one two
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s (s z)) ;
+mul two two
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;
+mul two zero
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . z ;
+mul two (mul two two)
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
+if_zero zero one two
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s z ;
+if_zero one one two
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s z) ;
+if_zero two one two
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s z) ;
+if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
+  : ('A -> 'A) -> 'A -> 'A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;

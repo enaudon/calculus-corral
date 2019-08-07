@@ -1,0 +1,32 @@
+Pair = \A :: * . \B :: * . \C :: * . (A -> B -> C) -> C ;
+
+pair = \f . \s . \p . p f s ;
+
+fst = \p . p (\f . \s . f) ;
+
+snd = \p . p (\f . \s . s) ;
+
+p =
+  (pair fls tru) :
+    forall 'A :: * . forall 'B :: * . Pair (Bool 'A) (Bool 'A) 'B ;
+
+fst p ;
+
+snd p ;
+
+p =
+  (pair zero one) :
+    forall 'A :: * . forall 'B :: * . Pair (Nat 'A) (Nat 'A) 'B ;
+
+fst p ;
+
+snd p ;
+
+p =
+  (pair fls zero) :
+    forall 'A :: * . forall 'B :: * . forall 'C :: * .
+      Pair (Bool 'A) (Nat 'B) 'C ;
+
+fst p ;
+
+snd p ;

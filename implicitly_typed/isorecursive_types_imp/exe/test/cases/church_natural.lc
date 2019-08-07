@@ -1,0 +1,44 @@
+Nat = \A :: * . (A -> A) -> A -> A ;
+
+zero = (\s . \z . z) : forall 'A :: * . Nat 'A ;
+
+one = (\s . \z . s z) : forall 'A :: * . Nat 'A ;
+
+two = \s . \z . s (s z) ;
+
+three = \s . \z . s (s (s z)) ;
+
+four = \s . \z . s (s (s (s z))) ;
+
+eight = \s . \z . s (s (s (s (s (s (s (s z))))))) ;
+
+succ = \n . \s . \z . s (n s z) ;
+
+add = \m . \n . \s . \z . m s (n s z) ;
+
+mul = \m . \n . \s . m (n s) ;
+
+if_zero = \m . \n . \o . \s . \z .  m (\x . o s z) (n s z) ;
+
+succ one ;
+
+add one zero ;
+
+add one two ;
+
+mul two two ;
+
+mul two zero ;
+
+mul two (mul two two) ;
+
+if_zero zero one two ;
+
+if_zero one one two ;
+
+if_zero two one two ;
+
+if_zero
+  (add (mul four four) one)
+  (mul eight two)
+  (add one (add two one)) ;

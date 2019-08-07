@@ -1,0 +1,27 @@
+Pair = \A :: * . \B :: * . {fst : A; snd : B} ;
+
+pair = \f . \s . {fst = f; snd = s} ;
+
+fst = \p .
+  (\p . p.fst) (p : forall 'A :: * . forall 'B :: * . Pair 'A 'B) ;
+
+snd = \p .
+  (\p . p.snd) (p : forall 'A :: * . forall 'B :: * . Pair 'A 'B) ;
+
+p = pair fls tru ;
+
+fst p ;
+
+snd p ;
+
+p = pair zero one ;
+
+fst p ;
+
+snd p ;
+
+p = pair fls zero ;
+
+fst p ;
+
+snd p ;

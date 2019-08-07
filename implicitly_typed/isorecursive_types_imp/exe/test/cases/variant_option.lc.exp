@@ -1,0 +1,18 @@
+Option
+  : * => *
+  = \A :: * . [None : {}; Some : A] ;
+none
+  : [None : {}; Some : 'A]
+  = \A :: * . [None {} of [None : {}; Some : A]] ;
+some
+  : 'A -> [None : {}; Some : 'A]
+  = \A :: * . \x : A . [Some x of [Some : A; None : {}]] ;
+default
+  : 'A -> [None : 'B; Some : 'A] -> 'A
+  = \A :: * . \B :: * . \x : A . \opt : [None : B; Some : A] . case opt of [None _ -> x; Some x -> x] ;
+map
+  : ('A -> 'B) -> [None : 'C; Some : 'A] -> [None : {}; Some : 'B]
+  = \A :: * . \B :: * . \C :: * . \fn : A -> B . \opt : [None : C; Some : A] . case opt of [None _ -> [None {} of [None : {}; Some : B]]; Some x -> [Some (fn x) of [Some : B; None : {}]]] ;
+fold
+  : ('A -> 'B -> 'A) -> 'A -> [None : 'C; Some : 'B] -> 'A
+  = \A :: * . \B :: * . \C :: * . \fn : A -> B -> A . \init : A . \opt : [None : C; Some : B] . case opt of [None _ -> init; Some x -> fn init x] ;

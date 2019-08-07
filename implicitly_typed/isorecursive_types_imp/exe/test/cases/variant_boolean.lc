@@ -1,0 +1,51 @@
+Bool = [False; True] ;
+
+fls = (False) : Bool ;
+
+tru = (True) : Bool ;
+
+not = \p . case p of [
+  False -> tru;
+  True -> fls;
+] ;
+
+and = \p . \q . case p of [
+  False -> fls;
+  True -> q;
+] ;
+
+or = \p . \q . case p of [
+  True -> tru;
+  False -> q;
+] ;
+
+if = \p . \t . \e . case p of [
+  True -> t;
+  False -> e;
+] ;
+
+not fls ;
+
+not tru ;
+
+and fls fls ;
+
+and fls tru ;
+
+and tru fls ;
+
+and tru tru ;
+
+or fls fls ;
+
+or fls tru ;
+
+or tru fls ;
+
+or tru tru ;
+
+if fls fls tru ; 
+
+if tru fls tru ;
+
+if fls (\x . x) (\y . y) ;

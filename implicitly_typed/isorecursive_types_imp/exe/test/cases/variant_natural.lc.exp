@@ -1,0 +1,63 @@
+Nat
+  : *
+  = mu A :: * . [Zero : {}; Succ : A] ;
+zero
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]] ;
+succ
+  : (mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A]
+  = \n : mu A :: * . [Zero : {}; Succ : A] . roll mu A :: * . [Zero : {}; Succ : A] [Succ n of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+one
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+three
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+four
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+eight
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+add
+  : (mu A :: * . [Zero : {}; Succ : A]) -> (mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A]
+  = \m : mu A :: * . [Zero : {}; Succ : A] . \n : mu A :: * . [Zero : {}; Succ : A] . case unroll n of [Zero _ -> m; Succ o -> fix (\add : (mu A :: * . [Zero : {}; Succ : A]) -> (mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A] . \m : mu A :: * . [Zero : {}; Succ : A] . \n : mu A :: * . [Zero : {}; Succ : A] . case unroll n of [Zero _ -> m; Succ o -> add (roll mu A :: * . [Zero : {}; Succ : A] [Succ m of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) o]) (roll mu A :: * . [Zero : {}; Succ : A] [Succ m of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) o] ;
+mul
+  : (mu A :: * . [Zero : {}; Succ : A]) -> (mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A]
+  = \m : mu A :: * . [Zero : {}; Succ : A] . \n : mu A :: * . [Zero : {}; Succ : A] . case unroll n of [Zero _ -> roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]; Succ o -> case unroll (fix (\mul : (mu A :: * . [Zero : {}; Succ : A]) -> (mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A] . \m : mu A :: * . [Zero : {}; Succ : A] . \n : mu A :: * . [Zero : {}; Succ : A] . case unroll n of [Zero _ -> roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]; Succ o -> case unroll (mul m o) of [Zero _ -> m; Succ o -> fix (\h : (mu A :: * . [Zero : {}; Succ : A]) -> (mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A] . \i : mu A :: * . [Zero : {}; Succ : A] . \j : mu A :: * . [Zero : {}; Succ : A] . case unroll j of [Zero _ -> i; Succ k -> h (roll mu A :: * . [Zero : {}; Succ : A] [Succ i of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) k]) (roll mu A :: * . [Zero : {}; Succ : A] [Succ m of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) o]]) m o) of [Zero _ -> m; Succ f -> fix (\b : (mu A :: * . [Zero : {}; Succ : A]) -> (mu A :: * . [Zero : {}; Succ : A]) -> mu A :: * . [Zero : {}; Succ : A] . \c : mu A :: * . [Zero : {}; Succ : A] . \d : mu A :: * . [Zero : {}; Succ : A] . case unroll d of [Zero _ -> c; Succ e -> b (roll mu A :: * . [Zero : {}; Succ : A] [Succ c of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) e]) (roll mu A :: * . [Zero : {}; Succ : A] [Succ m of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) f]] ;
+if_zero
+  : (mu A :: * . [Zero : {}; Succ : A]) -> 'A -> 'A -> 'A
+  = \A :: * . \m : mu A :: * . [Zero : {}; Succ : A] . \n : A . \o : A . case unroll m of [Zero _ -> n; Succ p -> o] ;
+succ one
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+add one zero
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+add one two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+mul two two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+mul two zero
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]] ;
+mul two (mul two two)
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+if_zero zero one two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+if_zero one one two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+if_zero two one two
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;
+if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
+  : mu A :: * . [Zero : {}; Succ : A]
+  = roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Succ (roll mu A :: * . [Zero : {}; Succ : A] [Zero {} of [Zero : {}; Succ : mu A :: * . [Zero : {}; Succ : A]]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]]) of [Succ : mu A :: * . [Zero : {}; Succ : A]; Zero : {}]] ;

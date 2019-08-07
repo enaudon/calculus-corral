@@ -1,0 +1,66 @@
+List = \A :: * . mu List :: * . [Nil; Cons : {head : A; tail : List}] ;
+
+nil = (Nil) : forall 'A :: * . List 'A ;
+
+cons = \hd . \tl .
+  (Cons {head = hd; tail = tl}) : forall 'A :: * . List 'A ;
+
+is_empty = \list . case (list : forall 'A :: * . List 'A) of [
+  Nil -> tru;
+  Cons c -> fls;
+] ;
+
+head = \list . case (list : forall 'A :: * . List 'A) of [
+  Nil -> none;
+  Cons c -> some c.head;
+] ;
+
+tail = \list . case (list : forall 'A :: * . List 'A) of [
+  Nil -> none;
+  Cons c -> some c.tail;
+] ;
+
+map =
+  let rec map =
+    \fn . \list . case (list : forall 'A :: * . List 'A) of [
+      Nil -> nil;
+      Cons c -> cons (fn c.head) (map fn c.tail);
+    ]
+  in
+  map ;
+
+fold_left =
+  let rec fold_left =
+    \fn . \acc . \list . case (list : forall 'A :: * . List 'A) of [
+      Nil -> acc;
+      Cons c -> fold_left fn (fn acc c.head) c.tail;
+    ]
+  in
+  fold_left ;
+
+fold_right =
+  let rec fold_right =
+    \fn . \acc . \list . case (list : forall 'A :: * . List 'A) of [
+      Nil -> acc;
+      Cons c -> fn c.head (fold_right fn acc c.tail);
+    ]
+  in
+  fold_right ;
+
+bools = cons tru (cons fls (cons tru nil)) ;
+
+map not bools ;
+
+map (\b . if b one zero) bools ;
+
+fold_left and tru bools ;
+
+fold_left or fls bools ;
+
+nats = cons zero (cons one (cons two nil)) ;
+
+map (\n . if_zero n tru fls) nats ;
+
+map (add two) nats ;
+
+fold_right add zero nats ;

@@ -1,0 +1,21 @@
+id = \x . x ;
+
+app = \f . \x . f x ;
+
+rev_app = \x . \f . f x ;
+
+compose = \f . \g . \x . f (g x) ;
+
+arg_swap = \f . \x . \y . f y x ;
+
+id' = compose id id ;
+
+rev_app' = arg_swap app ;
+
+id id ;
+
+app id id' ;
+
+rev_app app id ;
+
+rev_app' compose id ;

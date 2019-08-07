@@ -1,0 +1,60 @@
+Bool
+  : *
+  = [False : {}; True : {}] ;
+fls
+  : [False : {}; True : {}]
+  = [False {} of [False : {}; True : {}]] ;
+tru
+  : [False : {}; True : {}]
+  = [True {} of [True : {}; False : {}]] ;
+not
+  : [False : 'A; True : 'B] -> [False : {}; True : {}]
+  = \A :: * . \B :: * . \p : [False : A; True : B] . case p of [False _ -> [True {} of [True : {}; False : {}]]; True _ -> [False {} of [False : {}; True : {}]]] ;
+and
+  : [False : 'A; True : 'B] -> [False : {}; True : {}] -> [False : {}; True : {}]
+  = \A :: * . \B :: * . \p : [False : A; True : B] . \q : [False : {}; True : {}] . case p of [False _ -> [False {} of [False : {}; True : {}]]; True _ -> q] ;
+or
+  : [True : 'A; False : 'B] -> [False : {}; True : {}] -> [False : {}; True : {}]
+  = \A :: * . \B :: * . \p : [True : A; False : B] . \q : [False : {}; True : {}] . case p of [True _ -> [True {} of [True : {}; False : {}]]; False _ -> q] ;
+if
+  : [True : 'A; False : 'B] -> 'C -> 'C -> 'C
+  = \A :: * . \B :: * . \C :: * . \p : [True : A; False : B] . \t : C . \e : C . case p of [True _ -> t; False _ -> e] ;
+not fls
+  : [False : {}; True : {}]
+  = [True {} of [True : {}; False : {}]] ;
+not tru
+  : [False : {}; True : {}]
+  = [False {} of [False : {}; True : {}]] ;
+and fls fls
+  : [False : {}; True : {}]
+  = [False {} of [False : {}; True : {}]] ;
+and fls tru
+  : [False : {}; True : {}]
+  = [False {} of [False : {}; True : {}]] ;
+and tru fls
+  : [False : {}; True : {}]
+  = [False {} of [False : {}; True : {}]] ;
+and tru tru
+  : [False : {}; True : {}]
+  = [True {} of [True : {}; False : {}]] ;
+or fls fls
+  : [False : {}; True : {}]
+  = [False {} of [False : {}; True : {}]] ;
+or fls tru
+  : [False : {}; True : {}]
+  = [True {} of [True : {}; False : {}]] ;
+or tru fls
+  : [False : {}; True : {}]
+  = [True {} of [True : {}; False : {}]] ;
+or tru tru
+  : [False : {}; True : {}]
+  = [True {} of [True : {}; False : {}]] ;
+if fls fls tru
+  : [False : {}; True : {}]
+  = [True {} of [True : {}; False : {}]] ;
+if tru fls tru
+  : [False : {}; True : {}]
+  = [False {} of [False : {}; True : {}]] ;
+if fls (\x . x) (\y . y)
+  : 'A -> 'A
+  = \A :: * . \y : A . y ;
