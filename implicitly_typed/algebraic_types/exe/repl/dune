@@ -1,5 +1,0 @@
-(executable
- (name repl)
- (modules repl)
- (libraries algebraic_types)
- (flags -w +A-4 -warn-error +A-4))

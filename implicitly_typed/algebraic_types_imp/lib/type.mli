@@ -30,26 +30,6 @@ exception Cannot_unify of t * t
  *)
 val inf_var : Identifier.t -> t
 
-(** [var id] constructs a type variable with the identifier [id]. *)
-val var : Identifier.t -> t
-
-(**
-  [abs arg kn body] constructs the abstraction of [arg] of kind [kn]
-  from [body].
- *)
-val abs : Identifier.t -> Kind.t -> t -> t
-
-(**
-  [abs' args body] constructs the abstraction of [args] from [body].
- *)
-val abs' : (Identifier.t * Kind.t) list -> t -> t
-
-(** [app fn arg] constructs the application of [fn] to [arg]. *)
-val app : t -> t -> t
-
-(** [app' fn arg] constructs the application of [fn] to [args]. *)
-val app' : t -> t list -> t
-
 (**
   [func arg res] constructs a function from [arg] to [res].  If either
   [arg] or [res] is polymoprhic, [func] will raise [Expected_mono].
@@ -62,6 +42,12 @@ val func : t -> t -> t
   [Expected_mono].
  *)
 val func' : t list -> t -> t
+
+(** [rcrd fields] constructs a record type. *)
+val rcrd : (Identifier.t * t) list -> t option -> t
+
+(** [vnrt cases] constructs a variant type. *)
+val vrnt : (Identifier.t * t) list -> t option -> t
 
 (** [get_forall' tp] computes the variable quantifiers of [tp]. *)
 val get_quants : t -> (Identifier.t * Kind.t) list
@@ -84,11 +70,10 @@ module Inferencer : sig
   val make_state : Kind.Environment.t -> state
 
   (**
-    [register ~rigid:() state tv] registers the inference variable,
-    [tv], with the inference engine.  Unless [rigid] is passed, [tv]
-    will be registered as a flexible type variable.
+    [register state tv kn] registers the inference variable, [tv], of
+    kind [kn], with the inference engine.
    *)
-  val register : ?rigid : unit -> state -> t -> Kind.t -> state
+  val register : state -> t -> Kind.t -> state
 
   (**
     [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
@@ -139,22 +124,13 @@ end
 (** [to_kind env tp] computes the kind of [tp] under [env]. *)
 val to_kind : Kind.Environment.t -> t -> Kind.t
 
-(** {1 Transformations} *)
-
-(**
-  [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
-  [env].  If the [deep] argument is passed, then [beta_reduce] will
-  reduce the body of abstractions.
- *)
-val beta_reduce : ?deep : unit -> Environment.t -> t -> t
-
 (** {1 Utilities} *)
 
 (**
   [to_intl_repr tp] computes an internal representation type which is
   equivalent to [tp].
  *)
-val to_intl_repr : t -> Type_operators_exp.Type.t
+val to_intl_repr : t -> Algebraic_types_exp.Type.t
 
 (**
   [simplify tp] replaces each inference variable in [tp] with the

@@ -7,11 +7,12 @@ type morph = Mono | Poly
 type t =
   | Inference_variable of morph * Id.t
   | Variable of Id.t
-  | Abstraction of Id.t * Kind.t * t
   | Application of t * t
   | Universal of Id.t * Kind.t * t
+  | Row_nil
+  | Row_cons of Id.t * t * t
 
-module Env = Type_environment.Make (struct
+module Environment = Type_environment.Make (struct
   type value = t
   let initial_types = []
   let initial_terms = []
@@ -32,13 +33,6 @@ let expected_mono : string -> 'a = fun fn_name ->
   invalid_arg @@
     Printf.sprintf "%s.%s: expected monomorphic type" __MODULE__ fn_name
 
-let raise_abs : string -> 'a = fun fn_name ->
-  invalid_arg @@
-    Printf.sprintf
-      "%s.%s: unexpected type abstraction"
-      __MODULE__
-      fn_name
-
 let var_to_string : t -> string = fun tv -> match tv with
   | Inference_variable (_, id) -> "'" ^ Id.to_string id
   | Variable id -> Id.to_string id
@@ -51,8 +45,6 @@ let inf_var : morph -> Id.t -> t = fun morph id ->
 
 let var id = Variable id
 
-let abs arg kn body = Abstraction (arg, kn, body)
-
 let app : t -> t -> t = fun fn arg -> Application (fn, arg)
 
 let forall : Id.t -> Kind.t -> t -> t = fun quant kn body ->
@@ -61,6 +53,26 @@ let forall : Id.t -> Kind.t -> t -> t = fun quant kn body ->
 let forall' : (Id.t * Kind.t) list -> t -> t = fun quants body ->
   let forall (quant, kn) body = forall quant kn body in
   List.fold_right forall quants body
+
+let row_nil : t = Row_nil
+
+let row_cons : Id.t -> t -> t -> t = fun id tp rest ->
+  Row_cons (id, tp, rest)
+
+let row_of_list : (Id.t * t) list -> t option -> t =
+    fun fields rest_opt ->
+  let cons (id, tp) rest = row_cons id tp rest in
+  let nil = Option.default row_nil rest_opt in
+  List.fold_right cons fields nil
+
+let row_to_list : t -> (Id.t * t) list * t option = fun row ->
+  let rec to_list acc m = match m with
+    | Row_nil -> acc, None
+    | Row_cons (id, m, rest) -> to_list ((id, m) :: acc) rest
+    | _ -> acc, Some m
+  in
+  let fields, rest = to_list [] row in
+  List.rev fields, rest
 
 (* Destructors *)
 
@@ -74,81 +86,13 @@ let get_forall' : t -> (Identifier.t * Kind.t) list * t = fun tp ->
   let quants, tp = get_forall [] tp in
   List.rev quants, tp
 
-(* Transformations *)
-
-(**
-  [subst tp id tp'] replaces occurences of [id] in [tp] with [tp'].
-
-  [subst] avoids name capture by renaming binders in [tp] to follow the
-  Barendregt convention--i.e. the names of bound variable are chosen
-  distinct from those of free variables.
- *)
-let rec subst : Id.Set.t -> Env.t -> t -> t = fun fvs sub tp ->
-  match tp with
-    | Inference_variable _ ->
-      tp
-    | Variable id ->
-      Env.Type.find_default tp id sub
-    | Abstraction (arg, kn, body) when Id.Set.mem arg fvs ->
-      let arg' = Id.gen_upper () in
-      let sub' = Env.Type.add arg (var arg') sub in
-      abs arg' kn @@ subst (Id.Set.add arg' fvs) sub' body
-    | Abstraction (arg, kn, body) ->
-      abs arg kn @@
-        subst (Id.Set.add arg fvs) (Env.Type.del arg sub) body
-    | Application (fn, arg) ->
-      app (subst fvs sub fn) (subst fvs sub arg)
-    | Universal (quant, kn, body) when Id.Set.mem quant fvs ->
-      let quant' = Id.gen_upper () in
-      let sub' = Env.Type.add quant (var quant') sub in
-      forall quant' kn @@ subst (Id.Set.add quant' fvs) sub' body
-    | Universal (quant, kn, body) ->
-      forall quant kn @@
-        subst (Id.Set.add quant fvs) (Env.Type.del quant sub) body
-
-let rec beta_reduce ?deep env tp =
-
-  let beta_reduce = beta_reduce ?deep in
-
-  let subst env tp id tp' =
-    let fvs = Id.Set.of_list @@ Env.Type.keys env in
-    subst fvs (Env.Type.singleton id tp') tp
-  in
-
-  match tp with
-    | Inference_variable _ ->
-      tp
-    | Variable id ->
-      Env.Type.find_default tp id env
-    | Abstraction (arg, kn, body) ->
-      if deep <> None then
-        abs arg kn @@ beta_reduce (Env.Type.add arg (var arg) env) body
-      else
-        tp
-    | Application (fn, act_arg) ->
-      let fn' = beta_reduce env fn in
-      let act_arg' = beta_reduce env act_arg in
-      begin match fn' with
-        | Abstraction (fml_arg, _, body) ->
-          let body' = subst env body fml_arg act_arg' in
-          beta_reduce env body'
-        | _ ->
-          app fn' act_arg'
-      end
-    | Universal (quant, kn, body) ->
-      if deep <> None then
-        forall quant kn @@
-          beta_reduce (Env.Type.add quant (var quant) env) body
-      else
-        tp
-
 (* Inference *)
 
 module Inferencer : sig
 
   type state
   val make_state : Kind.Environment.t -> state
-  val register : ?rigid : unit -> state -> t -> Kind.t -> state
+  val register : state -> t -> Kind.t -> state
   val to_kind : state -> t -> Kind.t
   val unify : state -> t -> t -> state
   val gen_enter : state -> state
@@ -162,13 +106,9 @@ end = struct
 
   type sub = t Id.Map.t
 
-  type rigidity =
-    | Flexible
-    | Rigid
-
   type state = {
     sub : sub ;
-    pools : (Kind.t * rigidity) IVE.t ;
+    pools : Kind.t IVE.t ;
     kind_env : Kind_env.t ;
   }
 
@@ -189,12 +129,14 @@ end = struct
         Id.Map.find_default tp id sub
       | Variable _ ->
         tp
-      | Abstraction (arg, kn, body) ->
-        abs arg kn @@ apply body sub
       | Application (fn, arg) ->
         app (apply fn sub) (apply arg sub)
       | Universal (quant, kn, body) ->
         forall quant kn @@ apply body sub
+      | Row_nil ->
+        tp
+      | Row_cons (id, tp, rest) ->
+        row_cons id (apply tp sub) (apply rest sub)
 
     let extend id tp state =
       let apply tp' = apply tp' @@ singleton id tp in
@@ -213,23 +155,21 @@ end = struct
     val push : state -> state
     val peek : state -> Kind.t Id.Map.t
     val pop : state -> state
-    val insert : Id.t -> Kind.t -> bool -> state -> state
+    val insert : Id.t -> Kind.t -> state -> state
     val remove : Id.t -> state -> state
     val update : Id.t -> Id.t -> state -> state
     val get_kind : Id.t -> state -> Kind.t
-    val is_rigid : Id.t -> state -> bool
 
   end = struct
 
     let push state = {state with pools = IVE.push state.pools}
 
-    let peek state = Id.Map.map fst @@ IVE.peek state.pools
+    let peek state = IVE.peek state.pools
 
     let pop state = {state with pools = IVE.pop state.pools}
 
-    let insert id kn is_rigid state =
-      let rigidity = if is_rigid then Rigid else Flexible in
-      {state with pools = IVE.insert id (kn, rigidity) state.pools}
+    let insert id kn state =
+      {state with pools = IVE.insert id kn state.pools}
 
     let remove id state =
       {state with pools = IVE.remove id state.pools}
@@ -237,11 +177,7 @@ end = struct
     let update id1 id2 state =
       {state with pools = IVE.update id1 id2 state.pools}
 
-    let get_kind id state = fst @@ IVE.find id state.pools
-
-    let is_rigid id state = match snd @@ IVE.find id state.pools with
-      | Flexible -> false
-      | Rigid -> true
+    let get_kind id state = IVE.find id state.pools
 
   end
 
@@ -260,11 +196,9 @@ end = struct
   let get_kind id state =
     Kind_env.find id state.kind_env
 
-  let register ?rigid state tp kn = match tp with
-    | Inference_variable (_, id) ->
-      Pools.insert id kn (rigid <> None) state
-    | _ ->
-      error "register" "expected variable"
+  let register state tp kn = match tp with
+    | Inference_variable (_, id) -> Pools.insert id kn state
+    | _ -> error "register" "expected variable"
 
   (* Kinding *)
 
@@ -288,9 +222,6 @@ end = struct
         with Id.Unbound _ ->
           undefined_id tp
         end
-      | Abstraction (arg, kn, body) ->
-        let body_kn = to_kind (add_kind arg kn state) body in
-        Kind.oper kn body_kn
       | Application (fn, arg) ->
         let fn_kn = to_kind state fn in
         let fml_arg_kn, res_kn =
@@ -313,6 +244,18 @@ end = struct
                 (Kind.to_string act_arg_kn)
       | Universal (quant, kn, body) ->
         to_kind (add_kind quant kn state) body
+      | Row_nil ->
+        Kind.row
+      | Row_cons (_, tp, rest) ->
+        ignore @@ to_kind state tp;
+        let rest_kn = to_kind state rest in
+        if Kind.alpha_equivalent rest_kn Kind.row then
+          Kind.row
+        else
+          error "to_kind" @@
+            Printf.sprintf
+              "expected row kind; found kind '%s'"
+                (Kind.to_string rest_kn)
     in
 
     to_kind state @@ Sub.apply tp state
@@ -324,8 +267,9 @@ end = struct
     let rec occurs : Id.t -> t -> bool = fun id tp -> match tp with
       | Inference_variable (_, id') -> id = id'
       | Variable _ -> false
-      | Abstraction _ -> raise_abs "Inferencer.unify.occurs"
       | Application (fn, arg) -> occurs id fn || occurs id arg
+      | Row_nil -> false
+      | Row_cons (_, m, rest) -> occurs id m || occurs id rest
       | Universal _ -> expected_mono "Inferencer.unify.occurs"
     in
 
@@ -336,9 +280,12 @@ end = struct
           Pools.update id' id state
         | Variable _ ->
           state
-        | Abstraction _ -> raise_abs "Inferencer.unify.update_ranks"
         | Application (fn, arg) ->
           update_ranks (update_ranks state id fn) id arg
+        | Row_nil ->
+          state
+        | Row_cons (_, m, rest) ->
+          update_ranks (update_ranks state id m) id rest
         | Universal _ ->
           expected_mono "Inferencer.unify.update_ranks"
     in
@@ -360,34 +307,33 @@ end = struct
         | Universal _, _ ->
           expected_mono "unify";
 
-        | _, Abstraction _ | Abstraction _, _ ->
-          raise_abs "Inferencer.unify"
-
         | Inference_variable (_, id1), Inference_variable (_, id2)
         | Variable id1, Variable id2
             when id1 = id2 ->
           state
 
-        | Inference_variable _, Inference_variable (_, id)
-            when Id.is_generated id ->
+        | _, Inference_variable (_, id) ->
           if occurs id tp1' then raise_occurs id tp1';
           merge state id tp1'
-        | Inference_variable (_, id), Inference_variable _
-            when Id.is_generated id ->
-          if occurs id tp2' then raise_occurs id tp2';
-          merge state id tp2'
-
-        | _, Inference_variable (_, id)
-            when not @@ Pools.is_rigid id state ->
-          if occurs id tp1' then raise_occurs id tp1';
-          merge state id tp1'
-        | Inference_variable (_, id), _
-            when not @@ Pools.is_rigid id state ->
+        | Inference_variable (_, id), _ ->
           if occurs id tp2' then raise_occurs id tp2';
           merge state id tp2'
 
         | Application (fn1, arg1), Application (fn2, arg2) ->
           unify (unify state fn1 fn2) arg1 arg2
+
+        | Row_nil, Row_nil ->
+          state
+        | Row_cons (id1, tp1, rest1), Row_cons (id2, tp2, rest2) ->
+          if id1 = id2 then
+            unify (unify state tp1 tp2) rest1 rest2
+          else
+            let tv = Id.gen_upper () in
+            let state = Pools.insert tv Kind.row state in
+            let rest = inf_var Mono tv in
+            let state = unify state rest1 @@ row_cons id2 tp2 rest in
+            let state = unify state rest2 @@ row_cons id1 tp1 rest in
+            state
 
         | _, _ ->
           raise_unify tp1' tp2'
@@ -419,10 +365,12 @@ end = struct
           (Id.Set.add id seen, id :: fvs)
         | Inference_variable _ | Variable _ ->
           (seen, fvs)
-        | Abstraction _ ->
-          raise_abs "Inferencer.gen_exit.free_vars"
         | Application (fn, arg) ->
           free_inf_vars (free_inf_vars (seen, fvs) fn) arg
+        | Row_nil ->
+          seen, fvs
+        | Row_cons (_, tp, rest) ->
+          free_inf_vars (free_inf_vars (seen, fvs) tp) rest
         | Universal _ ->
           expected_mono "Inferencer.gen_exit.free_inf_vars"
       in
@@ -441,10 +389,12 @@ end = struct
         assert false
       | Inference_variable _ | Variable _ ->
         tp
-      | Abstraction _ ->
-        raise_abs "Inferencer.gen_exit.gen"
       | Application (fn, arg) ->
         app (gen env fn) (gen env arg)
+      | Row_nil ->
+        tp
+      | Row_cons (id, tp, rest) ->
+        row_cons id (gen env tp) (gen env rest)
       | Universal _ ->
         expected_mono "Inferencer.gen_exit.gen"
     in
@@ -468,17 +418,19 @@ end = struct
         Id.Map.find_default tp id env
       | Inference_variable _ | Variable _ ->
         tp
-      | Abstraction _ ->
-        raise_abs "Inferencer.inst"
       | Application (fn, arg) ->
         app (inst env fn) (inst env arg)
+      | Row_nil ->
+        tp
+      | Row_cons (id, tp, rest) ->
+        row_cons id (inst env tp) (inst env rest)
       | Universal _ ->
         expected_mono "Inferencer.inst"
     in
 
     let make_var kn (state, tvs) =
       let tv = Id.gen_upper () in
-      (Pools.insert tv kn false state, inf_var Mono tv :: tvs)
+      (Pools.insert tv kn state, inf_var Mono tv :: tvs)
     in
 
     let quants, tp' = get_forall' @@ Sub.apply tp state in
@@ -500,16 +452,19 @@ let to_kind env tp =
 (* Utilities *)
 
 let rec to_intl_repr tp =
-  let module IR = Type_operators_exp.Type in
+  let module IR = Algebraic_types_exp.Type in
   match tp with
     | Inference_variable (_, id) ->
       IR.var id
     | Variable id ->
       IR.var id
-    | Abstraction (arg, kn, body) ->
-      IR.abs arg (Kind.to_intl_repr kn) (to_intl_repr body)
     | Application (fn, arg) ->
       IR.app (to_intl_repr fn) (to_intl_repr arg)
+    | Row_nil | Row_cons _ ->
+      let fields, rest = row_to_list tp in
+      IR.row
+        (List.map (fun (id, tp) -> id, to_intl_repr tp) fields)
+        (Option.map to_intl_repr rest)
     | Universal (quant, kn, body) ->
       IR.forall quant (Kind.to_intl_repr kn) (to_intl_repr body)
 
@@ -528,12 +483,10 @@ let simplify tp =
   in
 
   let rec simplify env tp = match tp with
-    | Inference_variable (morph, id) when Id.is_generated id ->
+    | Inference_variable (morph, id) ->
       inf_var morph @@ Id.Map.find id env
-    | Inference_variable _ | Variable _ ->
+    | Variable _ ->
       tp
-    | Abstraction (arg, kn, body) ->
-      abs arg kn @@ simplify env body
     | Application (fn, arg) ->
       let fn' = simplify env fn in
       let arg' = simplify env arg in
@@ -541,6 +494,12 @@ let simplify tp =
     | Universal (quant, kn, body) ->
       let quant' = fresh () in
       forall quant' kn @@ simplify (Id.Map.add quant quant' env) body
+    | Row_nil ->
+      tp
+    | Row_cons (id, tp, rest) ->
+      let tp' = simplify env tp in
+      let rest' = simplify env rest in
+      row_cons id tp' rest'
   in
 
   simplify (Id.Map.empty) tp
@@ -550,23 +509,41 @@ let to_string ?no_simp ?show_quants tp =
   let rec to_paren_string tp = Printf.sprintf "(%s)" (to_string tp)
 
   and arg_to_string tp = match tp with
-    | Inference_variable _ | Variable _ -> to_string tp
-    | Abstraction _ | Application _ | Universal _ -> to_paren_string tp
+    | Inference_variable _ | Variable _ | Row_nil | Row_cons _ ->
+      to_string tp
+    | Application (Variable id, _) when id = Id.rcrd || id = Id.vrnt ->
+      to_string tp
+    | Application _ | Universal _ ->
+      to_paren_string tp
+
+  and row_to_string row =
+    let fields, rest = row_to_list row in
+    let field_to_string (id, tp) =
+      Printf.sprintf "%s : %s" (Id.to_string id) (to_string tp)
+    in
+    let fields_str = String.concat "; " @@ List.map field_to_string fields in
+    match rest with
+      | None ->
+        fields_str
+      | Some tp ->
+        if String.length fields_str > 0 then
+          Printf.sprintf "%s | %s" fields_str (to_string tp)
+        else
+          Printf.sprintf "%s" (to_string tp)
 
   and to_string tp = match tp with
     | Inference_variable _ | Variable _ ->
       var_to_string tp
-    | Abstraction (arg, kn, body) ->
-      Printf.sprintf "\\%s :: %s . %s"
-        (Id.to_string arg)
-        (Kind.to_string kn)
-        (to_string body)
     | Application (Application (Variable id as tv, arg), res)
         when id = Id.func ->
       Printf.sprintf "%s %s %s"
         (arg_to_string arg)
         (var_to_string tv)
         (to_string res)
+    | Application (Variable id, row) when id = Id.rcrd ->
+      Printf.sprintf "{%s}" (row_to_string row)
+    | Application (Variable id, row) when id = Id.vrnt ->
+      Printf.sprintf "[%s]" (row_to_string row)
     | Application (fn, arg) ->
       Printf.sprintf "%s %s" (to_string fn) (arg_to_string arg)
     | Universal (quant, kn, body) ->
@@ -577,24 +554,22 @@ let to_string ?no_simp ?show_quants tp =
           (Id.to_string quant)
           (Kind.to_string kn)
           (to_string body)
+    | Row_nil | Row_cons _ ->
+      Printf.sprintf "<%s>" (row_to_string tp)
   in
 
   to_string @@ if no_simp = None then simplify tp else tp
-
-(* Containers *)
-
-module Environment = Env
 
 (* External functions *)
 
 let inf_var id = inf_var Mono id
 
-let abs' = List.fold_right (fun (arg, kn) body -> abs arg kn body)
-
-let app' fn args = List.fold_left app fn args
-
 let func arg res = app (app (var Id.func) arg) res
 
 let func' args res = List.fold_right func args res
+
+let rcrd fields rest = app (var Id.rcrd) (row_of_list fields rest)
+
+let vrnt cases rest = app (var Id.vrnt) (row_of_list cases rest)
 
 let get_quants tp = fst @@ get_forall' tp

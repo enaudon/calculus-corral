@@ -10,11 +10,13 @@ module Repl = Language.Repl (struct
 
   module Value = Type_operators_exp.Term
 
-  module Kind = Type_annotations.Kind
+  module Kind = Type_operators_imp.Kind
 
   module Type = struct
 
-    include Type_annotations.Type
+    include Type_operators_imp.Type
+
+    let beta_reduce ?deep:_ _ _ = assert false
 
     let to_string tp = to_string tp
 
@@ -22,14 +24,14 @@ module Repl = Language.Repl (struct
 
   module Term = struct
 
-    include Type_annotations.Term
+    include Type_operators_imp.Term
 
     let to_type env tm =
       let to_type = match !type_inference_algorithm with
         | Hindley_milner -> to_type_hm
         | Pottier_remy -> to_type_pr
       in
-      to_type env tm
+      to_type (snd env) tm
 
     let to_value ?deep (vl_env, kn_env, tp_env) tm =
 
@@ -43,7 +45,7 @@ module Repl = Language.Repl (struct
         | Pottier_remy -> to_intl_repr_pr
       in
 
-      let vl = to_intl_repr (kn_env, tp_env) tm in
+      let vl = to_intl_repr tp_env tm in
       let kn_env' =
         Kind_env.fold
           (fun id kn -> IR_kind_env.add id @@ Kind.to_intl_repr kn)
@@ -63,7 +65,7 @@ module Repl = Language.Repl (struct
   end
 
   let parse =
-    Type_annotations.Parser.commands Type_annotations.Lexer.prog
+    Type_operators_imp.Parser.commands Type_operators_imp.Lexer.prog
 
   let arg_specs = [
     ( "--type-inference-algorithm",

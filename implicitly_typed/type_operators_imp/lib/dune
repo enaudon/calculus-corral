@@ -10,6 +10,6 @@
    (run ocamlyacc --strict -v %{<}))))
 
 (library
- (name type_annotations)
+ (name type_operators_imp)
  (libraries type_operators_exp utilities)
  (flags -w +A-4 -warn-error +A-4))

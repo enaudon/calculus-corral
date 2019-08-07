@@ -1,0 +1,5 @@
+(executable
+ (name repl)
+ (modules repl)
+ (libraries type_operators_exp)
+ (flags -w +A-4 -warn-error +A-4))

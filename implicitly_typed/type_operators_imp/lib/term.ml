@@ -1,4 +1,3 @@
-module Annot = Type_annotation
 module Id = Identifier
 module Infer = Type.Inferencer
 module IR = Type_operators_exp
@@ -11,7 +10,6 @@ type desc =
   | Abstraction of Id.t * t
   | Application of t * t
   | Binding of Id.t * t * t
-  | Annotation of t * Annot.t
 
 and t = {
   desc : desc ;
@@ -38,9 +36,6 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 
 let bind : Loc.t -> Id.t -> t -> t -> t = fun loc id value body ->
   { desc = Binding (id, value, body); loc }
-
-let annot : Loc.t -> t -> Annot.t -> t = fun loc tm an ->
-  { desc = Annotation (tm, an); loc }
 
 (* Typing *)
 
@@ -72,8 +67,7 @@ let coerce tvs qs ir_tm =
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)
-let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
-    fun (kn_env, tp_env) tm ->
+let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
 
   let type_to_ir state tp =
     Type.to_intl_repr @@ Infer.apply state tp
@@ -151,15 +145,11 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
               (IR.Term.abs ~loc id tp'' (body_k state))
               (coerce tvs qs' @@
                 IR.Term.tp_abs' ~loc qs' @@ value_k state) )
-      | Annotation (tm, an) ->
-        let state, tp = Annot.infer env state an in
-        let state, k = infer env state tp tm in
-        (unify loc state exp_tp tp, k)
   in
 
-  let state = Infer.gen_enter @@ Infer.make_state kn_env in
+  let state = Infer.gen_enter @@ Infer.make_state Kind_env.initial in
   let state, tp = fresh_inf_var state Kind.prop in
-  let state, k = infer tp_env state tp tm in
+  let state, k = infer env state tp tm in
   let state, tvs, tp' = Infer.gen_exit state tp in
   let qs = List.map quant_to_ir @@ Type.get_quants tp' in
   let tm' =
@@ -178,8 +168,7 @@ let to_intl_repr_hm env tm = snd @@ infer_hm env tm
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)
-let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
-    fun (kn_env, tp_env) tm ->
+let infer_pr : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
 
   let module TC = Type_constraint in
   let open TC.Operators in
@@ -218,9 +207,6 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
             IR.Term.app ~loc
               (IR.Term.abs ~loc id tp' body')
               (coerce tvs qs @@ IR.Term.tp_abs' ~loc qs value')
-      | Annotation (tm, an) ->
-        Annot.constrain tp_env an @@ fun tp ->
-          (constrain tp tm, TC.equals exp_tp tp)
 
   in
 
@@ -233,7 +219,7 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
         let qs = fst @@ IR.Type.get_forall' @@ Type.to_intl_repr tp in
         tp, coerce tvs qs @@ IR.Term.tp_abs' ~loc qs tm'
   in
-  TC.solve kn_env @@ Type_env.Term.fold (fun id -> TC.def id) tp_env c
+  TC.solve @@ Type_env.Term.fold (fun id -> TC.def id) env c
 
 let to_type_pr env tm = fst @@ infer_pr env tm
 
@@ -246,10 +232,8 @@ let rec to_string tm =
   let to_paren_string tm = Printf.sprintf "(%s)" (to_string tm) in
 
   let arg_to_string tm = match tm.desc with
-    | Variable _ ->
-      to_string tm
-    | Abstraction _ | Application _ | Binding _ | Annotation _ ->
-      to_paren_string tm
+    | Variable _ -> to_string tm
+    | Abstraction _ | Application _ | Binding _ -> to_paren_string tm
   in
 
   match tm.desc with
@@ -262,7 +246,7 @@ let rec to_string tm =
     | Application (fn, arg) ->
       let fn_to_string tm = match tm.desc with
         | Variable _ | Application _ -> to_string tm
-        | Abstraction _ | Binding _ | Annotation _ -> to_paren_string tm
+        | Abstraction _ | Binding _ -> to_paren_string tm
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
     | Binding (id, value, body) ->
@@ -270,17 +254,6 @@ let rec to_string tm =
         (Id.to_string id)
         (to_string value)
         (to_string body)
-    | Annotation (tm, tp) ->
-      let to_string' tm = match tm.desc with
-        | Variable _ | Application _ | Annotation _ ->
-          to_string tm
-        | Abstraction _ | Binding _ ->
-          to_paren_string tm
-      in
-      Printf.sprintf
-        "%s : %s"
-        (to_string' tm)
-        (Annot.to_string tp)
 
 (* Constructors *)
 
@@ -296,5 +269,3 @@ let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 let app' ?(loc = Loc.dummy) fn args = List.fold_left (app ~loc) fn args
 
 let bind ?(loc = Loc.dummy) id value body = bind loc id value body
-
-let annot ?(loc = Loc.dummy) tm an = annot loc tm an

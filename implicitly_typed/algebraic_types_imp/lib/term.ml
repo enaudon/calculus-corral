@@ -1,9 +1,9 @@
-module Annot = Type_annotation
 module Id = Identifier
 module Infer = Type.Inferencer
-module IR = Type_operators_exp
+module IR = Algebraic_types_exp
 module Kind_env = Kind.Environment
 module Loc = Location
+module Misc = Miscellaneous
 module Type_env = Type.Environment
 
 type desc =
@@ -11,7 +11,10 @@ type desc =
   | Abstraction of Id.t * t
   | Application of t * t
   | Binding of Id.t * t * t
-  | Annotation of t * Annot.t
+  | Record of (Id.t * t) list
+  | Projection of t * Id.t
+  | Variant of Id.t * t
+  | Case of t * (Id.t * Id.t * t) list
 
 and t = {
   desc : desc ;
@@ -39,8 +42,18 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 let bind : Loc.t -> Id.t -> t -> t -> t = fun loc id value body ->
   { desc = Binding (id, value, body); loc }
 
-let annot : Loc.t -> t -> Annot.t -> t = fun loc tm an ->
-  { desc = Annotation (tm, an); loc }
+let rcrd : Loc.t -> (Id.t * t) list -> t = fun loc fields ->
+  { desc = Record fields; loc }
+
+let proj : Loc.t -> t -> Id.t -> t = fun loc rcrd field ->
+  { desc = Projection (rcrd, field); loc }
+
+let vrnt : Loc.t -> Id.t -> t -> t = fun loc case data ->
+  { desc = Variant (case, data); loc }
+
+let case : Loc.t -> t -> (Id.t * Id.t * t) list -> t =
+    fun loc vrnt cases ->
+  { desc = Case (vrnt, cases); loc }
 
 (* Typing *)
 
@@ -72,8 +85,7 @@ let coerce tvs qs ir_tm =
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)
-let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
-    fun (kn_env, tp_env) tm ->
+let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
 
   let type_to_ir state tp =
     Type.to_intl_repr @@ Infer.apply state tp
@@ -84,6 +96,14 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
   let fresh_inf_var state kn =
     let tv = Type.inf_var @@ Id.gen_upper () in
     Infer.register state tv kn, tv
+  in
+
+  let fresh_inf_var_list state n kn =
+    let init_fn _ = Type.inf_var @@ Id.gen_upper () in
+    let tvs = List.init n init_fn in
+    let fold_fn tv state = Infer.register state tv kn in
+    let state = List.fold_right fold_fn tvs state in
+    state, tvs
   in
 
   let unify loc state tp1 tp2 =
@@ -151,15 +171,81 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
               (IR.Term.abs ~loc id tp'' (body_k state))
               (coerce tvs qs' @@
                 IR.Term.tp_abs' ~loc qs' @@ value_k state) )
-      | Annotation (tm, an) ->
-        let state, tp = Annot.infer env state an in
-        let state, k = infer env state tp tm in
-        (unify loc state exp_tp tp, k)
+      | Record fields ->
+        let infer_field (state, ks) tp (id, tm) =
+          let state, k = infer env state tp tm in
+          state, (id, k) :: ks
+        in
+        let state, tps =
+          fresh_inf_var_list state (List.length fields) Kind.prop
+        in
+        let state, field_ks =
+          (* TODO: Use `fold_right2` here. *)
+          let s, ks =
+            List.fold_left2 infer_field (state, []) tps fields
+          in
+          s, List.rev ks
+        in
+        let state =
+          unify loc state exp_tp @@
+            Type.rcrd (List.combine (List.map fst fields) tps) None
+        in
+        ( state,
+          fun state ->
+            IR.Term.rcrd ~loc @@
+              List.map (fun (id, k) -> id, k state) field_ks )
+      | Projection (rcrd, field) ->
+        let state, rest_tp = fresh_inf_var state Kind.row in
+        let tp = Type.rcrd [(field, exp_tp)] @@ Some rest_tp in
+        let state, k = infer env state tp rcrd in
+        ( state, fun state -> IR.Term.proj ~loc (k state) field)
+      | Variant (case, data) ->
+        let state, data_tp = fresh_inf_var state Kind.prop in
+        let state, rest_tp = fresh_inf_var state Kind.row in
+        let state, data_k = infer env state data_tp data in
+        let tp = Type.vrnt [(case, data_tp)] @@ Some rest_tp in
+        let state = unify loc state exp_tp tp in
+        ( state,
+          fun state ->
+            let data_tp' = type_to_ir state data_tp in
+            let rest_tp' = type_to_ir state rest_tp in
+            IR.Term.vrnt ~loc case (data_k state) @@
+              IR.Type.vrnt [(case, data_tp')] @@ Some rest_tp' )
+      | Case (vrnt, cases) ->
+        let infer_case res_tp (state, ks) tp (case, id, body) =
+          let state, k =
+            infer (Type_env.Term.add id tp env) state res_tp body
+          in
+          state, (case, id, k) :: ks
+        in
+        let state, tps =
+          fresh_inf_var_list state (List.length cases) Kind.prop
+        in
+        let case_tps =
+          List.combine (List.map Misc.fst_of_3 cases) tps
+        in
+        let state, res_tp = fresh_inf_var state Kind.prop in
+        let state, vrnt_k =
+          infer env state (Type.vrnt case_tps None) vrnt
+        in
+        let state, case_ks =
+          (* TODO: Use `fold_right2` here. *)
+          let s, ks =
+            List.fold_left2 (infer_case res_tp) (state, []) tps cases
+          in
+          s, List.rev ks
+        in
+        ( unify loc state exp_tp res_tp,
+          fun state ->
+            let cases' =
+              List.map (fun (case, id, k) -> case, id, k state) case_ks
+            in
+            IR.Term.case ~loc (vrnt_k state) cases' )
   in
 
-  let state = Infer.gen_enter @@ Infer.make_state kn_env in
+  let state = Infer.gen_enter @@ Infer.make_state Kind_env.initial in
   let state, tp = fresh_inf_var state Kind.prop in
-  let state, k = infer tp_env state tp tm in
+  let state, k = infer env state tp tm in
   let state, tvs, tp' = Infer.gen_exit state tp in
   let qs = List.map quant_to_ir @@ Type.get_quants tp' in
   let tm' =
@@ -178,8 +264,7 @@ let to_intl_repr_hm env tm = snd @@ infer_hm env tm
   constructs an internal representation term which is equivalent to
   [tm].  [tm] is assumed to be closed under [env].
  *)
-let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
-    fun (kn_env, tp_env) tm ->
+let infer_pr : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
 
   let module TC = Type_constraint in
   let open TC.Operators in
@@ -218,9 +303,53 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
             IR.Term.app ~loc
               (IR.Term.abs ~loc id tp' body')
               (coerce tvs qs @@ IR.Term.tp_abs' ~loc qs value')
-      | Annotation (tm, an) ->
-        Annot.constrain tp_env an @@ fun tp ->
-          (constrain tp tm, TC.equals exp_tp tp)
+      | Record fields ->
+        let constrain_field tp (id, tm) =
+          constrain tp tm <$> fun tm' -> id, tm'
+        in
+        let kns = List.init (List.length fields) (fun _ -> Kind.prop) in
+        TC.exists_list ~loc kns (fun tps ->
+          let field_tps = List.combine (List.map fst fields) tps in
+          TC.conj_left
+            (TC.conj_list (List.map2 constrain_field tps fields))
+            (TC.equals exp_tp @@ Type.rcrd field_tps None)) <$>
+          fun (_, fields') -> IR.Term.rcrd ~loc fields'
+      | Projection (rcrd, field) ->
+        TC.exists ~loc Kind.row (fun rest_tp ->
+          let rcrd_tp = Type.rcrd [(field, exp_tp)] @@ Some rest_tp in
+          constrain rcrd_tp rcrd) <$>
+        fun (_, rcrd') -> IR.Term.proj ~loc rcrd' field
+      | Variant (case, data) ->
+        TC.exists ~loc Kind.prop (fun data_tp ->
+          TC.exists ~loc Kind.row @@ fun rest_tp ->
+            let tp = Type.vrnt [(case, data_tp)] @@ Some rest_tp in
+            TC.conj_left
+              (constrain data_tp data)
+              (TC.equals exp_tp tp)) <$>
+          fun (data_tp, (rest_tp, data')) ->
+            let data_tp' = Type.to_intl_repr data_tp in
+            let rest_tp' = Type.to_intl_repr rest_tp in
+            IR.Term.vrnt ~loc case data' @@
+              IR.Type.vrnt [(case, data_tp')] @@ Some rest_tp'
+      | Case (vrnt, cases) ->
+        let constrain_case res_tp tp (case, id, body) =
+          TC.def id tp @@ constrain res_tp body <$>
+            fun body' -> case, id, body'
+        in
+        let kns = List.init (List.length cases) (fun _ -> Kind.prop) in
+        TC.exists_list ~loc kns (fun tps ->
+          let case_tps =
+            List.combine (List.map Misc.fst_of_3 cases) tps
+          in
+          TC.exists ~loc Kind.prop @@ fun res_tp ->
+            TC.conj_left
+              (TC.conj
+                (constrain (Type.vrnt case_tps None) vrnt)
+                (TC.conj_list
+                  (List.map2 (constrain_case res_tp) tps cases)))
+              (TC.equals exp_tp res_tp)) <$>
+          fun (_, (_, (vrnt', cases'))) ->
+            IR.Term.case ~loc vrnt' cases'
 
   in
 
@@ -233,7 +362,7 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
         let qs = fst @@ IR.Type.get_forall' @@ Type.to_intl_repr tp in
         tp, coerce tvs qs @@ IR.Term.tp_abs' ~loc qs tm'
   in
-  TC.solve kn_env @@ Type_env.Term.fold (fun id -> TC.def id) tp_env c
+  TC.solve @@ Type_env.Term.fold (fun id -> TC.def id) env c
 
 let to_type_pr env tm = fst @@ infer_pr env tm
 
@@ -246,9 +375,9 @@ let rec to_string tm =
   let to_paren_string tm = Printf.sprintf "(%s)" (to_string tm) in
 
   let arg_to_string tm = match tm.desc with
-    | Variable _ ->
+    | Variable _ | Record _ | Projection _ ->
       to_string tm
-    | Abstraction _ | Application _ | Binding _ | Annotation _ ->
+    | Abstraction _ | Application _ | Binding _ | Variant _ | Case _ ->
       to_paren_string tm
   in
 
@@ -261,8 +390,10 @@ let rec to_string tm =
         (to_string body)
     | Application (fn, arg) ->
       let fn_to_string tm = match tm.desc with
-        | Variable _ | Application _ -> to_string tm
-        | Abstraction _ | Binding _ | Annotation _ -> to_paren_string tm
+        | Variable _ | Application _ | Record _ | Projection _ ->
+          to_string tm
+        | Abstraction _ | Binding _ | Variant _ | Case _ ->
+          to_paren_string tm
       in
       Printf.sprintf "%s %s" (fn_to_string fn) (arg_to_string arg)
     | Binding (id, value, body) ->
@@ -270,17 +401,28 @@ let rec to_string tm =
         (Id.to_string id)
         (to_string value)
         (to_string body)
-    | Annotation (tm, tp) ->
-      let to_string' tm = match tm.desc with
-        | Variable _ | Application _ | Annotation _ ->
-          to_string tm
-        | Abstraction _ | Binding _ ->
-          to_paren_string tm
+    | Record fields ->
+      let field_to_string (id, tm) =
+        Printf.sprintf "%s = %s"
+          (Id.to_string id)
+          (to_string tm)
       in
-      Printf.sprintf
-        "%s : %s"
-        (to_string' tm)
-        (Annot.to_string tp)
+      Printf.sprintf "{%s}"
+        (String.concat "; " @@ List.map field_to_string fields)
+    | Projection (rcrd, field) ->
+      Printf.sprintf "%s.%s" (arg_to_string rcrd) (Id.to_string field)
+    | Variant (case, data) ->
+      Printf.sprintf "%s %s" (Id.to_string case) (arg_to_string data)
+    | Case (vrnt, cases) ->
+      let case_to_string (case, id, tm) =
+        Printf.sprintf "%s %s -> %s"
+          (Id.to_string case)
+          (Id.to_string id)
+          (to_string tm)
+      in
+      Printf.sprintf "case %s of [%s]"
+        (to_string vrnt)
+        (String.concat "; " @@ List.map case_to_string cases)
 
 (* Constructors *)
 
@@ -297,4 +439,10 @@ let app' ?(loc = Loc.dummy) fn args = List.fold_left (app ~loc) fn args
 
 let bind ?(loc = Loc.dummy) id value body = bind loc id value body
 
-let annot ?(loc = Loc.dummy) tm an = annot loc tm an
+let rcrd ?(loc = Loc.dummy) fields = rcrd loc fields
+
+let proj ?(loc = Loc.dummy) rcrd field = proj loc rcrd field
+
+let vrnt ?(loc = Loc.dummy) case data = vrnt loc case data
+
+let case ?(loc = Loc.dummy) vrnt cases = case loc vrnt cases

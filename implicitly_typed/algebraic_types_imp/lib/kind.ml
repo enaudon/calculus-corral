@@ -2,11 +2,14 @@ module Id = Identifier
 
 type t =
   | Proper
+  | Row
   | Operator of t * t
 
 (* Constructors *)
 
 let prop = Proper
+
+let row = Row
 
 let oper arg res = Operator (arg, res)
 
@@ -22,16 +25,21 @@ let get_oper kn = match kn with
 
 module Environment = Environment.Make (struct
   type value = t
-  let initial = [ (Id.func, oper' [prop; prop] prop) ]
+  let initial =
+    [ (Id.func, oper' [prop; prop] prop);
+      (Id.rcrd, oper row prop);
+      (Id.vrnt, oper row prop) ]
 end)
 
 (* Utilities *)
 
 let rec to_intl_repr kn =
-  let module IR = Type_operators_exp.Kind in
+  let module IR = Algebraic_types_exp.Kind in
   match kn with
     | Proper ->
       IR.prop
+    | Row ->
+      IR.row
     | Operator (arg, res) ->
       IR.oper (to_intl_repr arg) (to_intl_repr res)
 
@@ -46,9 +54,11 @@ let rec to_string kn =
   match kn with
     | Proper ->
       Id.to_string Id.prop
+    | Row ->
+      Id.to_string Id.row
     | Operator (arg, res) ->
       let arg_to_string kn = match kn with
-        | Proper -> to_string kn
+        | Proper | Row -> to_string kn
         | Operator _ -> to_paren_string kn
       in
       Printf.sprintf "%s %s %s"

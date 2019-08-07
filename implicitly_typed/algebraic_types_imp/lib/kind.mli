@@ -13,6 +13,9 @@ module Environment : Environment.Output with type value := t
 (** [prop] is the proper kind. *)
 val prop : t
 
+(** [row] is the row kind. *)
+val row : t
+
 (** [oper arg res] constructs an operator from [arg] to [res]. *)
 val oper : t -> t -> t
 
@@ -31,7 +34,7 @@ val get_oper : t -> t * t
   [to_intl_repr kn] computes an internal representation type which is
   equivalent to [kn].
  *)
-val to_intl_repr : t -> Type_operators_exp.Kind.t
+val to_intl_repr : t -> Algebraic_types_exp.Kind.t
 
 (**
   [alpha_equivalent kn1 kn2] determines whether [kn1] and [kn2] are

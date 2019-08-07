@@ -28,45 +28,33 @@ val app' : ?loc : Location.t -> t -> t list -> t
  *)
 val bind : ?loc : Location.t -> Identifier.t -> t -> t -> t
 
-(**
-  [annot tm annot] constructs an annotation, which assigns [tm] the type
-  given by [annot].
- *)
-val annot : ?loc : Location.t -> t -> Type_annotation.t -> t
-
 (** {1 Typing and Elaboration} *)
 
 (**
   [to_type_hm env tm] computes the type of [tm] under [env], via
   Algorithm W-style Hindley-Milner type inference.
  *)
-val to_type_hm :
-  (Kind.Environment.t * Type.Environment.t) -> t -> Type.t
+val to_type_hm : Type.Environment.t -> t -> Type.t
 
 (**
   [to_intl_repr_hm env tm] computes an internal representation term
   which is equivalent to [tm].
  *)
 val to_intl_repr_hm :
-  (Kind.Environment.t * Type.Environment.t) ->
-  t ->
-  Type_operators_exp.Term.t
+  Type.Environment.t -> t -> Type_operators_exp.Term.t
 
 (**
   [to_type_pr env tm] computes the type of [tm] under [env], via
   constraint-based type inference a la Pottier and Remy.
  *)
-val to_type_pr :
-  (Kind.Environment.t * Type.Environment.t) -> t -> Type.t
+val to_type_pr : Type.Environment.t -> t -> Type.t
 
 (**
   [to_intl_repr_pr env tm] computes an internal representation term
   which is equivalent to [tm].
  *)
 val to_intl_repr_pr :
-  (Kind.Environment.t * Type.Environment.t) ->
-  t ->
-  Type_operators_exp.Term.t
+  Type.Environment.t -> t -> Type_operators_exp.Term.t
 
 (** {1 Utilities} *)
 
