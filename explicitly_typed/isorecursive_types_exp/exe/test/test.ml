@@ -13,7 +13,7 @@ let _ =
     ("variant_natural.lc", []) ;
     ("record_pair.lc", ["variant_boolean.lc"; "variant_natural.lc"]) ;
     ("variant_option.lc", []) ;
-    ("variant_list.lc", []) ;
+    ("variant_list.lc", ["variant_boolean.lc"; "variant_natural.lc"; "variant_option.lc"]) ;
   ] in
 
   let test_suite = "isorecursive_types" >::: [

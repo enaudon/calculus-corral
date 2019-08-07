@@ -20,14 +20,13 @@ add =
     Succ o -> add (succ m) o;
   ]) ;
 
-until_zero =
-  fix (\add : (Nat -> Nat) -> Nat -> Nat -> Nat .
-    \fn : Nat -> Nat . \m : Nat . \n : Nat . case unroll n of [
-      Zero -> m;
-      Succ o -> add fn (fn m) o;
-    ]) ;
+mul =
+  fix (\mul : Nat -> Nat -> Nat . \m : Nat . \n : Nat . case unroll n of [
+    Zero -> zero;
+    Succ o -> add m (mul m o);
+  ]) ;
 
-if_zero = \m : Nat . \n : Nat . \o : Nat . case unroll m of [
+if_zero = \A :: * . \m : Nat . \n : A . \o : A . case unroll m of [
   Zero -> n;
   Succ p -> o;
 ];
@@ -38,8 +37,20 @@ add one zero ;
 
 add one two ;
 
-if_zero zero one two ;
+mul two two ;
 
-if_zero one one two ;
+mul two zero ;
 
-if_zero two one two ;
+mul two (mul two two) ;
+
+if_zero Nat zero one two ;
+
+if_zero Nat one one two ;
+
+if_zero Nat two one two ;
+
+if_zero
+  Nat
+  (add (mul four four) one)
+  (mul eight two)
+  (add one (add two one)) ;
