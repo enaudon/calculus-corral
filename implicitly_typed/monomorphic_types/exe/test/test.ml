@@ -10,7 +10,7 @@ let _ =
     ("church_natural.lc", ["church_pair.lc"]) ;
   ] in
 
-  let test_suite = "monomorphic_types" >::: [
+  let test_suite = "implicitly_typed::monomorphic_types" >::: [
     Test_repl.make_implicit repl_exe case_dir repl_cases ;
   ] in
 

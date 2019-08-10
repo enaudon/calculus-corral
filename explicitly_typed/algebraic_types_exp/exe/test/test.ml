@@ -14,7 +14,7 @@ let _ =
     ("variant_option.lc", []) ;
   ] in
 
-  let test_suite = "records_and_variants" >::: [
+  let test_suite = "explicitly_typed::algebraic_types" >::: [
     Test_term.make () ;
     Test_repl.make_explicit repl_exe case_dir repl_cases ;
   ] in

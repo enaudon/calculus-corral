@@ -9,7 +9,7 @@ let _ =
     ("church_natural.lc", []) ;
   ] in
 
-  let test_suite = "existential_types" >::: [
+  let test_suite = "explicitly_typed::existential_types" >::: [
     Test_term.make () ;
     Test_repl.make_explicit repl_exe case_dir repl_cases ;
   ] in

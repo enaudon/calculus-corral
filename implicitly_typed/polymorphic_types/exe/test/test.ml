@@ -11,7 +11,7 @@ let _ =
     ("church_pair.lc", ["church_boolean.lc"; "church_natural.lc"]) ;
   ] in
 
-  let test_suite = "polymorphic_types" >::: [
+  let test_suite = "implicitly_typed::polymorphic_types" >::: [
     Test_repl.make_implicit repl_exe case_dir repl_cases ;
   ] in
 

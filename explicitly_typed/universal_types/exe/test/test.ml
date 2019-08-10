@@ -10,7 +10,7 @@ let _ =
     ("church_pair.lc", ["church_boolean.lc"; "church_natural.lc"]) ;
   ] in
 
-  let test_suite = "universal_types" >::: [
+  let test_suite = "explicitly_typed::universal_types" >::: [
     Test_term.make () ;
     Test_repl.make_explicit repl_exe case_dir repl_cases ;
   ] in

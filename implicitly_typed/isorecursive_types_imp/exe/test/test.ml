@@ -18,7 +18,7 @@ let _ =
     ("variant_list.lc", ["variant_boolean.lc"; "variant_natural.lc"; "variant_option.lc"]) ;
   ] in
 
-  let test_suite = "isorecursive_types_imp" >::: [
+  let test_suite = "implicitly_typed::isorecursive_types" >::: [
     Test_repl.make_implicit repl_exe case_dir repl_cases ;
   ] in
 
