@@ -74,7 +74,7 @@ val alpha_equivalent : t -> t -> bool
   the domain of [sub] with the corresponding type the range of [sub].
   [fvs] is any superset of the variables which appear in the range of
   [sub].
-*)
+ *)
 val subst_tp : Identifier.Set.t -> Type.Environment.t -> t -> t
 
 (**
@@ -82,7 +82,7 @@ val subst_tp : Identifier.Set.t -> Type.Environment.t -> t -> t
   the domain of [sub] with the corresponding term the range of [sub].
   [fvs] is any superset of the variables which appear in the range of
   [sub].
-*)
+ *)
 val subst_tm : Identifier.Set.t -> Environment.t -> t -> t
 
 (**

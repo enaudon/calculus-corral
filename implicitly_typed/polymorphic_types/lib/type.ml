@@ -67,8 +67,8 @@ end = struct
   type sub = t Id.Map.t
 
   type state = {
-    sub : sub ;
-    pools : unit IVE.t ;
+    sub : sub;
+    pools : unit IVE.t;
   }
 
   module Sub : sig
@@ -84,12 +84,9 @@ end = struct
     let singleton : Id.t -> t -> sub = Id.Map.singleton
 
     let rec apply tp sub = match tp with
-      | Inference_variable id ->
-        Id.Map.find_default tp id sub
-      | Function (arg, res) ->
-        func (apply arg sub) (apply res sub)
-      | Universal (quant, body) ->
-        forall quant @@ apply body sub
+      | Inference_variable id -> Id.Map.find_default tp id sub
+      | Function (arg, res) -> func (apply arg sub) (apply res sub)
+      | Universal (quant, body) -> forall quant @@ apply body sub
 
     let extend id tp state =
       let apply tp' = apply tp' @@ singleton id tp in

@@ -12,8 +12,8 @@ type desc =
   | Type_app of t * Type.t
 
 and t = {
-  desc : desc ;
-  loc : Loc.t ;
+  desc : desc;
+  loc : Loc.t;
 }
 
 module Env = Environment.Make (struct
@@ -32,19 +32,19 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
       msg
 
 let var : Loc.t -> Id.t -> t = fun loc id ->
-  { desc = Variable id; loc }
+  {desc = Variable id; loc}
 
 let abs : Loc.t -> Id.t -> Type.t -> t -> t = fun loc arg tp body ->
-  { desc = Term_abs (arg, tp, body); loc }
+  {desc = Term_abs (arg, tp, body); loc}
 
 let app : Loc.t -> t -> t -> t = fun loc fn arg ->
-  { desc = Term_app (fn, arg); loc }
+  {desc = Term_app (fn, arg); loc}
 
 let tp_abs : Loc.t -> Id.t -> Kind.t -> t -> t = fun loc arg kn body ->
-  { desc = Type_abs (arg, kn, body); loc }
+  {desc = Type_abs (arg, kn, body); loc}
 
 let tp_app : Loc.t -> t -> Type.t -> t = fun loc fn arg ->
-  { desc = Type_app (fn, arg); loc }
+  {desc = Type_app (fn, arg); loc}
 
 (* Typing *)
 
@@ -83,10 +83,10 @@ let rec to_type (kn_env, tp_env) tm =
         res_tp
       else
         error arg.loc "to_type" @@
-            Printf.sprintf
-              "expected type '%s'; found type '%s'"
-              (Type.to_string fml_arg_tp)
-              (Type.to_string act_arg_tp)
+          Printf.sprintf
+            "expected type '%s'; found type '%s'"
+            (Type.to_string fml_arg_tp)
+            (Type.to_string act_arg_tp)
     | Type_abs (arg, kn, body) ->
       Type.forall arg kn @@
         to_type (Kind_env.add arg kn kn_env) tp_env body
@@ -105,7 +105,7 @@ let rec to_type (kn_env, tp_env) tm =
       if not (Kind.alpha_equivalent arg_kn fn_kn) then
         error tm.loc "to_type" @@
           Printf.sprintf
-            "expected '%s'; found '%s'"
+            "expected kind '%s'; found '%s'"
             (Kind.to_string fn_kn)
             (Kind.to_string arg_kn);
       let ftvs = Id.Set.of_list @@ Kind_env.keys kn_env in

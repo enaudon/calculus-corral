@@ -11,8 +11,8 @@ type desc =
   | Unpack of Id.t * Id.t * t * t
 
 and t = {
-  desc : desc ;
-  loc : Loc.t ;
+  desc : desc;
+  loc : Loc.t;
 }
 
 module Env = Environment.Make (struct
@@ -31,20 +31,20 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
       msg
 
 let var : Loc.t -> Id.t -> t = fun loc id ->
-  { desc = Variable id; loc }
+  {desc = Variable id; loc}
 
 let abs : Loc.t -> Id.t -> Type.t -> t -> t = fun loc arg tp body ->
-  { desc = Abstraction (arg, tp, body); loc }
+  {desc = Abstraction (arg, tp, body); loc}
 
 let app : Loc.t -> t -> t -> t = fun loc fn arg ->
-  { desc = Application (fn, arg); loc }
+  {desc = Application (fn, arg); loc}
 
 let pack : Loc.t -> Type.t -> t -> Type.t -> t = fun loc tp1 tm tp2 ->
-  { desc = Pack (tp1, tm, tp2); loc }
+  {desc = Pack (tp1, tm, tp2); loc}
 
 let unpack : Loc.t -> Id.t -> Id.t -> t -> t -> t =
   fun loc tp_id tm_id pack body ->
-    { desc = Unpack (tp_id, tm_id, pack, body); loc }
+    {desc = Unpack (tp_id, tm_id, pack, body); loc}
 
 (* Typing *)
 
@@ -78,10 +78,10 @@ let rec to_type (kn_env, tp_env) tm =
         res_tp
       else
         error arg.loc "to_type" @@
-            Printf.sprintf
-              "expected type '%s'; found type '%s'"
-              (Type.to_string fml_arg_tp)
-              (Type.to_string act_arg_tp)
+          Printf.sprintf
+            "expected type '%s'; found type '%s'"
+            (Type.to_string fml_arg_tp)
+            (Type.to_string act_arg_tp)
     | Pack (tp1, tm, tp2) ->
       Type.check kn_env tp2;
       let tp2_tv, tp2_tp =
@@ -104,10 +104,10 @@ let rec to_type (kn_env, tp_env) tm =
         tp2
       else
         error tm.loc "to_type" @@
-            Printf.sprintf
-              "expected type '%s'; found type '%s'"
-              (Type.to_string tp2_tp')
-              (Type.to_string tm_tp)
+          Printf.sprintf
+            "expected type '%s'; found type '%s'"
+            (Type.to_string tp2_tp')
+            (Type.to_string tm_tp)
     | Unpack (tp_id, tm_id, pack, body) ->
       let pack_tp = to_type kn_env tp_env pack in
       let pack_tp_tv, pack_tp_tp =

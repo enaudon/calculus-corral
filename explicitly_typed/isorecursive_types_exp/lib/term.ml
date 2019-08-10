@@ -19,8 +19,8 @@ type desc =
   | Case of t * (Id.t * Id.t * t) list
 
 and t = {
-  desc : desc ;
-  loc : Loc.t ;
+  desc : desc;
+  loc : Loc.t;
 }
 
 module Env = Environment.Make (struct
@@ -39,41 +39,41 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
       msg
 
 let var : Loc.t -> Id.t -> t = fun loc id ->
-  { desc = Variable id; loc }
+  {desc = Variable id; loc}
 
 let abs : Loc.t -> Id.t -> Type.t -> t -> t = fun loc arg tp body ->
-  { desc = Term_abs (arg, tp, body); loc }
+  {desc = Term_abs (arg, tp, body); loc}
 
 let app : Loc.t -> t -> t -> t = fun loc fn arg ->
-  { desc = Term_app (fn, arg); loc }
+  {desc = Term_app (fn, arg); loc}
 
 let tp_abs : Loc.t -> Id.t -> Kind.t -> t -> t = fun loc arg kn body ->
-  { desc = Type_abs (arg, kn, body); loc }
+  {desc = Type_abs (arg, kn, body); loc}
 
 let tp_app : Loc.t -> t -> Type.t -> t = fun loc fn arg ->
-  { desc = Type_app (fn, arg); loc }
+  {desc = Type_app (fn, arg); loc}
 
 let roll : Loc.t -> Type.t -> t -> t = fun loc tp tm ->
-  { desc = Roll (tp, tm); loc }
+  {desc = Roll (tp, tm); loc}
 
 let unroll : Loc.t -> t -> t = fun loc tm ->
-  { desc = Unroll tm; loc }
+  {desc = Unroll tm; loc}
 
 let fix : Loc.t -> t -> t = fun loc tm ->
-  { desc = Fix tm; loc }
+  {desc = Fix tm; loc}
 
 let rcrd : Loc.t -> (Id.t * t) list -> t = fun loc fields ->
-  { desc = Record fields; loc }
+  {desc = Record fields; loc}
 
 let proj : Loc.t -> t -> Id.t -> t = fun loc rcrd field ->
-  { desc = Projection (rcrd, field); loc }
+  {desc = Projection (rcrd, field); loc}
 
 let vrnt : Loc.t -> Id.t -> t -> Type.t -> t = fun loc case data tp ->
-  { desc = Variant (case, data, tp); loc }
+  {desc = Variant (case, data, tp); loc}
 
 let case : Loc.t -> t -> (Id.t * Id.t * t) list -> t =
     fun loc vrnt cases ->
-  { desc = Case (vrnt, cases); loc }
+  {desc = Case (vrnt, cases); loc}
 
 (* Typing *)
 
@@ -114,10 +114,10 @@ let rec to_type (kn_env, tp_env) tm =
         res_tp
       else
         error arg.loc "to_type" @@
-            Printf.sprintf
-              "expected type '%s'; found type '%s'"
-              (Type.to_string fml_arg_tp)
-              (Type.to_string act_arg_tp)
+          Printf.sprintf
+            "expected type '%s'; found type '%s'"
+            (Type.to_string fml_arg_tp)
+            (Type.to_string act_arg_tp)
     | Type_abs (arg, kn, body) ->
       Type.forall arg kn @@
         to_type (Kind_env.add arg kn kn_env) tp_env body
@@ -138,7 +138,7 @@ let rec to_type (kn_env, tp_env) tm =
       if not (Kind.alpha_equivalent arg_kn fn_kn) then
         error tm.loc "to_type" @@
           Printf.sprintf
-            "expected '%s'; found '%s'"
+            "expected kind '%s'; found '%s'"
             (Kind.to_string fn_kn)
             (Kind.to_string arg_kn);
       let ftvs = Id.Set.of_list @@ Kind_env.keys kn_env in
@@ -161,10 +161,10 @@ let rec to_type (kn_env, tp_env) tm =
         tp
       else
         error tm.loc "to_type" @@
-            Printf.sprintf
-              "expected type '%s'; found type '%s'"
-              (Type.to_string exp)
-              (Type.to_string act)
+          Printf.sprintf
+            "expected type '%s'; found type '%s'"
+            (Type.to_string exp)
+            (Type.to_string act)
     | Unroll tm ->
       let tp =
         Type.beta_reduce ~deep:() tp_env @@ to_type kn_env tp_env tm
@@ -197,10 +197,10 @@ let rec to_type (kn_env, tp_env) tm =
         res_tp
       else
         error tm.loc "to_type" @@
-            Printf.sprintf
-              "expected type '%s'; found type '%s'"
-              (Type.to_string arg_tp)
-              (Type.to_string res_tp)
+          Printf.sprintf
+            "expected type '%s'; found type '%s'"
+            (Type.to_string arg_tp)
+            (Type.to_string res_tp)
     | Record fields ->
       let field_to_type (id, tm) = id, to_type kn_env tp_env tm in
       Type.rcrd (List.map field_to_type fields) None
@@ -257,10 +257,10 @@ let rec to_type (kn_env, tp_env) tm =
         tp
       else
         error data.loc "to_type" @@
-            Printf.sprintf
-              "expected type '%s'; found type '%s'"
-              (Type.to_string case_tp)
-              (Type.to_string data_tp)
+          Printf.sprintf
+            "expected type '%s'; found type '%s'"
+            (Type.to_string case_tp)
+            (Type.to_string data_tp)
     | Case (vrnt, cases) ->
       let case_to_type (_, tp) (_, id, tm) =
         to_type kn_env (Type_env.Term.add id tp tp_env) tm, tm.loc
@@ -275,10 +275,10 @@ let rec to_type (kn_env, tp_env) tm =
             res_tp
           else
             error loc "to_type" @@
-                Printf.sprintf
-                  "this branch has type '%s'; the others have type '%s'"
-                  (Type.to_string case_tp)
-                  (Type.to_string res_tp)
+              Printf.sprintf
+                "this branch has type '%s'; the others have type '%s'"
+                (Type.to_string case_tp)
+                (Type.to_string res_tp)
         | [], _ | _, [] ->
           error tm.loc "to_type" @@
             Printf.sprintf

@@ -110,9 +110,9 @@ end = struct
   type sub = t Id.Map.t
 
   type state = {
-    sub : sub ;
-    pools : Kind.t IVE.t ;
-    kind_env : Kind_env.t ;
+    sub : sub;
+    pools : Kind.t IVE.t;
+    kind_env : Kind_env.t;
   }
 
   module Sub : sig

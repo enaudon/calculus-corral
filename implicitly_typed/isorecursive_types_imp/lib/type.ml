@@ -184,10 +184,10 @@ end = struct
     | Rigid
 
   type state = {
-    sub : sub ;
-    pools : (Kind.t * rigidity) IVE.t ;
-    kind_env : Kind_env.t ;
-    type_env : Env.t ;
+    sub : sub;
+    pools : (Kind.t * rigidity) IVE.t;
+    kind_env : Kind_env.t;
+    type_env : Env.t;
   }
 
   module Sub : sig

@@ -116,7 +116,7 @@ val alpha_equivalent :
   the domain of [sub] with the corresponding type the range of [sub].
   [fvs] is any superset of the variables which appear in the range of
   [sub].
-*)
+ *)
 val subst : Identifier.Set.t -> Environment.t -> t -> t
 
 (**

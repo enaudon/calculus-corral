@@ -154,10 +154,10 @@ end = struct
     | Rigid
 
   type state = {
-    sub : sub ;
-    pools : (Kind.t * rigidity) IVE.t ;
-    kind_env : Kind_env.t ;
-    type_env : Env.t ;
+    sub : sub;
+    pools : (Kind.t * rigidity) IVE.t;
+    kind_env : Kind_env.t;
+    type_env : Env.t;
   }
 
   module Sub : sig
@@ -173,16 +173,11 @@ end = struct
     let singleton : Id.t -> t -> sub = Id.Map.singleton
 
     let rec apply tp sub = match tp with
-      | Inference_variable (_, id) ->
-        Id.Map.find_default tp id sub
-      | Variable _ ->
-        tp
-      | Abstraction (arg, kn, body) ->
-        abs arg kn @@ apply body sub
-      | Application (fn, arg) ->
-        app (apply fn sub) (apply arg sub)
-      | Universal (quant, kn, body) ->
-        forall quant kn @@ apply body sub
+      | Inference_variable (_, id) -> Id.Map.find_default tp id sub
+      | Variable _ -> tp
+      | Abstraction (arg, kn, body) -> abs arg kn @@ apply body sub
+      | Application (fn, arg) -> app (apply fn sub) (apply arg sub)
+      | Universal (quant, kn, body) -> forall quant kn @@ apply body sub
 
     let extend id tp state =
       let apply tp' = apply tp' @@ singleton id tp in

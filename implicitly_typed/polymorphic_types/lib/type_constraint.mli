@@ -20,13 +20,13 @@ val conj : ?loc : Location.t -> 'a t -> 'b t -> ('a * 'b) t
 (**
   [conj_left lhs rhs] behaves as [conj], but only returns the value
   produced by [lhs].
-*)
+ *)
 val conj_left : ?loc : Location.t -> 'a t -> 'b t -> 'a t
 
 (**
   [conj_right lhs rhs] behaves as [conj], but only returns the value
   produced by [rhs].
-*)
+ *)
 val conj_right : ?loc : Location.t -> 'a t -> 'b t -> 'b t
 
 (** [exists (fun tp -> c)] existentially quantifies [tp] in [c]. *)

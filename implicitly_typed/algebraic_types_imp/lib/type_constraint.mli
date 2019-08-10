@@ -20,13 +20,13 @@ val conj : ?loc : Location.t -> 'a t -> 'b t -> ('a * 'b) t
 (**
   [conj_left lhs rhs] behaves as [conj], but only returns the value
   produced by [lhs].
-*)
+ *)
 val conj_left : ?loc : Location.t -> 'a t -> 'b t -> 'a t
 
 (**
   [conj_right lhs rhs] behaves as [conj], but only returns the value
   produced by [rhs].
-*)
+ *)
 val conj_right : ?loc : Location.t -> 'a t -> 'b t -> 'b t
 
 (** [conj_list cs] conjoins the constraints in [cs]. *)
@@ -35,7 +35,7 @@ val conj_list : ?loc : Location.t -> 'a t list -> 'a list t
 (**
   [exists kn (fun tp -> c)] existentially quantifies [tp] of kind [kn]
   in [c].
-*)
+ *)
 val exists :
   ?loc : Location.t -> Kind.t -> (Type.t -> 'a t) -> (Type.t * 'a) t
 

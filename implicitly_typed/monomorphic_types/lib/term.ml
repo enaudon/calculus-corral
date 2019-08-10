@@ -9,8 +9,8 @@ type desc =
   | Application of t * t
 
 and t = {
-  desc : desc ;
-  loc : Loc.t ;
+  desc : desc;
+  loc : Loc.t;
 }
 
 (* Internal utilities *)
@@ -23,13 +23,13 @@ let error : Loc.t -> string -> string -> 'a = fun loc fn_name msg ->
       fn_name
       msg
 
-let var : Loc.t -> Id.t -> t = fun loc id -> { desc = Variable id; loc }
+let var : Loc.t -> Id.t -> t = fun loc id -> {desc = Variable id; loc}
 
 let abs : Loc.t -> Id.t -> t -> t = fun loc arg body ->
-  { desc = Abstraction (arg, body); loc }
+  {desc = Abstraction (arg, body); loc}
 
 let app : Loc.t -> t -> t -> t = fun loc fn arg ->
-  { desc = Application (fn, arg); loc }
+  {desc = Application (fn, arg); loc}
 
 (* Typing *)
 

@@ -78,7 +78,7 @@ val free_vars : t -> Identifier.Set.t
 (**
   [subst fvars tp sub] applies the substitution [sub] to [tp], assuming
   that the identifiers in [fvars] may occur free in the range of [sub].
-*)
+ *)
 val subst : Identifier.Set.t -> Environment.t -> t -> t
 
 (**
