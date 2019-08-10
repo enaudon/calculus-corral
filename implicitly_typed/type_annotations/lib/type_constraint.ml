@@ -93,8 +93,8 @@ let solve (kn_env, tp_env) (c, k) =
       let state, tvs, tp = Infer.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
-      let fn id env = Type_env.Term.add id tp env in
-      solve (Option.fold fn id_opt env) state rhs
+      let add id env = Type_env.Term.add id tp env in
+      solve (Option.fold add id_opt env) state rhs
     | Localized (loc, c) ->
       try solve env state c with
         | Type.Occurs (id, tp) ->

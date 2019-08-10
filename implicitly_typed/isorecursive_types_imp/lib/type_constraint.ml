@@ -99,11 +99,11 @@ let solve (kn_env, tp_env) (c, k) =
     | Def_binding (id, tp, c) ->
       solve (Type_env.Term.add id tp env) state c
     | Let_binding (id_opt, tp_ref, kn, lhs, rhs, tvs_ref, recf) ->
-      let fn tp id env = Type_env.Term.add id tp env in
+      let add tp id env = Type_env.Term.add id tp env in
       let state = Infer.gen_enter state in
       let env' =
         if recf then
-          Option.fold (fn !tp_ref) id_opt env
+          Option.fold (add !tp_ref) id_opt env
         else
           env
       in
@@ -111,7 +111,7 @@ let solve (kn_env, tp_env) (c, k) =
       let state, tvs, tp = Infer.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
-      solve (Option.fold (fn tp) id_opt env) state rhs
+      solve (Option.fold (add tp) id_opt env) state rhs
     | Localized (loc, c) ->
       try solve env state c with
         | Type.Occurs (id, tp) ->
