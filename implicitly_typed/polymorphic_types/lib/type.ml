@@ -177,7 +177,7 @@ end = struct
       match tp1', tp2' with
 
         | _, Universal _ | Universal _, _ ->
-          raise_poly "unify";
+          raise_poly "Inferencer.unify.unify";
 
         | Inference_variable id1, Inference_variable id2
             when id1 = id2 ->

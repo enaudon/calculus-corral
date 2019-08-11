@@ -29,12 +29,15 @@ exception Cannot_unify of t * t
 let error : string -> string -> 'a = fun fn_name msg ->
   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
+
+let invalid_arg : string -> string -> 'a = fun fn_name msg ->
+  invalid_arg @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
+
+let raise_mono : string -> 'a = fun fn_name ->
+  invalid_arg fn_name "unexpected monomorphic type"
+
 let raise_poly : string -> 'a = fun fn_name ->
-  invalid_arg @@
-    Printf.sprintf
-      "%s.%s: unexpected polymorphic type"
-      __MODULE__
-      fn_name
+  invalid_arg fn_name "unexpected polymorphic type"
 
 let var_to_string : t -> string = fun tv -> match tv with
   | Inference_variable (_, id) -> "'" ^ Id.to_string id
@@ -308,7 +311,7 @@ end = struct
         | Inference_variable (Poly, _), _
         | _, Universal _
         | Universal _, _ ->
-          raise_poly "unify";
+          raise_poly "Inferencer.unify.unify";
 
         | Inference_variable (_, id1), Inference_variable (_, id2)
         | Variable id1, Variable id2
@@ -389,7 +392,7 @@ end = struct
       | Inference_variable (Mono, id) when Id.Map.mem id env ->
         inf_var Poly id
       | Inference_variable (Poly, id) when Id.Map.mem id env ->
-        assert false
+        raise_poly "Inferencer.gen_exit.gen"
       | Inference_variable _ | Variable _ ->
         tp
       | Application (fn, arg) ->
@@ -416,7 +419,7 @@ end = struct
 
     let rec inst env tp = match tp with
       | Inference_variable (Mono, id) when Id.Map.mem id env ->
-        assert false
+        raise_mono "Inferencer.inst.inst"
       | Inference_variable (Poly, id) ->
         Id.Map.find_default tp id env
       | Inference_variable _ | Variable _ ->
@@ -457,9 +460,7 @@ let to_kind env tp =
 let rec to_intl_repr tp =
   let module IR = Algebraic_types_exp.Type in
   match tp with
-    | Inference_variable (_, id) ->
-      IR.var id
-    | Variable id ->
+    | Inference_variable (_, id) | Variable id ->
       IR.var id
     | Application (fn, arg) ->
       IR.app (to_intl_repr fn) (to_intl_repr arg)
