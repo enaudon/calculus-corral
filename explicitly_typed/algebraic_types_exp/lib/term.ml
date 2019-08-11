@@ -526,7 +526,7 @@ let rec to_string tm =
       Printf.sprintf "%s %s" (fn_to_string fn) (Type.to_string arg)
     | Record fields ->
       let field_to_string (id, tm) =
-        Printf.sprintf "%s : %s"
+        Printf.sprintf "%s = %s"
           (Id.to_string id)
           (to_string tm)
       in

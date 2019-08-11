@@ -3,7 +3,7 @@ Pair
   = \A :: * . \B :: * . {fst : A; snd : B} ;
 pair
   : forall A :: * . forall B :: * . A -> B -> {fst : A; snd : B}
-  = \A :: * . \B :: * . \f : A . \s : B . {fst : f; snd : s} ;
+  = \A :: * . \B :: * . \f : A . \s : B . {fst = f; snd = s} ;
 fst
   : forall A :: * . forall B :: * . (Pair A B) -> A
   = \A :: * . \B :: * . \p : Pair A B . p.fst ;
@@ -12,7 +12,7 @@ snd
   = \A :: * . \B :: * . \p : Pair A B . p.snd ;
 p
   : {fst : [False : {}; True : {}]; snd : [False : {}; True : {}]}
-  = {fst : [False {} of Bool]; snd : [True {} of Bool]} ;
+  = {fst = [False {} of Bool]; snd = [True {} of Bool]} ;
 fst Bool Bool p
   : [False : {}; True : {}]
   = [False {} of Bool] ;
@@ -21,7 +21,7 @@ snd Bool Bool p
   = [True {} of Bool] ;
 p
   : {fst : mu A :: * . [Zero : {}; Succ : A]; snd : mu A :: * . [Zero : {}; Succ : A]}
-  = {fst : roll Nat [Zero {} of [Zero : {}; Succ : Nat]]; snd : roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]} ;
+  = {fst = roll Nat [Zero {} of [Zero : {}; Succ : Nat]]; snd = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]} ;
 fst Nat Nat p
   : mu A :: * . [Zero : {}; Succ : A]
   = roll Nat [Zero {} of [Zero : {}; Succ : Nat]] ;
@@ -30,7 +30,7 @@ snd Nat Nat p
   = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;
 p
   : {fst : [False : {}; True : {}]; snd : mu A :: * . [Zero : {}; Succ : A]}
-  = {fst : [False {} of Bool]; snd : roll Nat [Zero {} of [Zero : {}; Succ : Nat]]} ;
+  = {fst = [False {} of Bool]; snd = roll Nat [Zero {} of [Zero : {}; Succ : Nat]]} ;
 fst Bool Nat p
   : [False : {}; True : {}]
   = [False {} of Bool] ;
