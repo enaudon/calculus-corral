@@ -72,11 +72,6 @@ let rec to_type env tm = match tm.desc with
 (* Transformations *)
 
 (*
-  [subst fvs sub tm] applies [sub] to [tm], replacing any variable in
-  the domain of [sub] with the corresponding term the range of [sub].
-  [fvs] is any superset of the variables which appear in the range of
-  [sub].
-
   [subst] avoids name capture by renaming binders in [tm] to follow the
   Barendregt convention--i.e. the names of bound variable are chosen
   distinct from those of free variables.

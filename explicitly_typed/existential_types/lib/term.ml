@@ -137,11 +137,6 @@ let rec to_type (kn_env, tp_env) tm =
 (* Transformations *)
 
 (*
-  [subst_tp fvs sub tp] applies [sub] to [tp], replacing any variable in
-  the domain of [sub] with the corresponding type the range of [sub].
-  [fvs] is any superset of the variables which appear in the range of
-  [sub].
-
   [subst_tp] avoids name capture by renaming binders in [tp] to follow
   the Barendregt convention--i.e. the names of bound variable are chosen
   distinct from those of free variables.

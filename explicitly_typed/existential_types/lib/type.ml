@@ -97,6 +97,11 @@ let free_vars =
   in
   free_vars Id.Set.empty
 
+(**
+  [subst] avoids name capture by renaming binders in [tp] to follow the
+  Barendregt convention--i.e. the names of bound variable are chosen
+  distinct from those of free variables.
+ *)
 let rec subst fvs sub tp = match tp with
   | Variable id ->
     Env.Type.find_default tp id sub

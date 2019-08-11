@@ -93,6 +93,11 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env=[]) tp1 tp2 =
     (beta_reduce ~deep:() beta_env tp1)
     (beta_reduce ~deep:() beta_env tp2)
 
+(**
+  [subst] avoids name capture by renaming binders in [tp] to follow the
+  Barendregt convention--i.e. the names of bound variable are chosen
+  distinct from those of free variables.
+ *)
 let rec subst fvs sub tp = match tp with
   | Variable id ->
     Env.Type.find_default tp id sub

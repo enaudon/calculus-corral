@@ -80,8 +80,6 @@ let get_forall' : t -> (Identifier.t * Kind.t) list * t = fun tp ->
 (* Reduction *)
 
 (**
-  [subst tp id tp'] replaces occurences of [id] in [tp] with [tp'].
-
   [subst] avoids name capture by renaming binders in [tp] to follow the
   Barendregt convention--i.e. the names of bound variable are chosen
   distinct from those of free variables.
