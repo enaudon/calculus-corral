@@ -34,58 +34,63 @@ let app : Loc.t -> t -> t -> t = fun loc fn arg ->
 (* Typing *)
 
 (*
-  [infer_hm env tm] ensures that [tm] has type [tp], via Algorithm
+  [to_type_hm env tm] ensures that [tm] has type [tp], via Algorithm
   W-style Hindley-Milner type inference.  [tm] is assumed to be closed
   under [env].
  *)
-let infer_hm : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
+let to_type_hm : Type_env.t -> t -> Type.t = fun env tm ->
+
+  let fresh_inf_var () = Type.inf_var @@ Id.gen_upper () in
 
   let unify loc sub tp1 tp2 =
     try Type.unify sub tp1 tp2 with
       | Type.Occurs (id, tp) ->
-        error loc "infer_hm" @@
+        error loc "to_type_hm" @@
           Printf.sprintf
             "type variable '%s' occurs in '%s'"
             (Id.to_string id)
             (Type.to_string ~no_simp:() tp)
   in
 
-  let rec infer env sub exp_tp tm =
+  let rec to_type env sub exp_tp tm =
     let loc = tm.loc in
     match tm.desc with
       | Variable id ->
-        let tp = try Type_env.Term.find id env with
-          | Id.Unbound id ->
-          error loc "infer_hm" @@
-            Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
+        let tp =
+          try
+            Type_env.Term.find id env
+          with Id.Unbound id ->
+            error tm.loc "to_type_hm" @@
+              Printf.sprintf
+                "undefined identifier '%s'"
+                (Id.to_string id)
         in
         unify loc sub exp_tp tp
       | Abstraction (arg, body) ->
-        let arg_tp = Type.inf_var @@ Id.gen_upper () in
-        let body_tp = Type.inf_var @@ Id.gen_upper () in
+        let arg_tp = fresh_inf_var () in
+        let body_tp = fresh_inf_var () in
         let env' = Type_env.Term.add arg arg_tp env in
-        let sub' = infer env' sub body_tp body in
-        unify loc sub' exp_tp @@ Type.func arg_tp body_tp
+        let sub = to_type env' sub body_tp body in
+        unify loc sub exp_tp @@ Type.func arg_tp body_tp
       | Application (fn, arg) ->
-        let tp = Type.inf_var @@ Id.gen_upper () in
-        infer env (infer env sub (Type.func tp exp_tp) fn) tp arg
+        let tp = fresh_inf_var () in
+        let sub = to_type env sub (Type.func tp exp_tp) fn in
+        to_type env sub tp arg
   in
 
-  infer env Sub.identity exp_tp tm
-
-let to_type_hm env tm =
-  let tp = Type.inf_var @@ Id.gen_upper () in
-  let sub = infer_hm env tp tm in
+  let tp = fresh_inf_var () in
+  let sub = to_type env Sub.identity tp tm in
   Sub.apply tp sub
 
 (*
-  [infer_pr env tp tm] ensures that [tm] has type [tp], via
+  [to_type_pr env tp tm] ensures that [tm] has type [tp], via
   constraint-based type inference a la Pottier and Remy.  [tm] is
   assumed to be closed under [env].
  *)
-let infer_pr : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
+let to_type_pr : Type_env.t -> t -> Type.t = fun env tm ->
 
   let module TC = Type_constraint in
+  let open TC.Operators in
 
   let rec constrain exp_tp tm =
     let loc = tm.loc in
@@ -93,27 +98,23 @@ let infer_pr : Type_env.t -> Type.t -> t -> Sub.s = fun env exp_tp tm ->
       | Variable id ->
         TC.var_eq ~loc id exp_tp
       | Abstraction (arg, body) ->
-        TC.exists ~loc @@ fun arg_id ->
-          let arg_tp = Type.inf_var arg_id in
-          TC.exists ~loc @@ fun body_id ->
-            let body_tp = Type.inf_var body_id in
+        TC.exists ~loc (fun arg_tp ->
+          TC.exists ~loc @@ fun body_tp ->
             TC.conj
               (TC.def arg arg_tp @@ constrain body_tp body)
-              (TC.type_eq exp_tp @@ Type.func arg_tp body_tp)
+              (TC.type_eq exp_tp @@ Type.func arg_tp body_tp)) <$>
+          fun _ -> ()
       | Application (fn, arg) ->
-        TC.exists ~loc @@ fun arg_id ->
-          let arg_tp = Type.inf_var arg_id in
+        TC.exists ~loc (fun arg_tp ->
           TC.conj
             (constrain (Type.func arg_tp exp_tp) fn)
-            (constrain arg_tp arg)
+            (constrain arg_tp arg)) <$>
+          fun _ -> ()
   in
 
-  TC.solve env @@ constrain exp_tp tm
-
-let to_type_pr env tm =
-  let tp = Type.inf_var @@ Id.gen_upper () in
-  let sub = infer_pr env tp tm in
-  Sub.apply tp sub
+  TC.solve env
+    ( TC.exists ~loc:tm.loc (fun tp -> constrain tp tm) <$>
+      fun (tp, _) -> tp )
 
 (* Utilities *)
 
