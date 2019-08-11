@@ -6,7 +6,7 @@ exception Unbound of t
 
 module OrdId = struct
   type nonrec t = t
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 
 module Set = struct

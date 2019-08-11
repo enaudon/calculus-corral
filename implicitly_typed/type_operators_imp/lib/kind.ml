@@ -39,7 +39,7 @@ let rec to_intl_repr kn =
   There are no kind variables, so alpha-equivalence is just structural
   equivalence.
  *)
-let alpha_equivalent = Pervasives.(=)
+let alpha_equivalent = Stdlib.(=)
 
 let rec to_string kn =
   let to_paren_string kn = Printf.sprintf "(%s)" (to_string kn) in

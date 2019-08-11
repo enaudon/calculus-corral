@@ -161,7 +161,7 @@ module Repl (Input : Input) = struct
       | Repl ->
         let rec eval_phrase kn_env tp_env vl_env =
           Printf.printf "> %!";
-          let lexbuf = Lexing.from_string @@ input_line stdin in
+          let lexbuf = Lexing.from_string (input_line stdin) in
           lexbuf_set_filename lexbuf "<repl>";
           let kn_env', tp_env', vl_env' =
             evaluate kn_env tp_env vl_env lexbuf
