@@ -1,5 +1,6 @@
 module Id = Identifier
 module Misc = Miscellaneous
+module Opt = Option
 
 type t =
   | Variable of Id.t
@@ -57,7 +58,7 @@ let rec beta_reduce ?deep env tp = match tp with
   | Function (arg, res) ->
     func (beta_reduce env arg) (beta_reduce env res)
   | Universal (quant, body) ->
-    if deep <> None then
+    if deep <> Opt.none then
       forall quant @@ beta_reduce (Env.Type.del quant env) body
     else
       tp

@@ -4,6 +4,7 @@ module IR = Algebraic_types_exp
 module Kind_env = Kind.Environment
 module Loc = Location
 module Misc = Miscellaneous
+module Opt = Option
 module Type_env = Type.Environment
 
 type desc =
@@ -187,26 +188,26 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
           s, List.rev ks
         in
         ( unify loc state exp_tp @@
-            Type.rcrd (List.combine (List.map fst fields) tps) None,
+            Type.rcrd (List.combine (List.map fst fields) tps) Opt.none,
           fun state ->
             IR.Term.rcrd ~loc @@
               List.map (fun (id, k) -> id, k state) field_ks )
       | Projection (rcrd, field) ->
         let state, rest_tp = fresh_inf_var state Kind.row in
-        let tp = Type.rcrd [(field, exp_tp)] @@ Some rest_tp in
+        let tp = Type.rcrd [(field, exp_tp)] @@ Opt.some rest_tp in
         let state, k = infer env state tp rcrd in
         ( state, fun state -> IR.Term.proj ~loc (k state) field)
       | Variant (case, data) ->
         let state, data_tp = fresh_inf_var state Kind.prop in
         let state, rest_tp = fresh_inf_var state Kind.row in
         let state, data_k = infer env state data_tp data in
-        let tp = Type.vrnt [(case, data_tp)] @@ Some rest_tp in
+        let tp = Type.vrnt [(case, data_tp)] @@ Opt.some rest_tp in
         ( unify loc state exp_tp tp,
           fun state ->
             let data_tp' = type_to_ir state data_tp in
             let rest_tp' = type_to_ir state rest_tp in
             IR.Term.vrnt ~loc case (data_k state) @@
-              IR.Type.vrnt [(case, data_tp')] @@ Some rest_tp' )
+              IR.Type.vrnt [(case, data_tp')] @@ Opt.some rest_tp' )
       | Case (vrnt, cases) ->
         let infer_case res_tp (state, ks) tp (case, id, body) =
           let state, k =
@@ -222,7 +223,7 @@ let infer_hm : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
         in
         let state, res_tp = fresh_inf_var state Kind.prop in
         let state, vrnt_k =
-          infer env state (Type.vrnt case_tps None) vrnt
+          infer env state (Type.vrnt case_tps Opt.none) vrnt
         in
         let state, case_ks =
           (* TODO: Use `fold_right2` here. *)
@@ -308,17 +309,19 @@ let infer_pr : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
           let field_tps = List.combine (List.map fst fields) tps in
           TC.conj_left
             (TC.conj_list (List.map2 constrain_field tps fields))
-            (TC.equals exp_tp @@ Type.rcrd field_tps None)) <$>
+            (TC.equals exp_tp @@ Type.rcrd field_tps Opt.none)) <$>
           fun (_, fields') -> IR.Term.rcrd ~loc fields'
       | Projection (rcrd, field) ->
         TC.exists ~loc Kind.row (fun rest_tp ->
-          let rcrd_tp = Type.rcrd [(field, exp_tp)] @@ Some rest_tp in
+          let rcrd_tp =
+            Type.rcrd [(field, exp_tp)] @@ Opt.some rest_tp
+          in
           constrain rcrd_tp rcrd) <$>
         fun (_, rcrd') -> IR.Term.proj ~loc rcrd' field
       | Variant (case, data) ->
         TC.exists ~loc Kind.prop (fun data_tp ->
           TC.exists ~loc Kind.row @@ fun rest_tp ->
-            let tp = Type.vrnt [(case, data_tp)] @@ Some rest_tp in
+            let tp = Type.vrnt [(case, data_tp)] @@ Opt.some rest_tp in
             TC.conj_left
               (constrain data_tp data)
               (TC.equals exp_tp tp)) <$>
@@ -326,7 +329,7 @@ let infer_pr : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
             let data_tp' = Type.to_intl_repr data_tp in
             let rest_tp' = Type.to_intl_repr rest_tp in
             IR.Term.vrnt ~loc case data' @@
-              IR.Type.vrnt [(case, data_tp')] @@ Some rest_tp'
+              IR.Type.vrnt [(case, data_tp')] @@ Opt.some rest_tp'
       | Case (vrnt, cases) ->
         let constrain_case res_tp tp (case, id, body) =
           TC.def id tp @@ constrain res_tp body <$>
@@ -335,7 +338,7 @@ let infer_pr : Type_env.t -> t -> Type.t * IR.Term.t = fun env tm ->
         let ids = List.map Misc.fst_of_3 cases in
         let kns = List.init (List.length cases) (fun _ -> Kind.prop) in
         TC.exists_list ~loc kns (fun tps ->
-          let vrnt_tp = Type.vrnt (List.combine ids tps) None in
+          let vrnt_tp = Type.vrnt (List.combine ids tps) Opt.none in
           TC.exists ~loc Kind.prop @@ fun res_tp ->
             TC.conj_left
               (TC.conj

@@ -1,6 +1,7 @@
 module Id = Identifier
 module Kind_env = Kind.Environment
 module Misc = Miscellaneous
+module Opt = Option
 
 type t =
   | Variable of Id.t
@@ -39,14 +40,14 @@ let row_cons : Id.t -> t -> t -> t = fun id tp rest ->
 let row_of_list : (Id.t * t) list -> t option -> t =
     fun fields rest_opt ->
   let cons (id, tp) rest = row_cons id tp rest in
-  let nil = Option.default row_nil rest_opt in
+  let nil = Opt.value ~default:row_nil rest_opt in
   List.fold_right cons fields nil
 
 let row_to_list : t -> (Id.t * t) list * t option = fun row ->
   let rec to_list acc tp = match tp with
-    | Row_nil -> acc, None
+    | Row_nil -> acc, Opt.none
     | Row_cons (id, tp, rest) -> to_list ((id, tp) :: acc) rest
-    | _ -> acc, Some tp
+    | _ -> acc, Opt.some tp
   in
   let fields, rest = to_list [] row in
   List.rev fields, rest
@@ -142,7 +143,7 @@ let rec beta_reduce ?deep env tp =
     | Variable id ->
       Env.Type.find_default tp id env
     | Abstraction (arg, kn, body) ->
-      if deep <> None then
+      if deep <> Opt.none then
         abs arg kn @@ beta_reduce (Env.Type.del arg env) body
       else
         tp
@@ -157,7 +158,7 @@ let rec beta_reduce ?deep env tp =
           app fn' act_arg'
       end
     | Universal (quant, kn, body) ->
-      if deep <> None then
+      if deep <> Opt.none then
         forall quant kn @@ beta_reduce (Env.Type.del quant env) body
       else
         tp

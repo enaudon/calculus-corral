@@ -1,6 +1,7 @@
 module Id = Identifier
 module Kind_env = Kind.Environment
 module Misc = Miscellaneous
+module Opt = Option
 
 type t =
   | Variable of Id.t
@@ -106,7 +107,7 @@ let rec beta_reduce ?deep env tp =
     | Variable id ->
       Env.Type.find_default tp id env
     | Abstraction (arg, kn, body) ->
-      if deep <> None then
+      if deep <> Opt.none then
         abs arg kn @@ beta_reduce (Env.Type.del arg env) body
       else
         tp
@@ -121,7 +122,7 @@ let rec beta_reduce ?deep env tp =
           app fn' act_arg'
       end
     | Universal (quant, kn, body) ->
-      if deep <> None then
+      if deep <> Opt.none then
         forall quant kn @@ beta_reduce (Env.Type.del quant env) body
       else
         tp

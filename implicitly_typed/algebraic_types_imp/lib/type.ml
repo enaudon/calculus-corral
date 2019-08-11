@@ -1,6 +1,7 @@
 module Id = Identifier
 module Kind_env = Kind.Environment
 module Misc = Miscellaneous
+module Opt = Option
 
 type morph = Mono | Poly
 
@@ -68,7 +69,7 @@ let row_cons : Id.t -> t -> t -> t = fun id tp rest ->
 let row_of_list : (Id.t * t) list -> t option -> t =
     fun fields rest_opt ->
   let cons (id, tp) rest = row_cons id tp rest in
-  let nil = Option.default row_nil rest_opt in
+  let nil = Opt.value ~default:row_nil rest_opt in
   List.fold_right cons fields nil
 
 (* Destructors *)
@@ -85,9 +86,9 @@ let get_forall' : t -> (Identifier.t * Kind.t) list * t = fun tp ->
 
 let row_to_list : t -> (Id.t * t) list * t option = fun row ->
   let rec to_list acc m = match m with
-    | Row_nil -> acc, None
+    | Row_nil -> acc, Opt.none
     | Row_cons (id, m, rest) -> to_list ((id, m) :: acc) rest
-    | _ -> acc, Some m
+    | _ -> acc, Opt.some m
   in
   let fields, rest = to_list [] row in
   List.rev fields, rest
@@ -470,7 +471,7 @@ let rec to_intl_repr tp =
       let fields, rest = row_to_list tp in
       IR.row
         (List.map (fun (id, tp) -> id, to_intl_repr tp) fields)
-        (Option.map to_intl_repr rest)
+        (Opt.map to_intl_repr rest)
 
 (*
   NOTE: [simplify] does not register the new variables that it creates
@@ -551,7 +552,7 @@ let to_string ?no_simp ?show_quants tp =
     | Application (fn, arg) ->
       Printf.sprintf "%s %s" (to_string fn) (arg_to_string arg)
     | Universal (quant, kn, body) ->
-      if show_quants = None then
+      if show_quants = Opt.none then
         to_string body
       else
         Printf.sprintf "forall %s :: %s . %s"
@@ -562,7 +563,7 @@ let to_string ?no_simp ?show_quants tp =
       Printf.sprintf "<%s>" (row_to_string tp)
   in
 
-  to_string @@ if no_simp = None then simplify tp else tp
+  to_string @@ if no_simp = Opt.none then simplify tp else tp
 
 (* External functions *)
 

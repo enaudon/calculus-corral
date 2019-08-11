@@ -1,6 +1,7 @@
 module Id = Identifier
 module Kind_env = Kind.Environment
 module Misc = Miscellaneous
+module Opt = Option
 
 type morph = Mono | Poly
 
@@ -445,7 +446,7 @@ let to_string ?no_simp ?show_quants tp =
     | Application (fn, arg) ->
       Printf.sprintf "%s %s" (to_string fn) (arg_to_string arg)
     | Universal (quant, kn, body) ->
-      if show_quants = None then
+      if show_quants = Opt.none then
         to_string body
       else
         Printf.sprintf "forall %s :: %s . %s"
@@ -454,7 +455,7 @@ let to_string ?no_simp ?show_quants tp =
           (to_string body)
   in
 
-  to_string @@ if no_simp = None then simplify tp else tp
+  to_string @@ if no_simp = Opt.none then simplify tp else tp
 
 (* External functions *)
 

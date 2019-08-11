@@ -2,6 +2,7 @@ module Id = Identifier
 module Kind_env = Kind.Environment
 module Loc = Location
 module Misc = Miscellaneous
+module Opt = Option
 module Type_env = Type.Environment
 
 type desc =
@@ -129,7 +130,7 @@ let rec to_type (kn_env, tp_env) tm =
       Type.subst ftvs (Type_env.Type.singleton fn_quant arg) fn_body
     | Record fields ->
       let field_to_type (id, tm) = id, to_type kn_env tp_env tm in
-      Type.rcrd (List.map field_to_type fields) None
+      Type.rcrd (List.map field_to_type fields) Opt.none
     | Projection (rcrd, field) ->
       let rcrd_tp = to_type kn_env tp_env rcrd in
       let fields, _ =
@@ -315,7 +316,7 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
     | Variable id ->
       Env.find_default tm id tm_env
     | Term_abs (arg, tp, body) ->
-      if deep <> None then
+      if deep <> Opt.none then
         let tm_env' = Env.add arg (var Loc.dummy arg) tm_env in
         abs loc arg tp @@ beta_reduce tp_env tm_env' body
       else
@@ -332,7 +333,7 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
           app loc fn' act_arg'
       end
     | Type_abs (arg, kn, body) ->
-      if deep <> None then
+      if deep <> Opt.none then
         let tp_env' = Type_env.Type.add arg (Type.var arg) tp_env in
         tp_abs loc arg kn @@ beta_reduce tp_env' tm_env body
       else
@@ -369,7 +370,10 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
       vrnt loc case (beta_reduce tp_env tm_env data) tp
     | Case (vrnt, cases) ->
       let beta_reduce_case (case, id, tm) =
-        case, id, if deep <> None then beta_reduce tp_env tm_env tm else tm 
+        let tm' =
+          if deep <> Opt.none then beta_reduce tp_env tm_env tm else tm
+        in
+        case, id, tm'
       in
       let vrnt' = beta_reduce tp_env tm_env vrnt in
       match vrnt'.desc with

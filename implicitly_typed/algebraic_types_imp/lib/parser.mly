@@ -2,6 +2,7 @@
 
 module Id = Identifier
 module Loc = Location
+module Opt = Option
 
 let get_loc () =
   Loc.of_lex_pos
@@ -94,8 +95,8 @@ term :
   | comp_term                     { $1 }
   | B_SLASH LOWER_ID PERIOD term  { Term.abs $2 $4 }
   | LET LOWER_ID EQ term IN term  { Term.bind $2 $4 $6 }
-  | UPPER_ID term                 { Term.vrnt $1 (Some $2) }
-  | UPPER_ID                      { Term.vrnt $1 None }
+  | UPPER_ID term                 { Term.vrnt $1 (Opt.some $2) }
+  | UPPER_ID                      { Term.vrnt $1 Opt.none }
   | CASE term OF O_BRACK case_list_term C_BRACK   { Term.case $2 $5 }
 
 comp_term :
@@ -116,11 +117,12 @@ field_list_term :
   | LOWER_ID EQ term SEMICOLON field_list_term  { ($1, $3) :: $5 }
 
 case_list_term :
-  | UPPER_ID LOWER_ID S_ARROW term  { [($1, Some $2, $4)] }
-  | UPPER_ID LOWER_ID S_ARROW term SEMICOLON  { [($1, Some $2, $4)] }
+  | UPPER_ID LOWER_ID S_ARROW term  { [($1, Opt.some $2, $4)] }
+  | UPPER_ID LOWER_ID S_ARROW term SEMICOLON
+    { [($1, Opt.some $2, $4)] }
   | UPPER_ID LOWER_ID S_ARROW term SEMICOLON case_list_term
-    { ($1, Some $2, $4) :: $6 }
-  | UPPER_ID S_ARROW term         { [($1, None, $3)] }
-  | UPPER_ID S_ARROW term SEMICOLON   { [($1, None, $3)] }
+    { ($1, Opt.some $2, $4) :: $6 }
+  | UPPER_ID S_ARROW term         { [($1, Opt.none, $3)] }
+  | UPPER_ID S_ARROW term SEMICOLON   { [($1, Opt.none, $3)] }
   | UPPER_ID S_ARROW term SEMICOLON case_list_term
-    { ($1, None, $3) :: $5 }
+    { ($1, Opt.none, $3) :: $5 }

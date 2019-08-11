@@ -1,5 +1,6 @@
 module Id = Identifier
 module Misc = Miscellaneous
+module Opt = Option
 
 type t =
   | Inference_variable of Id.t
@@ -134,4 +135,4 @@ let to_string ?no_simp tp =
         in
         Printf.sprintf "%s -> %s" (arg_to_string arg) (to_string res)
   in
-  to_string @@ if no_simp = None then simplify tp else tp
+  to_string @@ if no_simp = Opt.none then simplify tp else tp

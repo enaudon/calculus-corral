@@ -1,6 +1,7 @@
 module Id = Identifier
 module Infer = Type.Inferencer
 module Loc = Location
+module Opt = Option
 
 type co =
   | True
@@ -99,11 +100,11 @@ let solve (kn_env, tp_env) (c, k) =
     | Def_binding (id, tp, c) ->
       solve (Type_env.Term.add id tp env) state c
     | Let_binding (id_opt, tp_ref, kn, lhs, rhs, tvs_ref, recf) ->
-      let add tp id env = Type_env.Term.add id tp env in
+      let add tp env id = Type_env.Term.add id tp env in
       let state = Infer.gen_enter state in
       let env' =
         if recf then
-          Option.fold (add !tp_ref) id_opt env
+          Opt.fold ~none:env ~some:(add !tp_ref env) id_opt
         else
           env
       in
@@ -111,7 +112,7 @@ let solve (kn_env, tp_env) (c, k) =
       let state, tvs, tp = Infer.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
-      solve (Option.fold (add tp) id_opt env) state rhs
+      solve (Opt.fold ~none:env ~some:(add tp env) id_opt) state rhs
     | Localized (loc, c) ->
       try solve env state c with
         | Type.Occurs (id, tp) ->
@@ -255,10 +256,10 @@ let def ?loc id tp (c, k) =
 let top ?loc kn fn =
   map
     (fun (_, tp, tvs, rhs_v, ()) -> tp, tvs, rhs_v)
-    (let_ loc false None kn fn @@ yield ())
+    (let_ loc false Opt.none kn fn @@ yield ())
 
 let let_ ?loc ?recf id kn fn rhs =
-  let_ loc (recf <> None) (Some id) kn fn rhs
+  let_ loc (recf <> Opt.none) (Opt.some id) kn fn rhs
 
 module Operators = struct
 

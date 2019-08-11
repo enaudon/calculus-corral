@@ -5,6 +5,7 @@ module IR = Isorecursive_types_exp
 module Kind_env = Kind.Environment
 module Loc = Location
 module Misc = Miscellaneous
+module Opt = Option
 module Type_env = Type.Environment
 
 type desc =
@@ -210,13 +211,13 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
           s, List.rev ks
         in
         ( unify loc state exp_tp @@
-            Type.rcrd (List.combine (List.map fst fields) tps) None,
+            Type.rcrd (List.combine (List.map fst fields) tps) Opt.none,
           fun state ->
             IR.Term.rcrd ~loc @@
               List.map (fun (id, k) -> id, k state) field_ks )
       | Projection (rcrd, field) ->
         let state, rest_tp = fresh_inf_var state Kind.row in
-        let tp = Type.rcrd [(field, exp_tp)] @@ Some rest_tp in
+        let tp = Type.rcrd [(field, exp_tp)] @@ Opt.some rest_tp in
         let state, k = infer env state tp rcrd in
         ( state, fun state -> IR.Term.proj ~loc (k state) field)
       | Variant (case, data) ->
@@ -224,7 +225,7 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
         let state, data_tp = fresh_inf_var state Kind.prop in
         let state, rest_tp = fresh_inf_var state Kind.row in
         let state, data_k = infer env state data_tp data in
-        let tp = Type.vrnt [(case, data_tp)] @@ Some rest_tp in
+        let tp = Type.vrnt [(case, data_tp)] @@ Opt.some rest_tp in
         let state = unify loc state res_tp exp_tp in
         ( unify loc state exp_tp tp,
           fun state ->
@@ -232,7 +233,7 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
             let rest_tp' = type_to_ir state rest_tp in
             let tm' =
               IR.Term.vrnt ~loc case (data_k state) @@
-                IR.Type.vrnt [(case, data_tp')] @@ Some rest_tp'
+                IR.Type.vrnt [(case, data_tp')] @@ Opt.some rest_tp'
             in
             if Type.is_mu @@ Infer.apply state res_tp then
               IR.Term.roll ~loc (type_to_ir state res_tp) tm'
@@ -254,7 +255,9 @@ let infer_hm : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
         let state, res_tp = fresh_inf_var state Kind.prop in
         let state, vrnt_tp = fresh_inf_var state Kind.prop in
         let state, vrnt_k = infer env state vrnt_tp vrnt in
-        let state = unify loc state vrnt_tp @@ Type.vrnt case_tps None in
+        let state =
+          unify loc state vrnt_tp @@ Type.vrnt case_tps Opt.none
+        in
         let state, case_ks =
           (* TODO: Use `fold_right2` here. *)
           let s, ks =
@@ -328,7 +331,8 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
             (constrain arg_tp arg)) <$>
           fun (_, (fn', arg')) -> IR.Term.app ~loc fn' arg'
       | Binding (id, value, body, recf) ->
-        TC.let_ ~loc ?recf:(if recf then Some () else None) id Kind.prop
+        let rec_opt = if recf then Opt.some () else Opt.none in
+        TC.let_ ~loc ?recf:rec_opt id Kind.prop
           (fun tp -> constrain tp value)
           (constrain exp_tp body) <$>
           fun (mono_tp, poly_tp, tvs, value', body') ->
@@ -356,18 +360,20 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
           let field_tps = List.combine (List.map fst fields) tps in
           TC.conj_left
             (TC.conj_list (List.map2 constrain_field tps fields))
-            (TC.equals exp_tp @@ Type.rcrd field_tps None)) <$>
+            (TC.equals exp_tp @@ Type.rcrd field_tps Opt.none)) <$>
           fun (_, fields') -> IR.Term.rcrd ~loc fields'
       | Projection (rcrd, field) ->
         TC.exists ~loc Kind.row (fun rest_tp ->
-          let rcrd_tp = Type.rcrd [(field, exp_tp)] @@ Some rest_tp in
+          let rcrd_tp =
+            Type.rcrd [(field, exp_tp)] @@ Opt.some rest_tp
+          in
           constrain rcrd_tp rcrd) <$>
         fun (_, rcrd') -> IR.Term.proj ~loc rcrd' field
       | Variant (case, data) ->
         TC.exists ~loc Kind.prop (fun res_tp ->
           TC.exists ~loc Kind.prop (fun data_tp ->
             TC.exists ~loc Kind.row @@ fun rest_tp ->
-              let tp = Type.vrnt [(case, data_tp)] @@ Some rest_tp in
+              let tp = Type.vrnt [(case, data_tp)] @@ Opt.some rest_tp in
               TC.conj_left
                 (constrain data_tp data)
                 (TC.conj
@@ -378,7 +384,7 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
               let rest_tp' = Type.to_intl_repr rest_tp in
               let tm' =
                 IR.Term.vrnt ~loc case data' @@
-                  IR.Type.vrnt [(case, data_tp')] @@ Some rest_tp'
+                  IR.Type.vrnt [(case, data_tp')] @@ Opt.some rest_tp'
               in
               if Type.is_mu exp_tp then
                 IR.Term.roll ~loc (Type.to_intl_repr exp_tp) tm'
@@ -392,7 +398,7 @@ let infer_pr : (Kind_env.t * Type_env.t) -> t -> Type.t * IR.Term.t =
         let ids = List.map Misc.fst_of_3 cases in
         let kns = List.init (List.length cases) (fun _ -> Kind.prop) in
         TC.exists_list' ~loc kns (fun tps ->
-          let vrnt_tp = Type.vrnt (List.combine ids tps) None in
+          let vrnt_tp = Type.vrnt (List.combine ids tps) Opt.none in
           TC.exists ~loc Kind.prop @@ fun vrnt_tp' ->
             TC.exists ~loc Kind.prop @@ fun res_tp ->
               TC.conj_left
@@ -513,7 +519,7 @@ let app ?(loc = Loc.dummy) fn arg = app loc fn arg
 let app' ?(loc = Loc.dummy) fn args = List.fold_left (app ~loc) fn args
 
 let bind ?(loc = Loc.dummy) ?recf id value body =
-  bind loc id value body (recf <> None)
+  bind loc id value body (recf <> Opt.none)
 
 let annot ?(loc = Loc.dummy) tm an = annot loc tm an
 

@@ -2,6 +2,7 @@ module Id = Identifier
 module Loc = Location
 module Misc = Miscellaneous
 module Type_env = Type.Environment
+module Opt = Option
 
 type desc =
   | Variable of Id.t
@@ -223,7 +224,7 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
     | Variable id ->
       Env.find_default tm id tm_env
     | Abstraction (arg, tp, body) ->
-      if deep <> None then
+      if deep <> Opt.none then
         let tm_env' = Env.add arg (var Loc.dummy arg) tm_env in
         abs loc arg tp @@ beta_reduce tp_env tm_env' body
       else

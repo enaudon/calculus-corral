@@ -1,3 +1,5 @@
+module Opt = Option
+
 module type Environment = sig
   type value
   type t
@@ -86,11 +88,12 @@ module Repl (Input : Input) = struct
 
   let mode = ref Repl
 
-  let deep = ref None
+  let deep = ref Opt.none
 
   let parse_cmd_args () =
     let initial_specs = [
-      ( "--deep-beta-reduction", Arg.Unit (fun () -> deep := Some ()),
+      ( "--deep-beta-reduction",
+        Arg.Unit (fun () -> deep := Opt.some ()),
         "Beta-reduce within the body of abstractions." ) ;
     ] in
     let parse_file f = match !mode with

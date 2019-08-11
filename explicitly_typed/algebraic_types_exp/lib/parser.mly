@@ -2,6 +2,7 @@
 
 module Id = Identifier
 module Loc = Location
+module Opt = Option
 
 let get_loc () =
   Loc.of_lex_pos
@@ -31,7 +32,7 @@ module Type = struct
 
   let vrnt (cases, rest) =
     let fn (id, tp) = match tp with
-      | None -> Id.define id, rcrd ([], None)
+      | None -> Id.define id, rcrd ([], Opt.none)
       | Some tp -> Id.define id, tp
     in
     vrnt (List.map fn cases) rest
@@ -42,7 +43,7 @@ module Type = struct
 
   let vrnt_row (cases, rest) =
     let fn (id, tp) = match tp with
-      | None -> Id.define id, rcrd ([], None)
+      | None -> Id.define id, rcrd ([], Opt.none)
       | Some tp -> Id.define id, tp
     in
     row (List.map fn cases) rest
@@ -170,12 +171,12 @@ atom_typo :
   | O_BRACK vrnt_typo error       { error "unclosed bracket" }
   | O_CHEVR rcrd_typo C_CHEVR     { Type.rcrd_row $2 }
   | O_CHEVR vrnt_typo C_CHEVR     { Type.vrnt_row $2 }
-  | O_CHEVR C_CHEVR               { Type.rcrd_row ([], None) }
+  | O_CHEVR C_CHEVR               { Type.rcrd_row ([], Opt.none) }
   | UPPER_ID                      { Type.var $1 }
 
 rcrd_typo :
-  | field_list_typo               { ($1, None) }
-  | field_list_typo V_BAR typo    { ($1, Some $3) }
+  | field_list_typo               { ($1, Opt.none) }
+  | field_list_typo V_BAR typo    { ($1, Opt.some $3) }
 
 field_list_typo :
   | LOWER_ID COLON typo           { [($1, $3)] }
@@ -183,17 +184,17 @@ field_list_typo :
   | LOWER_ID COLON typo SEMICOLON field_list_typo   { ($1, $3) :: $5 }
 
 vrnt_typo :
-  | case_list_typo                { ($1, None) }
-  | case_list_typo V_BAR typo     { ($1, Some $3) }
+  | case_list_typo                { ($1, Opt.none) }
+  | case_list_typo V_BAR typo     { ($1, Opt.some $3) }
 
 case_list_typo :
-  | UPPER_ID COLON typo           { [($1, Some $3)] }
-  | UPPER_ID COLON typo SEMICOLON   { [($1, Some $3)] }
+  | UPPER_ID COLON typo           { [($1, Opt.some $3)] }
+  | UPPER_ID COLON typo SEMICOLON   { [($1, Opt.some $3)] }
   | UPPER_ID COLON typo SEMICOLON case_list_typo
-    { ($1, Some $3) :: $5 }
-  | UPPER_ID                      { [($1, None)] }
-  | UPPER_ID SEMICOLON            { [($1, None)] }
-  | UPPER_ID SEMICOLON case_list_typo   { ($1, None) :: $3 }
+    { ($1, Opt.some $3) :: $5 }
+  | UPPER_ID                      { [($1, Opt.none)] }
+  | UPPER_ID SEMICOLON            { [($1, Opt.none)] }
+  | UPPER_ID SEMICOLON case_list_typo   { ($1, Opt.none) :: $3 }
 
 /* Terms */
 
@@ -224,15 +225,16 @@ field_list_term :
   | LOWER_ID EQ term SEMICOLON field_list_term  { ($1, $3) :: $5 }
 
 vrnt_term :
-  | UPPER_ID OF typo              { ($1, None, $3) }
-  | UPPER_ID term OF typo         { ($1, Some $2, $4) }
+  | UPPER_ID OF typo              { ($1, Opt.none, $3) }
+  | UPPER_ID term OF typo         { ($1, Opt.some $2, $4) }
 
 case_list_term :
-  | UPPER_ID LOWER_ID S_ARROW term  { [($1, Some $2, $4)] }
-  | UPPER_ID LOWER_ID S_ARROW term SEMICOLON  { [($1, Some $2, $4)] }
+  | UPPER_ID LOWER_ID S_ARROW term  { [($1, Opt.some $2, $4)] }
+  | UPPER_ID LOWER_ID S_ARROW term SEMICOLON
+    { [($1, Opt.some $2, $4)] }
   | UPPER_ID LOWER_ID S_ARROW term SEMICOLON case_list_term
-    { ($1, Some $2, $4) :: $6 }
-  | UPPER_ID S_ARROW term         { [($1, None, $3)] }
-  | UPPER_ID S_ARROW term SEMICOLON   { [($1, None, $3)] }
+    { ($1, Opt.some $2, $4) :: $6 }
+  | UPPER_ID S_ARROW term         { [($1, Opt.none, $3)] }
+  | UPPER_ID S_ARROW term SEMICOLON   { [($1, Opt.none, $3)] }
   | UPPER_ID S_ARROW term SEMICOLON case_list_term
-    { ($1, None, $3) :: $5 }
+    { ($1, Opt.none, $3) :: $5 }

@@ -2,6 +2,7 @@ module Id = Identifier
 module Infer = Type.Inferencer
 module Kind_env = Kind.Environment
 module Loc = Location
+module Opt = Option
 
 type co =
   | True
@@ -79,8 +80,8 @@ let solve env (c, k) =
       let state, tvs, tp = Infer.gen_exit state !tp_ref in
       tp_ref := tp;
       tvs_ref := tvs;
-      let add id env = Type_env.Term.add id tp env in
-      solve (Option.fold add id_opt env) state rhs
+      let add id = Type_env.Term.add id tp env in
+      solve (Opt.fold ~none:env ~some:add id_opt) state rhs
     | Localized (loc, c) ->
       try solve env state c with
         | Type.Occurs (id, tp) ->
@@ -189,9 +190,9 @@ let def ?loc id tp (c, k) =
 let top ?loc kn fn =
   map
     (fun (tp, tvs, rhs_v, ()) -> tp, tvs, rhs_v)
-    (let_ loc None kn fn pure)
+    (let_ loc Opt.none kn fn pure)
 
-let let_ ?loc id kn fn rhs = let_ loc (Some id) kn fn rhs
+let let_ ?loc id kn fn rhs = let_ loc (Opt.some id) kn fn rhs
 
 module Operators = struct
 
