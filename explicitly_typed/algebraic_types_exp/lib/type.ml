@@ -143,7 +143,7 @@ let rec beta_reduce ?deep env tp =
       Env.Type.find_default tp id env
     | Abstraction (arg, kn, body) ->
       if deep <> None then
-        abs arg kn @@ beta_reduce (Env.Type.add arg (var arg) env) body
+        abs arg kn @@ beta_reduce (Env.Type.del arg env) body
       else
         tp
     | Application (fn, act_arg) ->
@@ -151,15 +151,14 @@ let rec beta_reduce ?deep env tp =
       let act_arg' = beta_reduce env act_arg in
       begin match fn' with
         | Abstraction (fml_arg, _, body) ->
-          let body' = subst env body fml_arg act_arg' in
-          beta_reduce env body'
+          let env' = Env.Type.del fml_arg env in
+          beta_reduce env' @@ subst env' body fml_arg act_arg'
         | _ ->
           app fn' act_arg'
       end
     | Universal (quant, kn, body) ->
       if deep <> None then
-        forall quant kn @@
-          beta_reduce (Env.Type.add quant (var quant) env) body
+        forall quant kn @@ beta_reduce (Env.Type.del quant env) body
       else
         tp
     | Row_nil ->

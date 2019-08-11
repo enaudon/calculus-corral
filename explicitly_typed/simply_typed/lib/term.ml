@@ -114,8 +114,8 @@ let rec beta_reduce ?deep env tm =
       let act_arg' = beta_reduce env act_arg in
       match fn'.desc with
         | Abstraction (fml_arg, _, body) ->
-          let body' = subst env body fml_arg act_arg' in
-          beta_reduce env body'
+          let env' = Env.del fml_arg env in
+          beta_reduce env' @@ subst env body fml_arg act_arg'
         | _ ->
           app loc fn' act_arg'
 

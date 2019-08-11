@@ -188,8 +188,9 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
       let act_arg' = beta_reduce tp_env tm_env act_arg in
       begin match fn'.desc with
         | Term_abs (fml_arg, _, body) ->
-          let body' = subst_tm tm_env body fml_arg act_arg' in
-          beta_reduce tp_env tm_env body'
+          let tm_env' = Env.del fml_arg tm_env in
+          beta_reduce tp_env tm_env' @@
+            subst_tm tm_env body fml_arg act_arg'
         | _ ->
           app loc fn' act_arg'
       end
@@ -203,8 +204,9 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
       let fn' = beta_reduce tp_env tm_env fn in
       match fn'.desc with
         | Type_abs (fml_arg, _, body) ->
-          let body' = subst_tp tp_env body fml_arg act_arg in
-          beta_reduce tp_env tm_env body'
+          let tm_env' = Env.del fml_arg tm_env in
+          beta_reduce tp_env tm_env' @@
+            subst_tp tp_env body fml_arg act_arg
         | _ ->
           tp_app loc fn' act_arg
 

@@ -8,7 +8,7 @@ snd
   : forall A . forall B . (forall C . (A -> B -> C) -> C) -> B
   = \A . \B . \p : forall C . (A -> B -> C) -> C . p B (\f : A . \s : B . s) ;
 p
-  : forall C . ((forall A . A -> A -> A) -> (forall A . A -> A -> A) -> C) -> C
+  : forall C . (Bool -> Bool -> C) -> C
   = \C . \p : Bool -> Bool -> C . p (\A . \t : A . \f : A . f) (\A . \t : A . \f : A . t) ;
 fst Bool Bool p
   : forall A . A -> A -> A
@@ -17,7 +17,7 @@ snd Bool Bool p
   : forall A . A -> A -> A
   = \A . \t : A . \f : A . t ;
 p
-  : forall C . ((forall A . (A -> A) -> A -> A) -> (forall A . (A -> A) -> A -> A) -> C) -> C
+  : forall C . (Nat -> Nat -> C) -> C
   = \C . \n1 : Nat -> Nat -> C . n1 (\A . \s : A -> A . \z : A . z) (\A . \s : A -> A . \z : A . s z) ;
 fst Nat Nat p
   : forall A . (A -> A) -> A -> A
@@ -26,7 +26,7 @@ snd Nat Nat p
   : forall A . (A -> A) -> A -> A
   = \A . \s : A -> A . \z : A . s z ;
 p
-  : forall C . ((forall A . A -> A -> A) -> (forall A . (A -> A) -> A -> A) -> C) -> C
+  : forall C . (Bool -> Nat -> C) -> C
   = \C . \o1 : Bool -> Nat -> C . o1 (\A . \t : A . \f : A . f) (\A . \s : A -> A . \z : A . z) ;
 fst Bool Nat p
   : forall A . A -> A -> A

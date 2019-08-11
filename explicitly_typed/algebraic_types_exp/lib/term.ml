@@ -325,8 +325,9 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
       let act_arg' = beta_reduce tp_env tm_env act_arg in
       begin match fn'.desc with
         | Term_abs (fml_arg, _, body) ->
-          let body' = subst_tm tm_env body fml_arg act_arg' in
-          beta_reduce tp_env tm_env body'
+          let tm_env' = Env.del fml_arg tm_env in
+          beta_reduce tp_env tm_env' @@
+            subst_tm tm_env body fml_arg act_arg'
         | _ ->
           app loc fn' act_arg'
       end
@@ -340,16 +341,15 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
       let fn' = beta_reduce tp_env tm_env fn in
       begin match fn'.desc with
         | Type_abs (fml_arg, _, body) ->
-          let body' = subst_tp tp_env body fml_arg act_arg in
-          beta_reduce tp_env tm_env body'
+          let tm_env' = Env.del fml_arg tm_env in
+          beta_reduce tp_env tm_env' @@
+            subst_tp tp_env body fml_arg act_arg
         | _ ->
           tp_app loc fn' act_arg
       end
     | Record fields ->
-      let beta_reduce_field (id, tm) =
-        (id, beta_reduce tp_env tm_env tm)
-      in
-      rcrd loc @@ List.map beta_reduce_field fields
+      rcrd loc @@
+        List.map (fun (id, tm) -> id, beta_reduce tp_env tm_env tm) fields
     | Projection (rcrd, field) ->
       let rcrd' = beta_reduce tp_env tm_env rcrd in
       begin match rcrd'.desc with
@@ -369,13 +369,7 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
       vrnt loc case (beta_reduce tp_env tm_env data) tp
     | Case (vrnt, cases) ->
       let beta_reduce_case (case, id, tm) =
-        let tm' =
-          if deep <> None then
-            beta_reduce tp_env tm_env tm
-          else
-            tm
-        in
-        (case, id, tm')
+        case, id, if deep <> None then beta_reduce tp_env tm_env tm else tm 
       in
       let vrnt' = beta_reduce tp_env tm_env vrnt in
       match vrnt'.desc with
@@ -389,7 +383,7 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
                   "'%s' is not a case of this variant"
                   (Id.to_string case)
           in
-          beta_reduce tp_env tm_env @@ subst_tm tm_env tm id data
+          beta_reduce tp_env (Env.del id tm_env) (subst_tm tm_env tm id data)
         | _ ->
           case loc vrnt' @@ List.map beta_reduce_case cases
 

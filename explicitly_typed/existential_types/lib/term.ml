@@ -233,8 +233,9 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
       let act_arg' = beta_reduce tp_env tm_env act_arg in
       begin match fn'.desc with
         | Abstraction (fml_arg, _, body) ->
-          let body' = subst_tm tm_env body fml_arg act_arg' in
-          beta_reduce tp_env tm_env body'
+          let tm_env' = Env.del fml_arg tm_env in
+          beta_reduce tp_env tm_env' @@
+            subst_tm tm_env body fml_arg act_arg'
         | _ ->
           app loc fn' act_arg'
       end
@@ -245,8 +246,10 @@ let rec beta_reduce ?deep (tp_env, tm_env) tm =
       let body' = beta_reduce tp_env tm_env body in
       begin match pack'.desc with
         | Pack (tp, tm, _) ->
+          let tm_env' = Env.del tm_id tm_env in
+          let tp_env' = Type_env.Type.del tp_id tp_env in
           beta_reduce tp_env tm_env @@
-            subst_tp tp_env (subst_tm tm_env body' tm_id tm) tp_id tp
+            subst_tp tp_env' (subst_tm tm_env' body' tm_id tm) tp_id tp
         | _ ->
           unpack loc tp_id tm_id pack' body'
       end

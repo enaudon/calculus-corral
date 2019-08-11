@@ -47,18 +47,16 @@ let get_exists tp = match tp with
 
 (* Transformations *)
 
-let rec beta_reduce ?deep env tp =
-  let beta_reduce = beta_reduce ?deep env in
-  match tp with
-    | Variable id ->
-      Env.Type.find_default tp id env
-    | Function (arg, res) ->
-      func (beta_reduce arg) (beta_reduce res)
-    | Existential (quant, body) ->
-      if deep <> None then
-        exists quant @@ beta_reduce body
-      else
-        tp
+let rec beta_reduce ?deep env tp = match tp with
+  | Variable id ->
+    Env.Type.find_default tp id env
+  | Function (arg, res) ->
+    func (beta_reduce env arg) (beta_reduce env res)
+  | Existential (quant, body) ->
+    if deep <> None then
+      exists quant @@ beta_reduce (Env.Type.del quant env) body
+    else
+      tp
 
 (* Utilities *)
 
