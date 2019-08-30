@@ -1,0 +1,95 @@
+#
+# OCamlFormat configuration
+#
+
+# General
+disable = false
+profile = ocamlformat
+quiet = false
+ocp-indent-compat = false
+exp-grouping = parens
+margin = 80
+#max-indent = none
+max-iters = 10
+
+# Comments and docstrings
+comment-check = true
+doc-comments = before
+doc-comments-padding = 2                    # TODO: Revisit
+doc-comments-tag-only = default             # TODO: Revisit
+parse-docstrings = true
+wrap-comments = true
+
+# Modules
+break-struct = force
+let-module = sparse
+let-open = long
+module-item-spacing = sparse
+
+# Type declarations
+align-constructors-decl = false
+align-variants-decl = false
+type-decl = sparse
+type-decl-indent = 2
+
+# Functions
+break-fun-decl = fit-or-vertical
+break-fun-sig = fit-or-vertical             # TODO: Revisit
+function-indent = 2
+function-indent-nested = always
+wrap-fun-args = false
+
+# Let-bindings
+indent-after-in = 0
+break-before-in = fit-or-vertical
+let-and = sparse
+let-binding-indent = 2
+let-binding-spacing = compact
+
+# Match/try-expressions
+align-cases = false
+break-cases = nested
+cases-exp-indent = 2
+cases-matching-exp-indent = normal
+disambiguate-non-breaking-match = false
+indicate-nested-or-patterns = space         # TODO: Revisit
+leading-nested-match-parens = true
+match-indent = 2
+match-indent-nested = always
+nested-match = align
+single-case = compact
+
+# If-expressions
+if-then-else = fit-or-vertical
+parens-ite = false
+
+# Operators
+assignment-operator = end-line
+break-infix-before-func = false
+break-infix = wrap
+break-sequences = true
+infix-precedence = indent                   # TODO: Revisit
+
+# Records, tuples, lists and arrays
+break-collection-expressions = fit-or-vertical
+break-separators = after
+field-space = loose
+indicate-multiline-delimiters = space
+parens-tuple = always
+parens-tuple-patterns = multi-line-only
+sequence-blank-line = compact
+sequence-style = terminator
+space-around-arrays = false
+space-around-lists = false
+space-around-records = false
+space-around-variants = false
+
+# Strings
+#break-string-literals = newlines-and-wrap
+escape-chars = preserve
+escape-strings = preserve
+
+# Extensions
+extension-indent = 2
+extension-sugar = preserve
+stritem-extension-indent = 0
