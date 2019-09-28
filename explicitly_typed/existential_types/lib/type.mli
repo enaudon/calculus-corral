@@ -28,46 +28,35 @@ val exists : Identifier.t -> t -> t
 (** [exists' ids tp] constructs a existentially quantified type. *)
 val exists' : Identifier.t list -> t -> t
 
-(**
-  [get_func tp] computes the argument and result type of [tp], if [tp]
-  is a function.  Otherwise, [get_func] raises [Invalid_argument].
- *)
+(** [get_func tp] computes the argument and result type of [tp], if [tp] is a
+    function. Otherwise, [get_func] raises [Invalid_argument]. *)
 val get_func : t -> t * t
 
-(**
-  [get_exists tp] computes the variable quantifier and body of [tp], if
-  [tp] is a existentially quantified type.  Otherwise, [get_exists]
-  raises [Invalid_argument].
- *)
+(** [get_exists tp] computes the variable quantifier and body of [tp], if [tp]
+    is a existentially quantified type. Otherwise, [get_exists] raises
+    [Invalid_argument]. *)
 val get_exists : t -> Identifier.t * t
 
 (** {1 Transformations} *)
 
-(**
-  [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
-  [env].  If the [deep] argument is passed, then [beta_reduce] will
-  reduce the body of abstractions.
- *)
-val beta_reduce : ?deep : unit -> Environment.t -> t -> t
+(** [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
+    [env]. If the [deep] argument is passed, then [beta_reduce] will reduce the
+    body of abstractions. *)
+val beta_reduce : ?deep:unit -> Environment.t -> t -> t
 
 (** {1 Utilities} *)
 
-(**
-  [check env tp] verifies that [tp] is well-formed under [env].  In the
-  absence of kinding, this just means checking that all variables are
-  bound.
- *)
+(** [check env tp] verifies that [tp] is well-formed under [env]. In the absence
+    of kinding, this just means checking that all variables are bound. *)
 val check : Identifier.Set.t -> t -> unit
 
-(**
-  [alpha_equivalent ~beta_env ~env tp1 tp2] determines whether [tp1] and
-  [tp2] are equivalent up to renaming of variables.  The optional
-  argument, [env], specifies the renaming between bound variables, while
-  [beta_env] is the beta-reduction environment.
- *)
+(** [alpha_equivalent ~beta_env ~env tp1 tp2] determines whether [tp1] and [tp2]
+    are equivalent up to renaming of variables. The optional argument, [env],
+    specifies the renaming between bound variables, while [beta_env] is the
+    beta-reduction environment. *)
 val alpha_equivalent :
-  ?beta_env : Environment.t ->
-  ?env : (Identifier.t * Identifier.t) list ->
+  ?beta_env:Environment.t ->
+  ?env:(Identifier.t * Identifier.t) list ->
   t ->
   t ->
   bool
@@ -75,18 +64,13 @@ val alpha_equivalent :
 (** [free_vars tp] computes the free variables in [tp]. *)
 val free_vars : t -> Identifier.Set.t
 
-(**
-  [subst fvars tp sub] applies the substitution [sub] to [tp], assuming
-  that the identifiers in [fvars] may occur free in the range of [sub].
- *)
+(** [subst fvars tp sub] applies the substitution [sub] to [tp], assuming that
+    the identifiers in [fvars] may occur free in the range of [sub]. *)
 val subst : Identifier.Set.t -> Environment.t -> t -> t
 
-(**
-  [simplify ~ctx tp] replaces each variable in [tp] with the
-  lexicographically lowest unused variable.
- *)
-val simplify :
-  ?ctx : (unit -> Identifier.t) * t Identifier.Map.t -> t -> t
+(** [simplify ~ctx tp] replaces each variable in [tp] with the lexicographically
+    lowest unused variable. *)
+val simplify : ?ctx:(unit -> Identifier.t) * t Identifier.Map.t -> t -> t
 
 (** [to_string tp] computes a string representation of [tp]. *)
 val to_string : t -> string

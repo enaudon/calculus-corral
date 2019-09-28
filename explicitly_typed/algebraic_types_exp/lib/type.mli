@@ -13,15 +13,11 @@ module Environment : Type_environment.Output with type value := t
 (** [var id] constructs a type variable identified by [id]. *)
 val var : Identifier.t -> t
 
-(**
-  [abs arg kn body] constructs the abstraction of [arg] of kind [kn]
-  from [body].
- *)
+(** [abs arg kn body] constructs the abstraction of [arg] of kind [kn] from
+    [body]. *)
 val abs : Identifier.t -> Kind.t -> t -> t
 
-(**
-  [abs' args body] constructs the abstraction of [args] from [body].
- *)
+(** [abs' args body] constructs the abstraction of [args] from [body]. *)
 val abs' : (Identifier.t * Kind.t) list -> t -> t
 
 (** [app fn arg] constructs the application of [fn] to [arg]. *)
@@ -51,35 +47,24 @@ val vrnt : (Identifier.t * t) list -> t option -> t
 (** [row fields] constructs a row. *)
 val row : (Identifier.t * t) list -> t option -> t
 
-(**
-  [get_func tp] computes the argument and result type of [tp], if [tp]
-  is a function.  Otherwise, [get_func] raises [Invalid_argument].
- *)
+(** [get_func tp] computes the argument and result type of [tp], if [tp] is a
+    function. Otherwise, [get_func] raises [Invalid_argument]. *)
 val get_func : t -> t * t
 
-(**
-  [get_forall tp] computes the variable quantifier/kind and body of
-  [tp], if [tp] is a universally quantified type.  Otherwise,
-  [get_forall] raises [Invalid_argument].
- *)
+(** [get_forall tp] computes the variable quantifier/kind and body of [tp], if
+    [tp] is a universally quantified type. Otherwise, [get_forall] raises
+    [Invalid_argument]. *)
 val get_forall : t -> Identifier.t * Kind.t * t
 
-(**
-  [get_forall' tp] computes the variable quantifier/kind and body of
-  [tp].
- *)
+(** [get_forall' tp] computes the variable quantifier/kind and body of [tp]. *)
 val get_forall' : t -> (Identifier.t * Kind.t) list * t
 
-(**
-  [get_rcrd tp] computes the fields of [tp], if [tp] is a record type.
-  Otherwise [get_rcrd] raises [Invalid_argument].
- *)
+(** [get_rcrd tp] computes the fields of [tp], if [tp] is a record type.
+    Otherwise [get_rcrd] raises [Invalid_argument]. *)
 val get_rcrd : t -> (Identifier.t * t) list * t option
 
-(**
-  [get_vrnt tp] computes the cases of [tp], if [tp] is a variant type.
-  Otherwise [get_vrnt] raises [Invalid_argument].
- *)
+(** [get_vrnt tp] computes the cases of [tp], if [tp] is a variant type.
+    Otherwise [get_vrnt] raises [Invalid_argument]. *)
 val get_vrnt : t -> (Identifier.t * t) list * t option
 
 (** {1 Kinding} *)
@@ -89,42 +74,32 @@ val to_kind : Kind.Environment.t -> t -> Kind.t
 
 (** {1 Transformations} *)
 
-(**
-  [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
-  [env].  If the [deep] argument is passed, then [beta_reduce] will
-  reduce the body of abstractions.
- *)
-val beta_reduce : ?deep : unit -> Environment.t -> t -> t
+(** [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
+    [env]. If the [deep] argument is passed, then [beta_reduce] will reduce the
+    body of abstractions. *)
+val beta_reduce : ?deep:unit -> Environment.t -> t -> t
 
 (** {1 Utilities} *)
 
-(**
-  [alpha_equivalent ~beta_env ~env tp1 tp2] determines whether [tp1] and
-  [tp2] are equivalent up to renaming of variables.  The optional
-  argument, [env], specifies the renaming between bound variables, while
-  [beta_env] is the beta-reduction environment.
- *)
+(** [alpha_equivalent ~beta_env ~env tp1 tp2] determines whether [tp1] and [tp2]
+    are equivalent up to renaming of variables. The optional argument, [env],
+    specifies the renaming between bound variables, while [beta_env] is the
+    beta-reduction environment. *)
 val alpha_equivalent :
-  ?beta_env : Environment.t ->
-  ?env : (Identifier.t * Identifier.t) list ->
+  ?beta_env:Environment.t ->
+  ?env:(Identifier.t * Identifier.t) list ->
   t ->
   t ->
   bool
 
-(**
-  [subst fvs sub tp] applies [sub] to [tp], replacing any variable in
-  the domain of [sub] with the corresponding type the range of [sub].
-  [fvs] is any superset of the variables which appear in the range of
-  [sub].
- *)
+(** [subst fvs sub tp] applies [sub] to [tp], replacing any variable in the
+    domain of [sub] with the corresponding type the range of [sub]. [fvs] is any
+    superset of the variables which appear in the range of [sub]. *)
 val subst : Identifier.Set.t -> Environment.t -> t -> t
 
-(**
-  [simplify ~ctx tp] replaces each variable in [tp] with the
-  lexicographically lowest unused variable.
- *)
-val simplify :
-  ?ctx : (unit -> Identifier.t) * t Identifier.Map.t -> t -> t
+(** [simplify ~ctx tp] replaces each variable in [tp] with the lexicographically
+    lowest unused variable. *)
+val simplify : ?ctx:(unit -> Identifier.t) * t Identifier.Map.t -> t -> t
 
 (** [to_string tp] computes a string representation of [tp]. *)
 val to_string : t -> string

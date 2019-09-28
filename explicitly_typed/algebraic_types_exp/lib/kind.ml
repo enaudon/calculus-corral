@@ -17,14 +17,18 @@ let oper' args res = List.fold_right oper args res
 
 (* Destructors *)
 
-let get_oper kn = match kn with
-  | Operator (arg, res) -> arg, res
-  | _ -> invalid_arg "Kind.get_oper: expected operator"
+let get_oper kn =
+  match kn with
+    | Operator (arg, res) ->
+      (arg, res)
+    | _ ->
+      invalid_arg "Kind.get_oper: expected operator"
 
 (* Containers *)
 
 module Environment = Environment.Make (struct
   type value = t
+
   let initial =
     [ (Id.func, oper' [prop; prop] prop);
       (Id.rcrd, oper row prop);
@@ -33,11 +37,9 @@ end)
 
 (* Utilities *)
 
-(**
-  There are no kind variables, so alpha-equivalence is just structural
-  equivalence.
- *)
-let alpha_equivalent = Stdlib.(=)
+(** There are no kind variables, so alpha-equivalence is just structural
+    equivalence. *)
+let alpha_equivalent = Stdlib.( = )
 
 let rec to_string kn =
   let to_paren_string kn = Printf.sprintf "(%s)" (to_string kn) in
@@ -47,11 +49,15 @@ let rec to_string kn =
     | Row ->
       Id.to_string Id.row
     | Operator (arg, res) ->
-      let arg_to_string kn = match kn with
-        | Proper | Row -> to_string kn
-        | Operator _ -> to_paren_string kn
+      let arg_to_string kn =
+        match kn with
+          | Proper | Row ->
+            to_string kn
+          | Operator _ ->
+            to_paren_string kn
       in
-      Printf.sprintf "%s %s %s"
+      Printf.sprintf
+        "%s %s %s"
         (arg_to_string arg)
         (Id.to_string Id.oper)
         (to_string res)

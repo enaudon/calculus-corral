@@ -12,7 +12,6 @@ exception Unbound of t
 
 (** Sets of identifiers. *)
 module Set : sig
-
   (** The type of set elements, i.e. identifiers. *)
   type elt = t
 
@@ -37,23 +36,16 @@ module Set : sig
   (** [elements s] computes a list of the elements in [s]. *)
   val elements : t -> elt list
 
-  (**
-    [iter fn s] applies [fn] to each element in [s] in increasing order.
-   *)
+  (** [iter fn s] applies [fn] to each element in [s] in increasing order. *)
   val iter : (elt -> unit) -> t -> unit
 
-  (**
-    [partition fn s] computes [(s1,s2)], where [s1] is the subset of
-    [s] which satisfies the predicate, [fn], and [s2] is the subset
-    which does not.
-   *)
+  (** [partition fn s] computes [(s1,s2)], where [s1] is the subset of [s] which
+      satisfies the predicate, [fn], and [s2] is the subset which does not. *)
   val partition : (elt -> bool) -> t -> t * t
-
 end
 
 (** Maps from identifiers. *)
 module Map : sig
-
   (** The type of map keys, i.e. identifiers. *)
   type key = t
 
@@ -75,16 +67,12 @@ module Map : sig
   (** [del id m] removes the mapping from [id] from [m]. *)
   val del : key -> 'a t -> 'a t
 
-  (**
-    [find id m] computes the value to which [id] is bound in [m].  If no
-    such value exists, [find] raises [Unbound id].
-   *)
+  (** [find id m] computes the value to which [id] is bound in [m]. If no such
+      value exists, [find] raises [Unbound id]. *)
   val find : key -> 'a t -> 'a
 
-  (**
-    [find_default x id m] computes the value to which [id] is bound in
-    [m].  If no such value exists, [find] evaluates to [x].
-   *)
+  (** [find_default x id m] computes the value to which [id] is bound in [m]. If
+      no such value exists, [find] evaluates to [x]. *)
   val find_default : 'a -> key -> 'a t -> 'a
 
   (** [mem id m] determines whether [id] is a member of [m]. *)
@@ -99,19 +87,13 @@ module Map : sig
   (** [values m] computes a list of the values in [m]. *)
   val values : 'a t -> 'a list
 
-  (**
-    [map fn m] constructs a new map by applying [fn] to each binding in
-    [m] in increasing order.
-   *)
+  (** [map fn m] constructs a new map by applying [fn] to each binding in [m] in
+      increasing order. *)
   val map : ('a -> 'b) -> 'a t -> 'b t
 
-  (**
-    [fold fn m init] computes [fn kN vN (... (fn k0 v0 init)...)], where
-    the [k]'s and [v]'s are the key/value bindings in [m] in increasing
-    order.
-   *)
+  (** [fold fn m init] computes [fn kN vN (... (fn k0 v0 init)...)], where the
+      [k]'s and [v]'s are the key/value bindings in [m] in increasing order. *)
   val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-
 end
 
 (** {1 Constructors} *)
@@ -122,10 +104,7 @@ val prop : t
 (** [row] is the identifier for row kinds. *)
 val row : t
 
-(**
-  [oper] is the identifier for kind-level functions, a.k.a. type
-  operators.
- *)
+(** [oper] is the identifier for kind-level functions, a.k.a. type operators. *)
 val oper : t
 
 (** [func] is the identifier for type-level functions. *)
@@ -137,49 +116,34 @@ val rcrd : t
 (** [vrnt] is the identifier for variant types. *)
 val vrnt : t
 
-(**
-  [define str] constructs a user-defined identifier with the specified
-  string [str].
- *)
+(** [define str] constructs a user-defined identifier with the specified string
+    [str]. *)
 val define : string -> t
 
-(**
-  [gen_lower str] constructs a generated identifier with a fresh
-  lowercase string.
- *)
+(** [gen_lower str] constructs a generated identifier with a fresh lowercase
+    string. *)
 val gen_lower : unit -> t
 
-(**
-  [gen_upper str] constructs a generated identifier with a fresh
-  upper string.
- *)
+(** [gen_upper str] constructs a generated identifier with a fresh upper string. *)
 val gen_upper : unit -> t
 
 (** {1 Utilities} *)
 
-(**
-  [is_defined id] returns [true] if [id] was user-defined, or [false]
-  otherwise.
- *)
+(** [is_defined id] returns [true] if [id] was user-defined, or [false]
+    otherwise. *)
 val is_defined : t -> bool
 
-(**
-  [is_generated id] returns [true] if [id] was generated, or [false]
-  otherwise.
- *)
+(** [is_generated id] returns [true] if [id] was generated, or [false]
+    otherwise. *)
 val is_generated : t -> bool
 
-(**
-  [reset ()] resets the internal data structures for generating fresh
-  identifiers.
- *)
+(** [reset ()] resets the internal data structures for generating fresh
+    identifiers. *)
 val reset : unit -> unit
 
 (** [to_string id] computes a string representation of [id]. *)
 val to_string : t -> string
 
-(**
-  [alpha_equivalent env id1 id2] determines whether [id1] and [id2] are
-  equivalent, given the renamings specified in [env].
- *)
+(** [alpha_equivalent env id1 id2] determines whether [id1] and [id2] are
+    equivalent, given the renamings specified in [env]. *)
 val alpha_equivalent : (t * t) list -> t -> t -> bool

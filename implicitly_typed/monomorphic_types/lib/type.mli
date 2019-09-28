@@ -10,18 +10,13 @@ module Environment : Type_environment.Output with type value := t
 
 (** {1 Exceptions} *)
 
-(**
-  [Occurs (id, tp)] indicates that unification failed because the
-  inference variable identified by [id] occurs in the type [tp].
- *)
+(** [Occurs (id, tp)] indicates that unification failed because the inference
+    variable identified by [id] occurs in the type [tp]. *)
 exception Occurs of Identifier.t * t
 
 (** {1 Constructors} *)
 
-(**
-  [inf_var id] constructs an inference variable with the identifier
-  [id].
- *)
+(** [inf_var id] constructs an inference variable with the identifier [id]. *)
 val inf_var : Identifier.t -> t
 
 (** [func arg res] constructs a function from [arg] to [res]. *)
@@ -34,56 +29,40 @@ val func' : t list -> t -> t
 
 (** Substitution
 
-  A substitution maps (inference variable) identifiers to types, and
-  provide operations for extending substitutions with new mappings and
-  for applying substitutions to types.  Furthermore, substitutions are
-  idempotent by construction.
- *)
+    A substitution maps (inference variable) identifiers to types, and provide
+    operations for extending substitutions with new mappings and for applying
+    substitutions to types. Furthermore, substitutions are idempotent by
+    construction. *)
 module Substitution : sig
-
   (** The type of substitutions. *)
   type s
 
-  (**
-    [identity] is the identity substitution.  It maps every inference
-    variable to itself.
-  *)
+  (** [identity] is the identity substitution. It maps every inference variable
+      to itself. *)
   val identity : s
 
-  (**
-    [extend id tp sub] extends [sub] with a mapping from [id] to [tp].
-   *)
+  (** [extend id tp sub] extends [sub] with a mapping from [id] to [tp]. *)
   val extend : Identifier.t -> t -> s -> s
 
-  (**
-    [apply tp sub] applies [sub] to [tp], replacing any inference
-    variables in [tp] which occur in the domain of [sub] with their
-    corresponding types in the range of [sub].
-   *)
+  (** [apply tp sub] applies [sub] to [tp], replacing any inference variables in
+      [tp] which occur in the domain of [sub] with their corresponding types in
+      the range of [sub]. *)
   val apply : t -> s -> t
-
 end
 
-(**
-  [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
-  [tp2].  In cases where both [tp1] and [tp2] are inference variables,
-  and either identifier may be kept in the substitution, [tp1]'s
-  identifier is kept.
- *)
+(** [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and [tp2].
+    In cases where both [tp1] and [tp2] are inference variables, and either
+    identifier may be kept in the substitution, [tp1]'s identifier is kept. *)
 val unify : Substitution.s -> t -> t -> Substitution.s
 
 (** {1 Utilities} *)
 
-(**
-  [simplify tp] replaces each inference variable in [tp] with the
-  lexicographically lowest unused variable.
+(** [simplify tp] replaces each inference variable in [tp] with the
+    lexicographically lowest unused variable.
 
-  NOTE: [simplify]'d types cannot be used with inference functions.
- *)
+    NOTE: [simplify]'d types cannot be used with inference functions. *)
 val simplify : t -> t
 
-(**
-  [to_string ~no_simp tp] computes a string representation of [tp].
-  Unless [no_simp] is passed, [tp] is simplified first.
- *)
-val to_string : ?no_simp : unit -> t -> string
+(** [to_string ~no_simp tp] computes a string representation of [tp]. Unless
+    [no_simp] is passed, [tp] is simplified first. *)
+val to_string : ?no_simp:unit -> t -> string

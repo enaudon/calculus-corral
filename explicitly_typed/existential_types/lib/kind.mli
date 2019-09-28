@@ -10,10 +10,8 @@ val base : t
 
 (** {1 Utilities} *)
 
-(**
-  [alpha_equivalent kn1 kn2] determines whether [kn1] and [kn2] are
-  equivalent up to renaming of variables.
- *)
+(** [alpha_equivalent kn1 kn2] determines whether [kn1] and [kn2] are equivalent
+    up to renaming of variables. *)
 val alpha_equivalent : t -> t -> bool
 
 (** [to_string kn] computes a string representation of [kn]. *)

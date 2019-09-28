@@ -1,22 +1,18 @@
 (** Environment
 
-  The environment tracks bindings from identifiers.
- *)
+    The environment tracks bindings from identifiers. *)
 
 (** The input signature of the environment functor. *)
 module type Input = sig
-
   (** The type of bound values. *)
   type value
 
   (** The bindings in the initial environment. *)
   val initial : (Identifier.t * value) list
-
 end
 
 (** The output signature of the environment functor. *)
 module type Output = sig
-
   (** {1 Types} *)
 
   (** The type of bound values. *)
@@ -35,9 +31,7 @@ module type Output = sig
 
   (** {1 Functions} *)
 
-  (**
-    [singleton id v] constructs an environment with [id] bound to [v].
-   *)
+  (** [singleton id v] constructs an environment with [id] bound to [v]. *)
   val singleton : Identifier.t -> value -> t
 
   (** [of_list l] constructs an environment from the bindings in [l]. *)
@@ -49,16 +43,12 @@ module type Output = sig
   (** [del id env] removes the binding from [id] from [env]. *)
   val del : Identifier.t -> t -> t
 
-  (**
-    [find id env] computes the value to which [id] is bound in [env].
-    If no such value exists, [find] raises [Identifier.Map.Unbound id].
-   *)
+  (** [find id env] computes the value to which [id] is bound in [env]. If no
+      such value exists, [find] raises [Identifier.Map.Unbound id]. *)
   val find : Identifier.t -> t -> value
 
-  (**
-    [find_default v id env] computes the value to which [id] is bound in
-    [env].  If no such value exists, [find] evaluates to [v].
-   *)
+  (** [find_default v id env] computes the value to which [id] is bound in
+      [env]. If no such value exists, [find] evaluates to [v]. *)
   val find_default : value -> Identifier.t -> t -> value
 
   (** [mem id env] determines whether [id] is bound in [env]. *)
@@ -73,13 +63,9 @@ module type Output = sig
   (** [values env] computes a list of the values in [env]. *)
   val values : t -> value list
 
-  (**
-    [fold fn env init] computes [fn idN vN (... (fn id0 v0 init)...)],
-    where the [id]'s and [v]'s are the bindings in [env] in increasing
-    order.
-   *)
+  (** [fold fn env init] computes [fn idN vN (... (fn id0 v0 init)...)], where
+      the [id]'s and [v]'s are the bindings in [env] in increasing order. *)
   val fold : (Identifier.t -> value -> 'a -> 'a) -> t -> 'a -> 'a
-
 end
 
 module Make (Input : Input) : Output with type value := Input.value
