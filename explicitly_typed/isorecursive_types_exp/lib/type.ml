@@ -155,6 +155,23 @@ let rec subst fvs sub tp =
     | Row_cons (id, tp, rest) ->
       row_cons id (subst fvs sub tp) (subst fvs sub rest)
 
+let rec reduce_one env tp =
+  let subst env tp id tp' =
+    let fvs = Id.Set.of_list @@ Env.Type.keys env in
+    subst fvs (Env.Type.singleton id tp') tp
+  in
+  match tp with
+    | Variable id ->
+      Env.Type.find_default tp id env
+    | Application (fn, act_arg) ->
+      ( match reduce_one env fn with
+        | Abstraction (fml_arg, _, body) ->
+          subst env body fml_arg act_arg
+        | _ ->
+          tp )
+    | _ ->
+      tp
+
 let rec beta_reduce ?deep env tp =
   let beta_reduce = beta_reduce ?deep in
   let subst env tp id tp' =

@@ -11,19 +11,19 @@ snd
   : forall A :: * . forall B :: * . (Pair A B) -> B
   = \A :: * . \B :: * . \p : Pair A B . p.snd ;
 p
-  : {fst : [False : {}; True : {}]; snd : [False : {}; True : {}]}
+  : {fst : Bool; snd : Bool}
   = {fst = [False {} of Bool]; snd = [True {} of Bool]} ;
 fst Bool Bool p
-  : [False : {}; True : {}]
+  : Bool
   = [False {} of Bool] ;
 snd Bool Bool p
-  : [False : {}; True : {}]
+  : Bool
   = [True {} of Bool] ;
 p
-  : {fst : [False : {}; True : {}]; snd : forall A :: * . A -> A}
+  : {fst : Bool; snd : forall A :: * . A -> A}
   = {fst = [False {} of Bool]; snd = \A :: * . \x : A . x} ;
 fst Bool forall A :: * . A -> A p
-  : [False : {}; True : {}]
+  : Bool
   = [False {} of Bool] ;
 snd Bool forall A :: * . A -> A p
   : forall A :: * . A -> A

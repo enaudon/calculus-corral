@@ -65,7 +65,7 @@ NatPair
   : *
   = (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> (* -> *) -> * -> * ;
 pair
-  : Nat -> Nat -> (Nat -> Nat -> Nat) -> (* -> *) -> * -> *
+  : Nat -> Nat -> (Nat -> Nat -> Nat) -> Nat
   = \f : Nat . \s : Nat . \p : Nat -> Nat -> Nat . p f s ;
 fst
   : NatPair -> (* -> *) -> * -> *
@@ -74,7 +74,7 @@ snd
   : NatPair -> (* -> *) -> * -> *
   = \p : NatPair . p (\f : Nat . \s : Nat . s) ;
 pair zero one
-  : (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> (* -> *) -> * -> *
+  : (Nat -> Nat -> Nat) -> Nat
   = \p : Nat -> Nat -> Nat . p (\s : * -> * . \z : * . z) (\s : * -> * . \z : * . s z) ;
 fst (pair zero one)
   : (* -> *) -> * -> *

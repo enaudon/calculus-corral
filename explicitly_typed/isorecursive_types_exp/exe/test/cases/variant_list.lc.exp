@@ -11,44 +11,44 @@ is_empty
   : forall A :: * . (List A) -> Bool
   = \A :: * . \list : List A . case unroll list of [Nil _ -> [True {} of Bool]; Cons l -> [False {} of Bool]] ;
 head
-  : forall A :: * . (List A) -> [None : {}; Some : A]
+  : forall A :: * . (List A) -> Option A
   = \A :: * . \list : List A . case unroll list of [Nil _ -> [None {} of Option A]; Cons l -> [Some l.head of Option A]] ;
 tail
-  : forall A :: * . (List A) -> [None : {}; Some : mu V :: * . [Nil : {}; Cons : {head : A; tail : V}]]
+  : forall A :: * . (List A) -> Option (List A)
   = \A :: * . \list : List A . case unroll list of [Nil _ -> [None {} of Option (List A)]; Cons l -> [Some l.tail of Option (List A)]] ;
 map
-  : forall A :: * . forall B :: * . (A -> B) -> (mu I1 :: * . [Nil : {}; Cons : {head : A; tail : I1}]) -> mu D1 :: * . [Nil : {}; Cons : {head : B; tail : D1}]
+  : forall A :: * . forall B :: * . (A -> B) -> (List A) -> List B
   = \A :: * . \B :: * . fix (\map : (A -> B) -> (List A) -> List B . \fn : A -> B . \list : List A . case unroll list of [Nil _ -> roll List B [Nil {} of [Nil : {}; Cons : {head : B; tail : List B}]]; Cons l -> roll List B [Cons {head = fn l.head; tail = map fn l.tail} of [Nil : {}; Cons : {head : B; tail : List B}]]]) ;
 fold_left
-  : forall A :: * . forall B :: * . (A -> B -> A) -> A -> (mu O1 :: * . [Nil : {}; Cons : {head : B; tail : O1}]) -> A
+  : forall A :: * . forall B :: * . (A -> B -> A) -> A -> (List B) -> A
   = \A :: * . \B :: * . fix (\fold : (A -> B -> A) -> A -> (List B) -> A . \fn : A -> B -> A . \acc : A . \list : List B . case unroll list of [Nil _ -> acc; Cons l -> fold fn (fn acc l.head) l.tail]) ;
 fold_right
-  : forall A :: * . forall B :: * . (A -> B -> B) -> B -> (mu U1 :: * . [Nil : {}; Cons : {head : A; tail : U1}]) -> B
+  : forall A :: * . forall B :: * . (A -> B -> B) -> B -> (List A) -> B
   = \A :: * . \B :: * . fix (\fold : (A -> B -> B) -> B -> (List A) -> B . \fn : A -> B -> B . \acc : B . \list : List A . case unroll list of [Nil _ -> acc; Cons l -> fn l.head (fold fn acc l.tail)]) ;
 bools
-  : mu W1 :: * . [Nil : {}; Cons : {head : [False : {}; True : {}]; tail : W1}]
+  : List Bool
   = roll List Bool [Cons {head = [True {} of Bool]; tail = roll List Bool [Cons {head = [False {} of Bool]; tail = roll List Bool [Cons {head = [True {} of Bool]; tail = roll List Bool [Nil {} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]]} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]]} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]]} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]] ;
 map Bool Bool not bools
-  : mu D1 :: * . [Nil : {}; Cons : {head : [False : {}; True : {}]; tail : D1}]
+  : List Bool
   = roll List Bool [Cons {head = [False {} of Bool]; tail = roll List Bool [Cons {head = [True {} of Bool]; tail = roll List Bool [Cons {head = [False {} of Bool]; tail = roll List Bool [Nil {} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]]} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]]} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]]} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]] ;
 map Bool Nat (\b : Bool . if Nat b one zero) bools
-  : mu D1 :: * . [Nil : {}; Cons : {head : mu A :: * . [Zero : {}; Succ : A]; tail : D1}]
+  : List Nat
   = roll List Nat [Cons {head = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]; tail = roll List Nat [Cons {head = roll Nat [Zero {} of [Zero : {}; Succ : Nat]]; tail = roll List Nat [Cons {head = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]; tail = roll List Nat [Nil {} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]]} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]]} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]]} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]] ;
 fold_left Bool Bool and tru bools
-  : [False : {}; True : {}]
+  : Bool
   = [False {} of Bool] ;
 fold_left Bool Bool or fls bools
-  : [False : {}; True : {}]
+  : Bool
   = [True {} of Bool] ;
 nats
-  : mu D2 :: * . [Nil : {}; Cons : {head : mu A :: * . [Zero : {}; Succ : A]; tail : D2}]
+  : List Nat
   = roll List Nat [Cons {head = roll Nat [Zero {} of [Zero : {}; Succ : Nat]]; tail = roll List Nat [Cons {head = roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]; tail = roll List Nat [Cons {head = roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]; tail = roll List Nat [Nil {} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]]} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]]} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]]} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]] ;
 map Nat Bool (\n : Nat . if_zero Bool n tru fls) nats
-  : mu D1 :: * . [Nil : {}; Cons : {head : [False : {}; True : {}]; tail : D1}]
+  : List Bool
   = roll List Bool [Cons {head = [True {} of Bool]; tail = roll List Bool [Cons {head = [False {} of Bool]; tail = roll List Bool [Cons {head = [False {} of Bool]; tail = roll List Bool [Nil {} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]]} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]]} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]]} of [Nil : {}; Cons : {head : Bool; tail : List Bool}]] ;
 map Nat Nat (add two) nats
-  : mu D1 :: * . [Nil : {}; Cons : {head : mu A :: * . [Zero : {}; Succ : A]; tail : D1}]
+  : List Nat
   = roll List Nat [Cons {head = roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]; tail = roll List Nat [Cons {head = roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]; tail = roll List Nat [Cons {head = roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]; tail = roll List Nat [Nil {} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]]} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]]} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]]} of [Nil : {}; Cons : {head : Nat; tail : List Nat}]] ;
 fold_right Nat Nat add zero nats
-  : mu A :: * . [Zero : {}; Succ : A]
+  : Nat
   = roll Nat [Succ (roll Nat [Succ (roll Nat [Succ (roll Nat [Zero {} of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]]) of [Zero : {}; Succ : Nat]] ;

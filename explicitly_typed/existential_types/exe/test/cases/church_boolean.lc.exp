@@ -14,7 +14,7 @@ BoolPair
   : *
   = ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> * ;
 pair
-  : Bool -> Bool -> (Bool -> Bool -> Bool) -> * -> * -> *
+  : Bool -> Bool -> (Bool -> Bool -> Bool) -> Bool
   = \f : Bool . \s : Bool . \p : Bool -> Bool -> Bool . p f s ;
 fst
   : BoolPair -> * -> * -> *
@@ -23,7 +23,7 @@ snd
   : BoolPair -> * -> * -> *
   = \p : BoolPair . p (\f : Bool . \s : Bool . s) ;
 pair fls tru
-  : ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> *
+  : (Bool -> Bool -> Bool) -> Bool
   = \p : Bool -> Bool -> Bool . p (\t : * . \f : * . f) (\t : * . \f : * . t) ;
 fst (pair fls tru)
   : * -> * -> *

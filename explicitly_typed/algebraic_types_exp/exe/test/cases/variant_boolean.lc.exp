@@ -20,40 +20,40 @@ if
   : forall A :: * . Bool -> A -> A -> A
   = \A :: * . \p : Bool . \t : A . \e : A . case p of [True _ -> t; False _ -> e] ;
 not fls
-  : [False : {}; True : {}]
+  : Bool
   = [True {} of Bool] ;
 not tru
-  : [False : {}; True : {}]
+  : Bool
   = [False {} of Bool] ;
 and fls fls
-  : [False : {}; True : {}]
+  : Bool
   = [False {} of Bool] ;
 and fls tru
-  : [False : {}; True : {}]
+  : Bool
   = [False {} of Bool] ;
 and tru fls
-  : [False : {}; True : {}]
+  : Bool
   = [False {} of Bool] ;
 and tru tru
-  : [False : {}; True : {}]
+  : Bool
   = [True {} of Bool] ;
 or fls fls
-  : [False : {}; True : {}]
+  : Bool
   = [False {} of Bool] ;
 or fls tru
-  : [False : {}; True : {}]
+  : Bool
   = [True {} of Bool] ;
 or tru fls
-  : [False : {}; True : {}]
+  : Bool
   = [True {} of Bool] ;
 or tru tru
-  : [False : {}; True : {}]
+  : Bool
   = [True {} of Bool] ;
 if Bool fls fls tru
-  : [False : {}; True : {}]
+  : Bool
   = [True {} of Bool] ;
 if Bool tru fls tru
-  : [False : {}; True : {}]
+  : Bool
   = [False {} of Bool] ;
 if forall A :: * . A -> A fls (\A :: * . \x : A . x) (\B :: * . \y : B . y)
   : forall A :: * . A -> A

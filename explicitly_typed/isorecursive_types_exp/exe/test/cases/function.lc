@@ -44,4 +44,4 @@ rev_app'
 
 Omega = \A :: * . mu B :: * . B -> A ;
 
-omega = \A :: * . roll (Omega A) (\x : Omega A. (unroll x) x) ;
+omega = \A :: * . roll (Omega A) (\x : Omega A . (unroll x) x) ;

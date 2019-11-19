@@ -11,29 +11,29 @@ snd
   : forall A :: * . forall B :: * . (Pair A B) -> B
   = \A :: * . \B :: * . \p : Pair A B . p B (\f : A . \s : B . s) ;
 p
-  : forall C :: * . ((forall A :: * . A -> A -> A) -> (forall A :: * . A -> A -> A) -> C) -> C
+  : forall C :: * . (Bool -> Bool -> C) -> C
   = \C :: * . \p : Bool -> Bool -> C . p (\A :: * . \t : A . \f : A . f) (\A :: * . \t : A . \f : A . t) ;
 fst Bool Bool p
-  : forall A :: * . A -> A -> A
+  : Bool
   = \A :: * . \t : A . \f : A . f ;
 snd Bool Bool p
-  : forall A :: * . A -> A -> A
+  : Bool
   = \A :: * . \t : A . \f : A . t ;
 p
-  : forall C :: * . ((forall A :: * . (A -> A) -> A -> A) -> (forall A :: * . (A -> A) -> A -> A) -> C) -> C
+  : forall C :: * . (Nat -> Nat -> C) -> C
   = \C :: * . \n1 : Nat -> Nat -> C . n1 (\A :: * . \s : A -> A . \z : A . z) (\A :: * . \s : A -> A . \z : A . s z) ;
 fst Nat Nat p
-  : forall A :: * . (A -> A) -> A -> A
+  : Nat
   = \A :: * . \s : A -> A . \z : A . z ;
 snd Nat Nat p
-  : forall A :: * . (A -> A) -> A -> A
+  : Nat
   = \A :: * . \s : A -> A . \z : A . s z ;
 p
-  : forall C :: * . ((forall A :: * . A -> A -> A) -> (forall A :: * . (A -> A) -> A -> A) -> C) -> C
+  : forall C :: * . (Bool -> Nat -> C) -> C
   = \C :: * . \o1 : Bool -> Nat -> C . o1 (\A :: * . \t : A . \f : A . f) (\A :: * . \s : A -> A . \z : A . z) ;
 fst Bool Nat p
-  : forall A :: * . A -> A -> A
+  : Bool
   = \A :: * . \t : A . \f : A . f ;
 snd Bool Nat p
-  : forall A :: * . (A -> A) -> A -> A
+  : Nat
   = \A :: * . \s : A -> A . \z : A . z ;

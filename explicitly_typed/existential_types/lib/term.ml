@@ -59,7 +59,7 @@ let rec to_type (kn_env, tp_env) tm =
     | Application (fn, arg) ->
       let fn_tp = to_type kn_env tp_env fn in
       let fml_arg_tp, res_tp =
-        try Type.get_func (Type.beta_reduce ~deep:() tp_env fn_tp)
+        try Type.get_func (Type.reduce_one tp_env fn_tp)
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
@@ -79,7 +79,7 @@ let rec to_type (kn_env, tp_env) tm =
     | Pack (tp1, tm, tp2) ->
       Type.check kn_env tp2;
       let tp2_tv, tp2_tp =
-        try Type.get_exists @@ Type.beta_reduce ~deep:() tp_env tp2
+        try Type.get_exists @@ Type.reduce_one tp_env tp2
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
@@ -104,7 +104,7 @@ let rec to_type (kn_env, tp_env) tm =
     | Unpack (tp_id, tm_id, pack, body) ->
       let pack_tp = to_type kn_env tp_env pack in
       let pack_tp_tv, pack_tp_tp =
-        try Type.get_exists @@ Type.beta_reduce ~deep:() tp_env pack_tp
+        try Type.get_exists @@ Type.reduce_one tp_env pack_tp
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf

@@ -64,6 +64,9 @@ let get_forall' tp =
 
 (* Transformations *)
 
+let reduce_one env tp =
+  match tp with Variable id -> Env.Type.find_default tp id env | _ -> tp
+
 let rec beta_reduce ?deep env tp =
   match tp with
     | Variable id ->
