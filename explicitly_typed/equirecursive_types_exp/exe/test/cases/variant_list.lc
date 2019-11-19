@@ -1,0 +1,66 @@
+List = \A :: * . mu List :: * . [Nil; Cons : {head : A; tail : List}] ;
+
+nil = \A :: * .  [Nil of [Nil; Cons : {head : A; tail : List A}]] ;
+
+cons = \A :: * . \hd : A . \tl : List A .
+  [ Cons {head = hd; tail = tl} of
+    [Nil; Cons : {head : A; tail : List A}] ] ;
+
+is_empty = \A :: * . \list : List A . case list of [
+  Nil -> tru;
+  Cons l -> fls;
+] ;
+
+head = \A :: * . \list : List A . case list of [
+  Nil -> none A;
+  Cons l -> some A l.head;
+] ;
+
+tail = \A :: * . \list : List A . case list of [
+  Nil -> none (List A);
+  Cons l -> some (List A) l.tail;
+] ;
+
+map =
+  \A :: * . \B :: * .
+    fix (\map : (A -> B) -> List A -> List B .
+      \fn : A -> B . \list : List A . case list of [
+        Nil -> nil B;
+        Cons l -> cons B (fn l.head) (map fn l.tail);
+      ]) ;
+
+fold_left =
+  \A :: * . \B :: * .
+    fix (\fold : (A -> B -> A) -> A -> List B -> A .
+      \fn : A -> B -> A . \acc : A . \list : List B .
+        case list of [
+          Nil -> acc;
+          Cons l -> fold fn (fn acc l.head) l.tail;
+        ]) ;
+
+fold_right =
+  \A :: * . \B :: * .
+    fix (\fold : (A -> B -> B) -> B -> List A -> B .
+      \fn : A -> B -> B . \acc : B . \list : List A .
+        case list of [
+          Nil -> acc;
+          Cons l -> fn l.head (fold fn acc l.tail);
+        ]) ;
+
+bools = cons Bool tru (cons Bool fls (cons Bool tru (nil Bool))) ;
+
+map Bool Bool not bools ;
+
+map Bool Nat (\b : Bool . if Nat b one zero) bools ;
+
+fold_left Bool Bool and tru bools ;
+
+fold_left Bool Bool or fls bools ;
+
+nats = cons Nat zero (cons Nat one (cons Nat two (nil Nat))) ;
+
+map Nat Bool (\n : Nat . if_zero Bool n tru fls) nats ;
+
+map Nat Nat (add two) nats ;
+
+fold_right Nat Nat add zero nats ;

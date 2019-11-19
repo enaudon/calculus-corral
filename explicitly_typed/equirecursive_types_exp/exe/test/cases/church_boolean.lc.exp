@@ -1,0 +1,60 @@
+Bool
+  : *
+  = forall A :: * . A -> A -> A ;
+fls
+  : forall A :: * . A -> A -> A
+  = \A :: * . \t : A . \f : A . f ;
+tru
+  : forall A :: * . A -> A -> A
+  = \A :: * . \t : A . \f : A . t ;
+not
+  : Bool -> Bool
+  = \p : Bool . p Bool (\A :: * . \t : A . \f : A . f) (\A :: * . \t : A . \f : A . t) ;
+and
+  : Bool -> Bool -> Bool
+  = \p : Bool . \q : Bool . p Bool q (\A :: * . \t : A . \f : A . f) ;
+or
+  : Bool -> Bool -> Bool
+  = \p : Bool . \q : Bool . p Bool (\A :: * . \t : A . \f : A . t) q ;
+if
+  : forall A :: * . Bool -> A -> A -> A
+  = \A :: * . \p : Bool . \t : A . \e : A . p A t e ;
+not fls
+  : Bool
+  = \A :: * . \t : A . \f : A . t ;
+not tru
+  : Bool
+  = \A :: * . \t : A . \f : A . f ;
+and fls fls
+  : Bool
+  = \A :: * . \t : A . \f : A . f ;
+and fls tru
+  : Bool
+  = \A :: * . \t : A . \f : A . f ;
+and tru fls
+  : Bool
+  = \A :: * . \t : A . \f : A . f ;
+and tru tru
+  : Bool
+  = \A :: * . \t : A . \f : A . t ;
+or fls fls
+  : Bool
+  = \A :: * . \t : A . \f : A . f ;
+or fls tru
+  : Bool
+  = \A :: * . \t : A . \f : A . t ;
+or tru fls
+  : Bool
+  = \A :: * . \t : A . \f : A . t ;
+or tru tru
+  : Bool
+  = \A :: * . \t : A . \f : A . t ;
+if Bool fls fls tru
+  : Bool
+  = \A :: * . \t : A . \f : A . t ;
+if Bool tru fls tru
+  : Bool
+  = \A :: * . \t : A . \f : A . f ;
+if forall A :: * . A -> A fls (\A :: * . \x : A . x) (\B :: * . \y : B . y)
+  : forall A :: * . A -> A
+  = \B :: * . \y : B . y ;

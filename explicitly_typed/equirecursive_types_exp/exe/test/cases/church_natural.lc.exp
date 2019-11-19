@@ -1,0 +1,63 @@
+Nat
+  : *
+  = forall A :: * . (A -> A) -> A -> A ;
+zero
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . z ;
+one
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s z ;
+two
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s z) ;
+three
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s (s z)) ;
+four
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;
+eight
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
+succ
+  : Nat -> forall A :: * . (A -> A) -> A -> A
+  = \n : Nat . \A :: * . \s : A -> A . \z : A . s (n A s z) ;
+add
+  : Nat -> Nat -> forall A :: * . (A -> A) -> A -> A
+  = \m : Nat . \n : Nat . \A :: * . \s : A -> A . \z : A . m A s (n A s z) ;
+mul
+  : Nat -> Nat -> forall A :: * . (A -> A) -> A -> A
+  = \m : Nat . \n : Nat . \A :: * . \s : A -> A . m A (n A s) ;
+if_zero
+  : Nat -> Nat -> Nat -> forall A :: * . (A -> A) -> A -> A
+  = \m : Nat . \n : Nat . \o : Nat . \A :: * . \s : A -> A . \z : A . m A (\x : A . o A s z) (n A s z) ;
+succ one
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s z) ;
+add one zero
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s z ;
+add one two
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s (s z)) ;
+mul two two
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;
+mul two zero
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . z ;
+mul two (mul two two)
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s (s (s (s (s z))))))) ;
+if_zero zero one two
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s z ;
+if_zero one one two
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s z) ;
+if_zero two one two
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s z) ;
+if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
+  : forall A :: * . (A -> A) -> A -> A
+  = \A :: * . \s : A -> A . \z : A . s (s (s (s z))) ;

@@ -1,0 +1,56 @@
+Nat = mu A :: * . [Zero; Succ : A] ;
+
+zero = [Zero of [Zero; Succ : Nat]] ;
+
+succ = \n : Nat .  [Succ n of [Zero; Succ : Nat]] ;
+
+one = succ zero ;
+
+two = succ (succ zero) ;
+
+three = succ (succ (succ zero)) ;
+
+four = succ (succ (succ (succ zero))) ;
+
+eight = succ (succ (succ (succ (succ (succ (succ (succ zero))))))) ;
+
+add =
+  fix (\add : Nat -> Nat -> Nat . \m : Nat . \n : Nat . case n of [
+    Zero -> m;
+    Succ o -> add (succ m) o;
+  ]) ;
+
+mul =
+  fix (\mul : Nat -> Nat -> Nat . \m : Nat . \n : Nat . case n of [
+    Zero -> zero;
+    Succ o -> add m (mul m o);
+  ]) ;
+
+if_zero = \A :: * . \m : Nat . \n : A . \o : A . case m of [
+  Zero -> n;
+  Succ p -> o;
+];
+
+succ one ;
+
+add one zero ;
+
+add one two ;
+
+mul two two ;
+
+mul two zero ;
+
+mul two (mul two two) ;
+
+if_zero Nat zero one two ;
+
+if_zero Nat one one two ;
+
+if_zero Nat two one two ;
+
+if_zero
+  Nat
+  (add (mul four four) one)
+  (mul eight two)
+  (add one (add two one)) ;

@@ -1,0 +1,25 @@
+Pair = \A :: * . \B :: * . {fst : A; snd : B} ;
+
+pair = \A :: * . \B :: * . \f : A . \s : B . {fst = f; snd = s} ;
+
+fst = \A :: * . \B :: * . \p : Pair A B . p.fst ;
+
+snd = \A :: * . \B :: * . \p : Pair A B . p.snd ;
+
+p = pair Bool Bool fls tru ;
+
+fst Bool Bool p ;
+
+snd Bool Bool p ;
+
+p = pair Nat Nat zero one ;
+
+fst Nat Nat p ;
+
+snd Nat Nat p ;
+
+p = pair Bool Nat fls zero ;
+
+fst Bool Nat p ;
+
+snd Bool Nat p ;
