@@ -111,13 +111,12 @@ module Repl (Input : Input) = struct
       match cmd with
         | Command.Bind_type (id, tp) ->
           let kn = Type.to_kind kn_env tp in
-          let tp' = Type.beta_reduce ?deep tp_env tp in
           Printf.printf
             "%s\n  : %s\n  = %s ;\n%!"
             (Id.to_string id)
             (Kind.to_string kn)
-            (Type.to_string tp');
-          (Kind_env.add id kn kn_env, Type_env.Type.add id tp' tp_env, vl_env)
+            (Type.to_string tp);
+          (Kind_env.add id kn kn_env, Type_env.Type.add id tp tp_env, vl_env)
         | Command.Bind_term (id, tm) ->
           let tp = Term.to_type (kn_env, tp_env) tm in
           let vl = Term.to_value ?deep (vl_env, kn_env, tp_env) tm in

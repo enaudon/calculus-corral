@@ -155,14 +155,14 @@ let rec subst fvs sub tp =
     | Row_cons (id, tp, rest) ->
       row_cons id (subst fvs sub tp) (subst fvs sub rest)
 
-let rec reduce_one env tp =
+let rec reduce_one ?dont_unroll env tp =
   let subst env tp id tp' =
     let fvs = Id.Set.of_list @@ Env.Type.keys env in
     subst fvs (Env.Type.singleton id tp') tp
   in
   let unroll env tp =
     match tp with
-      | Recursive (quant, _, body) ->
+      | Recursive (quant, _, body) when dont_unroll = None ->
         subst env body quant tp
       | _ ->
         tp
@@ -227,9 +227,11 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
     subst fvs (Env.Type.singleton id tp') tp
   in
   let rec alpha_equiv seen env tp1 tp2 =
+    let tp1' = reduce_one ~dont_unroll:() beta_env tp1 in
+    let tp2' = reduce_one ~dont_unroll:() beta_env tp2 in
     List.mem (tp1, tp2) seen
     ||
-    match (tp1, tp2) with
+    match (tp1', tp2') with
       | Variable id1, Variable id2 ->
         Id.alpha_equivalent env id1 id2
       | Abstraction (arg1, kn1, body1), Abstraction (arg2, kn2, body2) ->
@@ -241,11 +243,11 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
         Kind.alpha_equivalent kn1 kn2
         && alpha_equiv seen ((quant1, quant2) :: env) body1 body2
       | _, Recursive (quant, _, body) ->
-        alpha_equiv ((tp1, tp2) :: seen) env tp1
-        @@ subst beta_env body quant tp2
+        alpha_equiv ((tp1, tp2) :: seen) env tp1'
+        @@ subst beta_env body quant tp2'
       | Recursive (quant, _, body), _ ->
-        alpha_equiv ((tp1, tp2) :: seen) env tp2
-        @@ subst beta_env body quant tp1
+        alpha_equiv ((tp1, tp2) :: seen) env tp2'
+        @@ subst beta_env body quant tp1'
       | Row_nil, Row_nil | Row_cons _, Row_cons _ ->
         let alpha_equiv_rest env rest1 rest2 =
           match (rest1, rest2) with
@@ -271,15 +273,11 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
             (List.sort compare_fields fields2)
           && alpha_equiv_rest env rest1 rest2
         in
-        alpha_equiv_row env tp1 tp2
+        alpha_equiv_row env tp1' tp2'
       | _ ->
         false
   in
-  alpha_equiv
-    []
-    env
-    (beta_reduce ~deep:() beta_env tp1)
-    (beta_reduce ~deep:() beta_env tp2)
+  alpha_equiv [] env tp1 tp2
 
 let simplify ?ctx:ctx_opt tp =
   let fresh, env =

@@ -86,22 +86,17 @@ let rec check env tp =
     | Existential (quant, body) ->
       check (Id.Set.add quant env) body
 
-let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
-  let rec alpha_equiv env tp1 tp2 =
-    match (tp1, tp2) with
-      | Variable id1, Variable id2 ->
-        Id.alpha_equivalent env id1 id2
-      | Function (arg1, res1), Function (arg2, res2) ->
-        alpha_equiv env arg1 arg2 && alpha_equiv env res1 res2
-      | Existential (quant1, body1), Existential (quant2, body2) ->
-        alpha_equiv ((quant1, quant2) :: env) body1 body2
-      | _ ->
-        false
-  in
-  alpha_equiv
-    env
-    (beta_reduce ~deep:() beta_env tp1)
-    (beta_reduce ~deep:() beta_env tp2)
+let rec alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
+  let alpha_equiv env = alpha_equivalent ~beta_env ~env in
+  match (reduce_one beta_env tp1, reduce_one beta_env tp2) with
+    | Variable id1, Variable id2 ->
+      Id.alpha_equivalent env id1 id2
+    | Function (arg1, res1), Function (arg2, res2) ->
+      alpha_equiv env arg1 arg2 && alpha_equiv env res1 res2
+    | Existential (quant1, body1), Existential (quant2, body2) ->
+      alpha_equiv ((quant1, quant2) :: env) body1 body2
+    | _ ->
+      false
 
 let free_vars =
   let rec free_vars fvs tp =

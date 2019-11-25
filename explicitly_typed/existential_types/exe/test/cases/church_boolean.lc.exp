@@ -12,24 +12,24 @@ if
   = \p : Bool . \t : * . \e : * . p t e ;
 BoolPair
   : *
-  = ((* -> * -> *) -> (* -> * -> *) -> * -> * -> *) -> * -> * -> * ;
+  = (Bool -> Bool -> Bool) -> Bool ;
 pair
   : Bool -> Bool -> (Bool -> Bool -> Bool) -> Bool
   = \f : Bool . \s : Bool . \p : Bool -> Bool -> Bool . p f s ;
 fst
-  : BoolPair -> * -> * -> *
+  : BoolPair -> Bool
   = \p : BoolPair . p (\f : Bool . \s : Bool . f) ;
 snd
-  : BoolPair -> * -> * -> *
+  : BoolPair -> Bool
   = \p : BoolPair . p (\f : Bool . \s : Bool . s) ;
 pair fls tru
   : (Bool -> Bool -> Bool) -> Bool
   = \p : Bool -> Bool -> Bool . p (\t : * . \f : * . f) (\t : * . \f : * . t) ;
 fst (pair fls tru)
-  : * -> * -> *
+  : Bool
   = \t : * . \f : * . f ;
 snd (pair fls tru)
-  : * -> * -> *
+  : Bool
   = \t : * . \f : * . t ;
 bool_lits
   : exists A . (A -> A -> A) -> A

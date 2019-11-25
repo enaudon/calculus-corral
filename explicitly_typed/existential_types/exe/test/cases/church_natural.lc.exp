@@ -63,31 +63,31 @@ if_zero (add (mul four four) one) (mul eight two) (add one (add two one))
   = \s : * -> * . \z : * . s (s (s (s z))) ;
 NatPair
   : *
-  = (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> (* -> *) -> * -> * ;
+  = (Nat -> Nat -> Nat) -> Nat ;
 pair
   : Nat -> Nat -> (Nat -> Nat -> Nat) -> Nat
   = \f : Nat . \s : Nat . \p : Nat -> Nat -> Nat . p f s ;
 fst
-  : NatPair -> (* -> *) -> * -> *
+  : NatPair -> Nat
   = \p : NatPair . p (\f : Nat . \s : Nat . f) ;
 snd
-  : NatPair -> (* -> *) -> * -> *
+  : NatPair -> Nat
   = \p : NatPair . p (\f : Nat . \s : Nat . s) ;
 pair zero one
   : (Nat -> Nat -> Nat) -> Nat
   = \p : Nat -> Nat -> Nat . p (\s : * -> * . \z : * . z) (\s : * -> * . \z : * . s z) ;
 fst (pair zero one)
-  : (* -> *) -> * -> *
+  : Nat
   = \s : * -> * . \z : * . z ;
 snd (pair zero one)
-  : (* -> *) -> * -> *
+  : Nat
   = \s : * -> * . \z : * . s z ;
 NatBinOp
   : *
-  = ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> * ;
+  = Nat -> Nat -> Nat ;
 NatBinOpPair
   : *
-  = ((((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> * ;
+  = (NatBinOp -> NatBinOp -> NatBinOp) -> NatBinOp ;
 op_pair
   : NatBinOp -> NatBinOp -> (NatBinOp -> NatBinOp -> NatBinOp) -> NatBinOp
   = \m : NatBinOp . \n : NatBinOp . \p : NatBinOp -> NatBinOp -> NatBinOp . p m n ;

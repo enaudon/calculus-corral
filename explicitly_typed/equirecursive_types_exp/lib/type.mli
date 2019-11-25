@@ -89,7 +89,7 @@ val to_kind : Kind.Environment.t -> t -> Kind.t
 
 (** [reduce_one env tp] evaluates top-level applications and unrolls top-level
     recursive types in [tp] under [env]. *)
-val reduce_one : Environment.t -> t -> t
+val reduce_one : ?dont_unroll:unit -> Environment.t -> t -> t
 
 (** [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
     [env]. If the [deep] argument is passed, then [beta_reduce] will reduce the
