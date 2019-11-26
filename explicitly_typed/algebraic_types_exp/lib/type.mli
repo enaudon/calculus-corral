@@ -74,8 +74,8 @@ val to_kind : Kind.Environment.t -> t -> Kind.t
 
 (** {1 Transformations} *)
 
-(** [reduce env tp] evaluates top-level applications and unrolls top-level
-    recursive types in [tp] under [env]. *)
+(** [reduce env tp] resolves top-level variables and evaluates top-level
+    applications in [tp]. *)
 val reduce : Environment.t -> t -> t
 
 (** {1 Utilities} *)

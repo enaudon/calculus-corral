@@ -39,8 +39,7 @@ val get_forall' : t -> Identifier.t list * t
 
 (** {1 Transformations} *)
 
-(** [reduce env tp] evaluates top-level applications and unrolls top-level
-    recursive types in [tp] under [env]. *)
+(** [reduce env tp] resolves top-level variables in [tp]. *)
 val reduce : Environment.t -> t -> t
 
 (** {1 Utilities} *)

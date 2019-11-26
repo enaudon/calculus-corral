@@ -157,8 +157,8 @@ let subst env tp id tp' =
   let fvs = Id.Set.of_list @@ Env.Type.keys env in
   subst fvs (Env.Type.singleton id tp') tp
 
-(* [reduce env tp] resolves top-level variables and evaluates top-level
-   applications. *)
+(** [reduce env tp] resolves top-level variables and evaluates top-level
+    applications. *)
 let rec reduce env tp =
   match tp with
     | Variable id ->

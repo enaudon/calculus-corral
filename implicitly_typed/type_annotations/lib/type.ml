@@ -117,8 +117,8 @@ let rec subst : Id.Set.t -> Env.t -> t -> t =
        forall quant kn
        @@ subst (Id.Set.add quant fvs) (Env.Type.del quant sub) body
 
-(* [reduce env tp] resolves top-level variables and evaluates top-level
-   applications. *)
+(** [reduce env tp] resolves top-level variables and evaluates top-level
+    applications. *)
 let rec reduce env tp =
   let subst env tp id tp' =
     let fvs = Id.Set.of_list @@ Env.Type.keys env in
