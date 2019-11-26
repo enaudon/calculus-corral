@@ -81,7 +81,7 @@ let rec to_type (kn_env, tp_env) tm =
     | Term_app (fn, arg) ->
       let fn_tp = to_type kn_env tp_env fn in
       let fml_arg_tp, res_tp =
-        try Type.get_func (Type.reduce_one tp_env fn_tp)
+        try Type.get_func (Type.reduce tp_env fn_tp)
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
@@ -103,7 +103,7 @@ let rec to_type (kn_env, tp_env) tm =
     | Type_app (fn, arg) ->
       let fn_tp = to_type kn_env tp_env fn in
       let fn_quant, fn_kn, fn_body =
-        try Type.get_forall @@ Type.reduce_one tp_env fn_tp
+        try Type.get_forall @@ Type.reduce tp_env fn_tp
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
@@ -125,7 +125,7 @@ let rec to_type (kn_env, tp_env) tm =
     | Projection (rcrd, field) ->
       let rcrd_tp = to_type kn_env tp_env rcrd in
       let fields, _ =
-        try Type.get_rcrd @@ Type.reduce_one tp_env rcrd_tp
+        try Type.get_rcrd @@ Type.reduce tp_env rcrd_tp
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
@@ -145,7 +145,7 @@ let rec to_type (kn_env, tp_env) tm =
         error tm.loc "to_type"
         @@ Printf.sprintf "expected proper kind; found '%s'" (Kind.to_string kn);
       let cases, _ =
-        try Type.get_vrnt @@ Type.reduce_one tp_env tp
+        try Type.get_vrnt @@ Type.reduce tp_env tp
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
@@ -196,7 +196,7 @@ let rec to_type (kn_env, tp_env) tm =
       let vrnt_tp = to_type kn_env tp_env vrnt in
       (* TODO: See about using the elided [rest] variable. *)
       let vrnt_cases, _ =
-        try Type.get_vrnt @@ Type.reduce_one tp_env vrnt_tp
+        try Type.get_vrnt @@ Type.reduce tp_env vrnt_tp
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf

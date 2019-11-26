@@ -134,7 +134,7 @@ let rec subst fvs sub tp =
     | Row_cons (id, tp, rest) ->
       row_cons id (subst fvs sub tp) (subst fvs sub rest)
 
-let rec reduce_one env tp =
+let rec reduce env tp =
   let subst env tp id tp' =
     let fvs = Id.Set.of_list @@ Env.Type.keys env in
     subst fvs (Env.Type.singleton id tp') tp
@@ -143,7 +143,7 @@ let rec reduce_one env tp =
     | Variable id ->
       Env.Type.find_default tp id env
     | Application (fn, act_arg) ->
-      ( match reduce_one env fn with
+      ( match reduce env fn with
         | Abstraction (fml_arg, _, body) ->
           subst env body fml_arg act_arg
         | _ ->
@@ -155,8 +155,8 @@ let rec reduce_one env tp =
 
 let rec alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
   let alpha_equiv beta_env env = alpha_equivalent ~beta_env ~env in
-  let tp1' = reduce_one beta_env tp1 in
-  let tp2' = reduce_one beta_env tp2 in
+  let tp1' = reduce beta_env tp1 in
+  let tp2' = reduce beta_env tp2 in
   match (tp1', tp2') with
     | Variable id1, Variable id2 ->
       Id.alpha_equivalent env id1 id2

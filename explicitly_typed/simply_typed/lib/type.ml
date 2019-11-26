@@ -43,7 +43,7 @@ let get_func tp =
 
 (* Transformations *)
 
-let reduce_one env tp =
+let reduce env tp =
   match tp with Variable id -> Env.Type.find_default tp id env | _ -> tp
 
 (* External utilities *)
@@ -60,7 +60,7 @@ let rec check env tp =
 
 let rec alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
   let alpha_equiv env = alpha_equivalent ~beta_env ~env in
-  match (reduce_one beta_env tp1, reduce_one beta_env tp2) with
+  match (reduce beta_env tp1, reduce beta_env tp2) with
     | Variable id1, Variable id2 ->
       Id.alpha_equivalent env id1 id2
     | Function (arg1, res1), Function (arg2, res2) ->

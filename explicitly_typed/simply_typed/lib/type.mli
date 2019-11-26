@@ -28,9 +28,9 @@ val get_func : t -> t * t
 
 (** {1 Transformations} *)
 
-(** [reduce_one env tp] evaluates top-level applications and unrolls top-level
+(** [reduce env tp] evaluates top-level applications and unrolls top-level
     recursive types in [tp] under [env]. *)
-val reduce_one : Environment.t -> t -> t
+val reduce : Environment.t -> t -> t
 
 (** {1 Utilities} *)
 

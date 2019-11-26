@@ -48,7 +48,7 @@ let rec to_type env tm =
     | Application (fn, arg) ->
       let fn_tp = to_type env fn in
       let fml_arg_tp, res_tp =
-        try Type.get_func (Type.reduce_one env fn_tp)
+        try Type.get_func (Type.reduce env fn_tp)
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf

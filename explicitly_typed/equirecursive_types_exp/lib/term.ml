@@ -73,7 +73,7 @@ let rec to_type (kn_env, tp_env) tm =
           error tm.loc "to_type"
           @@ Printf.sprintf "undefined identifier '%s'" (Id.to_string id) )
     | Term_abs (arg, arg_tp, body) ->
-      let arg_kn = Type.to_kind kn_env @@ Type.reduce_one tp_env arg_tp in
+      let arg_kn = Type.to_kind kn_env @@ Type.reduce tp_env arg_tp in
       if not (Kind.alpha_equivalent arg_kn Kind.prop) then
         error tm.loc "to_type"
         @@ Printf.sprintf
@@ -84,7 +84,7 @@ let rec to_type (kn_env, tp_env) tm =
     | Term_app (fn, arg) ->
       let fn_tp = to_type kn_env tp_env fn in
       let fml_arg_tp, res_tp =
-        try Type.get_func (Type.reduce_one tp_env fn_tp)
+        try Type.get_func (Type.reduce tp_env fn_tp)
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
@@ -106,14 +106,14 @@ let rec to_type (kn_env, tp_env) tm =
     | Type_app (fn, arg) ->
       let fn_tp = to_type kn_env tp_env fn in
       let fn_quant, fn_kn, fn_body =
-        try Type.get_forall @@ Type.reduce_one tp_env fn_tp
+        try Type.get_forall @@ Type.reduce tp_env fn_tp
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
                "expected universal type; found '%s'"
                (Type.to_string fn_tp)
       in
-      let arg_kn = Type.to_kind kn_env @@ Type.reduce_one tp_env arg in
+      let arg_kn = Type.to_kind kn_env @@ Type.reduce tp_env arg in
       if not (Kind.alpha_equivalent arg_kn fn_kn) then
         error tm.loc "to_type"
         @@ Printf.sprintf
@@ -123,7 +123,7 @@ let rec to_type (kn_env, tp_env) tm =
       let ftvs = Id.Set.of_list @@ Kind_env.keys kn_env in
       Type.subst ftvs (Type_env.Type.singleton fn_quant arg) fn_body
     | Fix tm ->
-      let tp = Type.reduce_one tp_env @@ to_type kn_env tp_env tm in
+      let tp = Type.reduce tp_env @@ to_type kn_env tp_env tm in
       let arg_tp, res_tp =
         try Type.get_func tp
         with Invalid_argument _ ->
@@ -146,7 +146,7 @@ let rec to_type (kn_env, tp_env) tm =
     | Projection (rcrd, field) ->
       let rcrd_tp = to_type kn_env tp_env rcrd in
       let fields, _ =
-        try Type.get_rcrd @@ Type.reduce_one tp_env rcrd_tp
+        try Type.get_rcrd @@ Type.reduce tp_env rcrd_tp
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
@@ -161,12 +161,12 @@ let rec to_type (kn_env, tp_env) tm =
                (Id.to_string field)
                (Type.to_string rcrd_tp) )
     | Variant (case, data, tp) ->
-      let kn = Type.to_kind kn_env @@ Type.reduce_one tp_env tp in
+      let kn = Type.to_kind kn_env @@ Type.reduce tp_env tp in
       if not (Kind.alpha_equivalent kn Kind.prop) then
         error tm.loc "to_type"
         @@ Printf.sprintf "expected proper kind; found '%s'" (Kind.to_string kn);
       let cases, _ =
-        try Type.get_vrnt @@ Type.reduce_one tp_env tp
+        try Type.get_vrnt @@ Type.reduce tp_env tp
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf
@@ -217,7 +217,7 @@ let rec to_type (kn_env, tp_env) tm =
       let vrnt_tp = to_type kn_env tp_env vrnt in
       (* TODO: See about using the elided [rest] variable. *)
       let vrnt_cases, _ =
-        try Type.get_vrnt @@ Type.reduce_one tp_env vrnt_tp
+        try Type.get_vrnt @@ Type.reduce tp_env vrnt_tp
         with Invalid_argument _ ->
           error tm.loc "to_type"
           @@ Printf.sprintf

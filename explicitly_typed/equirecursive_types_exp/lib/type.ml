@@ -155,7 +155,7 @@ let rec subst fvs sub tp =
     | Row_cons (id, tp, rest) ->
       row_cons id (subst fvs sub tp) (subst fvs sub rest)
 
-let rec reduce_one ?dont_unroll env tp =
+let rec reduce ?dont_unroll env tp =
   let subst env tp id tp' =
     let fvs = Id.Set.of_list @@ Env.Type.keys env in
     subst fvs (Env.Type.singleton id tp') tp
@@ -173,7 +173,7 @@ let rec reduce_one ?dont_unroll env tp =
     | Variable id ->
       Env.Type.find_default tp id env
     | Application (fn, act_arg) ->
-      ( match reduce_one env fn with
+      ( match reduce env fn with
         | Abstraction (fml_arg, _, body) ->
           subst env body fml_arg act_arg
         | _ ->
@@ -189,8 +189,8 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
     subst fvs (Env.Type.singleton id tp') tp
   in
   let rec alpha_equiv seen beta_env env tp1 tp2 =
-    let tp1' = reduce_one ~dont_unroll:() beta_env tp1 in
-    let tp2' = reduce_one ~dont_unroll:() beta_env tp2 in
+    let tp1' = reduce ~dont_unroll:() beta_env tp1 in
+    let tp2' = reduce ~dont_unroll:() beta_env tp2 in
     List.mem (tp1, tp2) seen
     ||
     match (tp1', tp2') with
