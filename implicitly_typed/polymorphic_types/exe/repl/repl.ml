@@ -26,8 +26,6 @@ module Repl = Language.Repl (struct
 
     let to_kind _ _ = Kind.Base
 
-    let beta_reduce ?deep:_ _ _ = assert false
-
     let to_string tp = to_string tp
   end
 

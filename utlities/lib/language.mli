@@ -48,8 +48,6 @@ module type Input = sig
 
     val to_kind : Kind.Environment.t -> t -> Kind.t
 
-    val beta_reduce : ?deep:unit -> Environment.t -> t -> t
-
     val to_string : t -> string
   end
 

@@ -13,8 +13,6 @@ module Repl = Language.Repl (struct
   module Type = struct
     include Isorecursive_types_imp.Type
 
-    let beta_reduce ?deep:_ _ tp = tp
-
     let to_string tp = to_string tp
   end
 

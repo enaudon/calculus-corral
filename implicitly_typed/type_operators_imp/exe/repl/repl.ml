@@ -13,8 +13,6 @@ module Repl = Language.Repl (struct
   module Type = struct
     include Type_operators_imp.Type
 
-    let beta_reduce ?deep:_ _ _ = assert false
-
     let to_string tp = to_string tp
   end
 
