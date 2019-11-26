@@ -448,3 +448,7 @@ let get_vrnt tp =
       row_to_list row
     | _ ->
       invalid_arg "Type.get_vrnt: expected variant"
+
+(* Transformations *)
+
+let reduce env tp = reduce env tp
