@@ -117,7 +117,9 @@ let rec subst : Id.Set.t -> Env.t -> t -> t =
        forall quant kn
        @@ subst (Id.Set.add quant fvs) (Env.Type.del quant sub) body
 
-let rec beta_reduce env tp =
+(* [reduce_one env tp] resolves top-level variables and evaluates top-level
+   applications. *)
+let rec reduce_one env tp =
   let subst env tp id tp' =
     let fvs = Id.Set.of_list @@ Env.Type.keys env in
     subst fvs (Env.Type.singleton id tp') tp
@@ -126,7 +128,7 @@ let rec beta_reduce env tp =
     | Variable id ->
       Env.Type.find_default tp id env
     | Application (fn, act_arg) ->
-      ( match beta_reduce env fn with
+      ( match reduce_one env fn with
         | Abstraction (fml_arg, _, body) ->
           subst env body fml_arg act_arg
         | _ ->
@@ -342,8 +344,8 @@ end = struct
        Sub.extend id tp @@ Pools.remove id state'
     in
     let rec unify state tp1 tp2 =
-      let tp1' = Sub.apply (beta_reduce state.type_env tp1) state in
-      let tp2' = Sub.apply (beta_reduce state.type_env tp2) state in
+      let tp1' = Sub.apply (reduce_one state.type_env tp1) state in
+      let tp2' = Sub.apply (reduce_one state.type_env tp2) state in
       match (tp1', tp2') with
         | _, Inference_variable (Poly, _)
         | Inference_variable (Poly, _), _

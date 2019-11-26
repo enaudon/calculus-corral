@@ -118,11 +118,6 @@ module Inferencer : sig
   val apply : state -> t -> t
 end
 
-(** {1 Reduction} *)
-
-(** [beta_reduce env tp] evaluates any applications in [tp] under [env]. *)
-val beta_reduce : Environment.t -> t -> t
-
 (** {1 Kinding} *)
 
 (** [to_kind env tp] computes the kind of [tp] under [env]. *)

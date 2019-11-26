@@ -1,6 +1,5 @@
 module Id = Identifier
 module Misc = Miscellaneous
-module Opt = Option
 
 type t =
   | Variable of Id.t
@@ -60,18 +59,6 @@ let get_exists tp =
 let reduce_one env tp =
   match tp with Variable id -> Env.Type.find_default tp id env | _ -> tp
 
-let rec beta_reduce ?deep env tp =
-  match tp with
-    | Variable id ->
-      Env.Type.find_default tp id env
-    | Function (arg, res) ->
-      func (beta_reduce env arg) (beta_reduce env res)
-    | Existential (quant, body) ->
-      if deep <> Opt.none then
-        exists quant @@ beta_reduce (Env.Type.del quant env) body
-      else
-        tp
-
 (* Utilities *)
 
 let rec check env tp =
@@ -87,14 +74,15 @@ let rec check env tp =
       check (Id.Set.add quant env) body
 
 let rec alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
-  let alpha_equiv env = alpha_equivalent ~beta_env ~env in
+  let alpha_equiv beta_env env = alpha_equivalent ~beta_env ~env in
   match (reduce_one beta_env tp1, reduce_one beta_env tp2) with
     | Variable id1, Variable id2 ->
       Id.alpha_equivalent env id1 id2
     | Function (arg1, res1), Function (arg2, res2) ->
-      alpha_equiv env arg1 arg2 && alpha_equiv env res1 res2
+      alpha_equiv beta_env env arg1 arg2 && alpha_equiv beta_env env res1 res2
     | Existential (quant1, body1), Existential (quant2, body2) ->
-      alpha_equiv ((quant1, quant2) :: env) body1 body2
+      let beta_env' = beta_env |> Env.Type.del quant1 |> Env.Type.del quant2 in
+      alpha_equiv beta_env' ((quant1, quant2) :: env) body1 body2
     | _ ->
       false
 

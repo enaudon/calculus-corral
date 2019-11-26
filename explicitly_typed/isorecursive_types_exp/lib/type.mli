@@ -91,11 +91,6 @@ val to_kind : Kind.Environment.t -> t -> Kind.t
     recursive types in [tp] under [env]. *)
 val reduce_one : Environment.t -> t -> t
 
-(** [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
-    [env]. If the [deep] argument is passed, then [beta_reduce] will reduce the
-    body of abstractions. *)
-val beta_reduce : ?deep:unit -> Environment.t -> t -> t
-
 (** {1 Utilities} *)
 
 (** [alpha_equivalent ~beta_env ~env tp1 tp2] determines whether [tp1] and [tp2]

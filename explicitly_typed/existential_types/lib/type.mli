@@ -43,11 +43,6 @@ val get_exists : t -> Identifier.t * t
     recursive types in [tp] under [env]. *)
 val reduce_one : Environment.t -> t -> t
 
-(** [beta_reduce ~deep:() env tp] evaluates any applications in [tp] under
-    [env]. If the [deep] argument is passed, then [beta_reduce] will reduce the
-    body of abstractions. *)
-val beta_reduce : ?deep:unit -> Environment.t -> t -> t
-
 (** {1 Utilities} *)
 
 (** [check env tp] verifies that [tp] is well-formed under [env]. In the absence

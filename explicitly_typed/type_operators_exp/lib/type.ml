@@ -1,7 +1,6 @@
 module Id = Identifier
 module Kind_env = Kind.Environment
 module Misc = Miscellaneous
-module Opt = Option
 
 type t =
   | Variable of Id.t
@@ -111,57 +110,27 @@ let rec reduce_one env tp =
     | _ ->
       tp
 
-let rec beta_reduce ?deep env tp =
-  let beta_reduce = beta_reduce ?deep in
-  let subst env tp id tp' =
-    let fvs = Id.Set.of_list @@ Env.Type.keys env in
-    subst fvs (Env.Type.singleton id tp') tp
-  in
-  match tp with
-    | Variable id ->
-      Env.Type.find_default tp id env
-    | Abstraction (arg, kn, body) ->
-      if deep <> Opt.none then
-        abs arg kn @@ beta_reduce (Env.Type.del arg env) body
-      else
-        tp
-    | Application (fn, act_arg) ->
-      let fn' = beta_reduce env fn in
-      let act_arg' = beta_reduce env act_arg in
-      ( match fn' with
-        | Abstraction (fml_arg, _, body) ->
-          let env' = Env.Type.del fml_arg env in
-          beta_reduce env' @@ subst env' body fml_arg act_arg'
-        | _ ->
-          app fn' act_arg' )
-    | Universal (quant, kn, body) ->
-      if deep <> Opt.none then
-        forall quant kn @@ beta_reduce (Env.Type.del quant env) body
-      else
-        tp
-
 (* Utilities *)
 
-let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
-  let rec alpha_equiv env tp1 tp2 =
-    match (tp1, tp2) with
-      | Variable id1, Variable id2 ->
-        Id.alpha_equivalent env id1 id2
-      | Abstraction (arg1, kn1, body1), Abstraction (arg2, kn2, body2) ->
-        Kind.alpha_equivalent kn1 kn2
-        && alpha_equiv ((arg1, arg2) :: env) body1 body2
-      | Application (fn1, arg1), Application (fn2, arg2) ->
-        alpha_equiv env fn1 fn2 && alpha_equiv env arg1 arg2
-      | Universal (quant1, kn1, body1), Universal (quant2, kn2, body2) ->
-        Kind.alpha_equivalent kn1 kn2
-        && alpha_equiv ((quant1, quant2) :: env) body1 body2
-      | _ ->
-        false
-  in
-  alpha_equiv
-    env
-    (beta_reduce ~deep:() beta_env tp1)
-    (beta_reduce ~deep:() beta_env tp2)
+let rec alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
+  let alpha_equiv beta_env env = alpha_equivalent ~beta_env ~env in
+  let tp1' = reduce_one beta_env tp1 in
+  let tp2' = reduce_one beta_env tp2 in
+  match (tp1', tp2') with
+    | Variable id1, Variable id2 ->
+      Id.alpha_equivalent env id1 id2
+    | Abstraction (arg1, kn1, body1), Abstraction (arg2, kn2, body2) ->
+      let beta_env' = beta_env |> Env.Type.del arg1 |> Env.Type.del arg2 in
+      Kind.alpha_equivalent kn1 kn2
+      && alpha_equiv beta_env' ((arg1, arg2) :: env) body1 body2
+    | Application (fn1, arg1), Application (fn2, arg2) ->
+      alpha_equiv beta_env env fn1 fn2 && alpha_equiv beta_env env arg1 arg2
+    | Universal (quant1, kn1, body1), Universal (quant2, kn2, body2) ->
+      let beta_env' = beta_env |> Env.Type.del quant1 |> Env.Type.del quant2 in
+      Kind.alpha_equivalent kn1 kn2
+      && alpha_equiv beta_env' ((quant1, quant2) :: env) body1 body2
+    | _ ->
+      false
 
 let simplify ?ctx:ctx_opt tp =
   let fresh, env =

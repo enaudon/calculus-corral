@@ -181,44 +181,6 @@ let rec reduce_one ?dont_unroll env tp =
     | _ ->
       tp
 
-let rec beta_reduce ?deep env tp =
-  let beta_reduce = beta_reduce ?deep in
-  let subst env tp id tp' =
-    let fvs = Id.Set.of_list @@ Env.Type.keys env in
-    subst fvs (Env.Type.singleton id tp') tp
-  in
-  match tp with
-    | Variable id ->
-      Env.Type.find_default tp id env
-    | Abstraction (arg, kn, body) ->
-      if deep <> Opt.none then
-        abs arg kn @@ beta_reduce (Env.Type.del arg env) body
-      else
-        tp
-    | Application (fn, act_arg) ->
-      let fn' = beta_reduce env fn in
-      let act_arg' = beta_reduce env act_arg in
-      ( match fn' with
-        | Abstraction (fml_arg, _, body) ->
-          let env' = Env.Type.del fml_arg env in
-          beta_reduce env' @@ subst env' body fml_arg act_arg'
-        | _ ->
-          app fn' act_arg' )
-    | Universal (quant, kn, body) ->
-      if deep <> Opt.none then
-        forall quant kn @@ beta_reduce (Env.Type.del quant env) body
-      else
-        tp
-    | Recursive (quant, kn, body) ->
-      if deep <> Opt.none then
-        mu quant kn @@ beta_reduce (Env.Type.del quant env) body
-      else
-        tp
-    | Row_nil ->
-      row_nil
-    | Row_cons (id, tp, rest) ->
-      row_cons id (beta_reduce env tp) (beta_reduce env rest)
-
 (* Utilities *)
 
 let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
@@ -226,7 +188,7 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
     let fvs = Id.Set.of_list @@ Env.Type.keys env in
     subst fvs (Env.Type.singleton id tp') tp
   in
-  let rec alpha_equiv seen env tp1 tp2 =
+  let rec alpha_equiv seen beta_env env tp1 tp2 =
     let tp1' = reduce_one ~dont_unroll:() beta_env tp1 in
     let tp2' = reduce_one ~dont_unroll:() beta_env tp2 in
     List.mem (tp1, tp2) seen
@@ -235,18 +197,23 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
       | Variable id1, Variable id2 ->
         Id.alpha_equivalent env id1 id2
       | Abstraction (arg1, kn1, body1), Abstraction (arg2, kn2, body2) ->
+        let beta_env' = beta_env |> Env.Type.del arg1 |> Env.Type.del arg2 in
         Kind.alpha_equivalent kn1 kn2
-        && alpha_equiv seen ((arg1, arg2) :: env) body1 body2
+        && alpha_equiv seen beta_env' ((arg1, arg2) :: env) body1 body2
       | Application (fn1, arg1), Application (fn2, arg2) ->
-        alpha_equiv seen env fn1 fn2 && alpha_equiv seen env arg1 arg2
+        alpha_equiv seen beta_env env fn1 fn2
+        && alpha_equiv seen beta_env env arg1 arg2
       | Universal (quant1, kn1, body1), Universal (quant2, kn2, body2) ->
+        let beta_env' =
+          beta_env |> Env.Type.del quant1 |> Env.Type.del quant2
+        in
         Kind.alpha_equivalent kn1 kn2
-        && alpha_equiv seen ((quant1, quant2) :: env) body1 body2
+        && alpha_equiv seen beta_env' ((quant1, quant2) :: env) body1 body2
       | _, Recursive (quant, _, body) ->
-        alpha_equiv ((tp1, tp2) :: seen) env tp1'
+        alpha_equiv ((tp1, tp2) :: seen) beta_env env tp1'
         @@ subst beta_env body quant tp2'
       | Recursive (quant, _, body), _ ->
-        alpha_equiv ((tp1, tp2) :: seen) env tp2'
+        alpha_equiv ((tp1, tp2) :: seen) beta_env env tp2'
         @@ subst beta_env body quant tp1'
       | Row_nil, Row_nil | Row_cons _, Row_cons _ ->
         let alpha_equiv_rest env rest1 rest2 =
@@ -256,11 +223,12 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
             | None, _ | _, None ->
               false
             | Some r1, Some r2 ->
-              alpha_equiv seen env r1 r2
+              alpha_equiv seen beta_env env r1 r2
         in
         let alpha_equiv_row env row1 row2 =
           let alpha_equiv_field env (id1, tp1) (id2, tp2) =
-            Id.alpha_equivalent env id1 id2 && alpha_equiv seen env tp1 tp2
+            Id.alpha_equivalent env id1 id2
+            && alpha_equiv seen beta_env env tp1 tp2
           in
           let compare_fields (id1, _) (id2, _) =
             String.compare (Id.to_string id1) (Id.to_string id2)
@@ -277,7 +245,7 @@ let alpha_equivalent ?(beta_env = Env.initial) ?(env = []) tp1 tp2 =
       | _ ->
         false
   in
-  alpha_equiv [] env tp1 tp2
+  alpha_equiv [] beta_env env tp1 tp2
 
 let simplify ?ctx:ctx_opt tp =
   let fresh, env =
