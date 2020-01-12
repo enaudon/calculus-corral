@@ -3,7 +3,7 @@ module Id = Identifier
 type rank = int
 
 type 'a t =
-  { pools : 'a Id.Map.t Stack.t;
+  { pools : 'a Id.Map.t Vector.t;
     ranks : rank Id.Map.t }
 
 let ranks_find : Id.t -> 'a t -> rank =
@@ -17,7 +17,7 @@ let ranks_find : Id.t -> 'a t -> rank =
 
 let pools_find : rank -> Id.t -> 'a t -> 'a =
  fun rank id ps ->
-   try Id.Map.find id @@ Stack.get rank ps.pools
+   try Id.Map.find id @@ Vector.get rank ps.pools
    with Id.Unbound _ ->
      failwith
      @@ Printf.sprintf
@@ -25,27 +25,27 @@ let pools_find : rank -> Id.t -> 'a t -> 'a =
           (Id.to_string id)
           rank
 
-let top : 'a t -> rank = fun ps -> Stack.size ps.pools - 1
+let top : 'a t -> rank = fun ps -> Vector.size ps.pools - 1
 
 let insert : rank -> Id.t -> 'a -> 'a t -> 'a t =
  fun rank id data ps ->
-   let pool = Stack.get rank ps.pools in
-   { pools = Stack.update rank (Id.Map.add id data pool) ps.pools;
+   let pool = Vector.get rank ps.pools in
+   { pools = Vector.set rank (Id.Map.add id data pool) ps.pools;
      ranks = Id.Map.add id rank ps.ranks }
 
 let remove : rank -> Id.t -> 'a t -> 'a t =
  fun rank id ps ->
-   let pool = Stack.get rank ps.pools in
-   { pools = Stack.update rank (Id.Map.del id pool) ps.pools;
+   let pool = Vector.get rank ps.pools in
+   { pools = Vector.set rank (Id.Map.del id pool) ps.pools;
      ranks = Id.Map.del id ps.ranks }
 
-let empty = {pools = Stack.empty; ranks = Id.Map.empty}
+let empty = {pools = Vector.empty; ranks = Id.Map.empty}
 
-let push ps = {ps with pools = Stack.push Id.Map.empty ps.pools}
+let push ps = {ps with pools = Vector.push_back Id.Map.empty ps.pools}
 
-let peek ps = Stack.peek ps.pools
+let peek ps = Vector.peek_back ps.pools
 
-let pop ps = {ps with pools = Stack.pop ps.pools}
+let pop ps = {ps with pools = Vector.pop_back ps.pools}
 
 let update id1 id2 (ps : 'a t) : 'a t =
   let rank = ranks_find id1 ps in
