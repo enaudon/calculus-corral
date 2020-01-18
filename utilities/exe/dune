@@ -1,0 +1,9 @@
+(executable
+ (name vector_test)
+ (libraries oUnit qcheck qcheck-ounit utilities))
+
+(alias
+ (name runtest)
+ (deps vector_test.exe)
+ (action
+  (run %{exe:vector_test.exe})))
