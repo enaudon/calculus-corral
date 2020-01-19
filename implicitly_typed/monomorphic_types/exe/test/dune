@@ -1,17 +1,8 @@
-(executable
+(test
  (name test)
- (libraries oUnit monomorphic_types)
- (flags -w +A-4 -warn-error +A-4))
-
-(rule
- (targets cases)
- (action
-  (run cp -r
-    %{workspace_root}/../../implicitly_typed/monomorphic_types/exe/test/cases/
-    .)))
-
-(alias
- (name runtest)
- (deps test.exe ../repl/repl.exe cases)
+ (libraries monomorphic_types oUnit)
+ (deps
+  ../repl/repl.exe
+  (glob_files cases/*))
  (action
   (run %{exe:test.exe} -repl-exe %{exe:../repl/repl.exe} -case-dir ./cases/)))

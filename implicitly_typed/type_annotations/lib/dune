@@ -11,5 +11,4 @@
 
 (library
  (name type_annotations)
- (libraries type_operators_exp utilities)
- (flags -w +A-4 -warn-error +A-4))
+ (libraries type_operators_exp utilities))

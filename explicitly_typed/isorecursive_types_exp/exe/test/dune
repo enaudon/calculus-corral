@@ -1,17 +1,8 @@
-(executable
+(test
  (name test)
- (libraries oUnit isorecursive_types_exp)
- (flags -w +A-4 -warn-error +A-4))
-
-(rule
- (targets cases)
- (action
-  (run cp -r
-    %{workspace_root}/../../explicitly_typed/isorecursive_types_exp/exe/test/cases/
-    .)))
-
-(alias
- (name runtest)
- (deps test.exe ../repl/repl.exe cases)
+ (libraries isorecursive_types_exp oUnit)
+ (deps
+  ../repl/repl.exe
+  (glob_files cases/*))
  (action
   (run %{exe:test.exe} -repl-exe %{exe:../repl/repl.exe} -case-dir ./cases/)))

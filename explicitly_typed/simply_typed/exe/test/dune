@@ -1,16 +1,8 @@
-(executable
+(test
  (name test)
  (libraries oUnit simply_typed)
- (flags -w +A-4 -warn-error +A-4))
-
-(rule
- (targets cases)
- (action
-  (run cp -r
-    %{workspace_root}/../../explicitly_typed/simply_typed/exe/test/cases/ .)))
-
-(alias
- (name runtest)
- (deps test.exe ../repl/repl.exe cases)
+ (deps
+  ../repl/repl.exe
+  (glob_files cases/*))
  (action
   (run %{exe:test.exe} -repl-exe %{exe:../repl/repl.exe} -case-dir ./cases/)))

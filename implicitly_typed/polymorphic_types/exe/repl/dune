@@ -1,5 +1,4 @@
 (executable
  (name repl)
  (modules repl)
- (libraries polymorphic_types)
- (flags -w +A-4 -warn-error +A-4))
+ (libraries polymorphic_types))

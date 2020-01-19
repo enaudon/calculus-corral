@@ -1,3 +1,5 @@
-(lang dune 1.0)
+(lang dune 2.1)
 
-(using fmt 1.2)
+(name calculus-corral)
+
+(generate_opam_files true)

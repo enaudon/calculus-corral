@@ -1,5 +1,4 @@
 (executable
  (name repl)
  (modules repl)
- (libraries equirecursive_types_exp)
- (flags -w +A-4 -warn-error +A-4))
+ (libraries equirecursive_types_exp))

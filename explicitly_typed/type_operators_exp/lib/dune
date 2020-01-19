@@ -11,5 +11,4 @@
 
 (library
  (name type_operators_exp)
- (libraries utilities)
- (flags -w +A-4 -warn-error +A-4))
+ (libraries utilities))

@@ -1,5 +1,4 @@
 (executable
  (name repl)
  (modules repl)
- (libraries type_annotations)
- (flags -w +A-4 -warn-error +A-4))
+ (libraries type_annotations))

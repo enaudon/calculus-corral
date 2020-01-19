@@ -11,5 +11,4 @@
 
 (library
  (name algebraic_types_imp)
- (libraries algebraic_types_exp utilities)
- (flags -w +A-4 -warn-error +A-4))
+ (libraries algebraic_types_exp utilities))
