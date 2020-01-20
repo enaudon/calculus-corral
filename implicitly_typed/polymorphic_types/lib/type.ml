@@ -21,6 +21,10 @@ exception Occurs of Id.t * t
 
 (* Internal utilities *)
 
+let error : string -> string -> 'a =
+ fun fn_name msg ->
+   failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
+
 let raise_poly : string -> 'a =
  fun fn_name ->
    invalid_arg
@@ -134,10 +138,6 @@ end = struct
     let update id1 id2 state =
       {state with pools = IVE.update id1 id2 state.pools}
   end
-
-  let error : string -> string -> 'a =
-   fun fn_name msg ->
-     failwith @@ Printf.sprintf "%s.%s: %s" __MODULE__ fn_name msg
 
   let raise_occurs : Id.t -> t -> 'a = fun id tp -> raise @@ Occurs (id, tp)
 

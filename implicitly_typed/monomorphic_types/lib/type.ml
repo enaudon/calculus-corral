@@ -18,8 +18,6 @@ end)
 
 exception Occurs of Id.t * t
 
-let raise_occurs : Id.t -> t -> 'a = fun id tp -> raise @@ Occurs (id, tp)
-
 (* Constructors *)
 
 let inf_var id = Inference_variable id
@@ -30,65 +28,84 @@ let func' args res = List.fold_right func args res
 
 (* Inference *)
 
-module Substitution : sig
-  type s
+module Inferencer : sig
+  type state
 
-  val identity : s
+  val initial : state
 
-  val extend : Id.t -> t -> s -> s
+  val unify : state -> t -> t -> state
 
-  val apply : t -> s -> t
+  val apply : state -> t -> t
 end = struct
-  type nonrec s = t Id.Map.t
+  module Sub : sig
+    type s = t Id.Map.t
 
-  let identity = Id.Map.empty
+    val identity : s
 
-  let singleton : Id.t -> t -> s = Id.Map.singleton
+    val extend : Id.t -> t -> s -> s
 
-  let rec apply : s -> t -> t =
-   fun sub tp ->
-     match tp with
-       | Inference_variable id ->
-         Id.Map.find_default tp id sub
-       | Function (arg, res) ->
-         func (apply sub arg) (apply sub res)
+    val apply : t -> s -> t
+  end = struct
+    type s = t Id.Map.t
 
-  let extend id tp sub =
-    Id.Map.add id tp @@ Id.Map.map (apply @@ singleton id tp) sub
+    let identity = Id.Map.empty
 
-  let apply tp sub =
-    let tp' = apply sub tp in
-    assert (tp' = apply sub tp');
-    tp'
+    let singleton : Id.t -> t -> s = Id.Map.singleton
+
+    let rec apply : t -> s -> t =
+     fun tp sub ->
+       match tp with
+         | Inference_variable id ->
+           Id.Map.find_default tp id sub
+         | Function (arg, res) ->
+           func (apply arg sub) (apply res sub)
+
+    let extend id tp sub =
+      let apply tp' = apply tp' @@ singleton id tp in
+      Id.Map.add id tp @@ Id.Map.map apply sub
+
+    let apply tp sub =
+      let tp' = apply tp sub in
+      assert (tp' = apply tp' sub);
+      tp'
+  end
+
+  type state = Sub.s
+
+  let raise_occurs : Id.t -> t -> 'a = fun id tp -> raise @@ Occurs (id, tp)
+
+  let initial = Sub.identity
+
+  let unify state tp1 tp2 =
+    let rec occurs : Id.t -> t -> bool =
+     fun id tp ->
+       match tp with
+         | Inference_variable id' ->
+           id = id'
+         | Function (arg, res) ->
+           occurs id arg || occurs id res
+    in
+    let rec unify state tp1 tp2 =
+      let tp1' = Sub.apply tp1 state in
+      let tp2' = Sub.apply tp2 state in
+      match (tp1', tp2') with
+        | Inference_variable id1, Inference_variable id2 when id1 = id2 ->
+          state
+        | _, Inference_variable id ->
+          if occurs id tp1' then raise_occurs id tp1';
+          Sub.extend id tp1' state
+        | Inference_variable id, _ ->
+          if occurs id tp2' then raise_occurs id tp2';
+          Sub.extend id tp2' state
+        | Function (arg1, res1), Function (arg2, res2) ->
+          unify (unify state arg1 arg2) res1 res2
+    in
+    let state' = unify state tp1 tp2 in
+    assert (Sub.apply tp1 state' = Sub.apply tp2 state');
+    state'
+
+  let apply state tp = Sub.apply tp state
 end
-
-let unify sub tp1 tp2 =
-  let module Sub = Substitution in
-  let rec occurs id tp =
-    match tp with
-      | Inference_variable id' ->
-        id = id'
-      | Function (arg, res) ->
-        occurs id arg || occurs id res
-  in
-  let rec unify sub tp1 tp2 =
-    let tp1' = Sub.apply tp1 sub in
-    let tp2' = Sub.apply tp2 sub in
-    match (tp1', tp2') with
-      | Inference_variable id1, Inference_variable id2 when id1 = id2 ->
-        sub
-      | _, Inference_variable id ->
-        if occurs id tp1' then raise_occurs id tp1';
-        Sub.extend id tp1' sub
-      | Inference_variable id, _ ->
-        if occurs id tp2' then raise_occurs id tp2';
-        Sub.extend id tp2' sub
-      | Function (arg1, res1), Function (arg2, res2) ->
-        unify (unify sub arg1 arg2) res1 res2
-  in
-  let sub' = unify sub tp1 tp2 in
-  assert (Sub.apply tp1 sub' = Sub.apply tp2 sub');
-  sub'
 
 (* Utilities *)
 

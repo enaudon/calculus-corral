@@ -27,33 +27,30 @@ val func' : t list -> t -> t
 
 (** {1 Inference} *)
 
-(** Substitution
+(** Inferencer
 
-    A substitution maps (inference variable) identifiers to types, and provide
-    operations for extending substitutions with new mappings and for applying
-    substitutions to types. Furthermore, substitutions are idempotent by
-    construction. *)
-module Substitution : sig
-  (** The type of substitutions. *)
-  type s
+    This module contains type inference functionality, such as unification.
+    After inference is complete, the [apply] function will apply the
+    substitution computed by type inference. *)
+module Inferencer : sig
+  (** The type of inference engine state. *)
+  type state
 
-  (** [identity] is the identity substitution. It maps every inference variable
-      to itself. *)
-  val identity : s
+  (** [initial] is the initial state. *)
+  val initial : state
 
-  (** [extend id tp sub] extends [sub] with a mapping from [id] to [tp]. *)
-  val extend : Identifier.t -> t -> s -> s
+  (** [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and
+      [tp2]. In cases where both [tp1] and [tp2] are inference variables, and
+      either identifier may be kept in the substitution, [tp1]'s identifier is
+      kept. *)
+  val unify : state -> t -> t -> state
 
-  (** [apply tp sub] applies [sub] to [tp], replacing any inference variables in
-      [tp] which occur in the domain of [sub] with their corresponding types in
-      the range of [sub]. *)
-  val apply : t -> s -> t
+  (** [apply tp state] applies the substitution in [state] to [tp], replacing
+      any inference variables in [tp] which occur in the domain of the
+      substitution with their corresponding concrete types in the range of the
+      substitution. *)
+  val apply : state -> t -> t
 end
-
-(** [unify sub tp1 tp2] computes the subtitution which unifies [tp1] and [tp2].
-    In cases where both [tp1] and [tp2] are inference variables, and either
-    identifier may be kept in the substitution, [tp1]'s identifier is kept. *)
-val unify : Substitution.s -> t -> t -> Substitution.s
 
 (** {1 Utilities} *)
 

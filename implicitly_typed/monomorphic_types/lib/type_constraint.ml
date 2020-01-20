@@ -1,6 +1,6 @@
 module Id = Identifier
+module Infer = Type.Inferencer
 module Loc = Location
-module Sub = Type.Substitution
 
 type co =
   | Variable_equality of Id.t * Type.t
@@ -10,7 +10,7 @@ type co =
   | Binding of Id.t * Type.t * co
   | Localized of Loc.t * co
 
-type 'a t = co * (Sub.s -> 'a)
+type 'a t = co * (Infer.state -> 'a)
 
 (* Internal helpers *)
 
@@ -29,20 +29,20 @@ let loc_wrap : Loc.t option -> co -> co =
 
 let solve env (c, k) =
   let module Type_env = Type.Environment in
-  let rec solve env sub c =
+  let rec solve env state c =
     match c with
       | Variable_equality (id, tp) ->
-        Type.unify sub tp @@ Type_env.Term.find id env
+        Infer.unify state tp @@ Type_env.Term.find id env
       | Type_equality (lhs, rhs) ->
-        Type.unify sub lhs rhs
+        Infer.unify state lhs rhs
       | Conjunction (lhs, rhs) ->
-        solve env (solve env sub lhs) rhs
+        solve env (solve env state lhs) rhs
       | Existential (_, c) ->
-        solve env sub c
+        solve env state c
       | Binding (id, tp, c) ->
-        solve (Type_env.Term.add id tp env) sub c
+        solve (Type_env.Term.add id tp env) state c
       | Localized (loc, c) ->
-        try solve env sub c with
+        try solve env state c with
           | Type.Occurs (id, tp) ->
             error loc "solve"
             @@ Printf.sprintf
@@ -53,7 +53,7 @@ let solve env (c, k) =
             error loc "solve"
             @@ Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
   in
-  k @@ solve env Sub.identity c
+  k @@ solve env Infer.initial c
 
 (* Utilities *)
 
@@ -92,7 +92,7 @@ let to_string ?no_simp (c, _) =
 
 (* Constructors *)
 
-let map f (c, k) = (c, fun sub -> f @@ k sub)
+let map f (c, k) = (c, fun state -> f @@ k state)
 
 let var_eq ?loc id tp = (loc_wrap loc @@ Variable_equality (id, tp), fun _ -> ())
 
@@ -100,12 +100,14 @@ let type_eq ?loc lhs rhs =
   (loc_wrap loc @@ Type_equality (lhs, rhs), fun _ -> ())
 
 let conj ?loc (lhs_c, lhs_k) (rhs_c, rhs_k) =
-  (loc_wrap loc @@ Conjunction (lhs_c, rhs_c), fun sub -> (lhs_k sub, rhs_k sub))
+  ( loc_wrap loc @@ Conjunction (lhs_c, rhs_c),
+    fun state -> (lhs_k state, rhs_k state) )
 
 let exists ?loc fn =
   let tv = fresh_inf_var () in
   let c, k = fn tv in
-  (loc_wrap loc @@ Existential (tv, c), fun sub -> (Sub.apply tv sub, k sub))
+  ( loc_wrap loc @@ Existential (tv, c),
+    fun state -> (Infer.apply state tv, k state) )
 
 let def ?loc id tp (c, k) = (loc_wrap loc @@ Binding (id, tp, c), k)
 

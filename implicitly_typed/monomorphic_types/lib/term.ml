@@ -1,6 +1,6 @@
 module Id = Identifier
+module Infer = Type.Inferencer
 module Loc = Location
-module Sub = Type.Substitution
 module Type_env = Type.Environment
 
 type desc =
@@ -34,8 +34,8 @@ let app : Loc.t -> t -> t -> t =
 let to_type_hm : Type_env.t -> t -> Type.t =
  fun env tm ->
    let fresh_inf_var () = Type.inf_var @@ Id.gen_upper () in
-   let unify loc sub tp1 tp2 =
-     try Type.unify sub tp1 tp2
+   let unify loc state tp1 tp2 =
+     try Infer.unify state tp1 tp2
      with Type.Occurs (id, tp) ->
        error loc "to_type_hm"
        @@ Printf.sprintf
@@ -43,7 +43,7 @@ let to_type_hm : Type_env.t -> t -> Type.t =
             (Id.to_string id)
             (Type.to_string ~no_simp:() tp)
    in
-   let rec to_type env sub exp_tp tm =
+   let rec to_type env state exp_tp tm =
      let loc = tm.loc in
      match tm.desc with
        | Variable id ->
@@ -53,21 +53,21 @@ let to_type_hm : Type_env.t -> t -> Type.t =
              error tm.loc "to_type_hm"
              @@ Printf.sprintf "undefined identifier '%s'" (Id.to_string id)
          in
-         unify loc sub exp_tp tp
+         unify loc state exp_tp tp
        | Abstraction (arg, body) ->
          let arg_tp = fresh_inf_var () in
          let body_tp = fresh_inf_var () in
          let env' = Type_env.Term.add arg arg_tp env in
-         let sub = to_type env' sub body_tp body in
-         unify loc sub exp_tp @@ Type.func arg_tp body_tp
+         let state = to_type env' state body_tp body in
+         unify loc state exp_tp @@ Type.func arg_tp body_tp
        | Application (fn, arg) ->
          let tp = fresh_inf_var () in
-         let sub = to_type env sub (Type.func tp exp_tp) fn in
-         to_type env sub tp arg
+         let state = to_type env state (Type.func tp exp_tp) fn in
+         to_type env state tp arg
    in
    let tp = fresh_inf_var () in
-   let sub = to_type env Sub.identity tp tm in
-   Sub.apply tp sub
+   let state = to_type env Infer.initial tp tm in
+   Infer.apply state tp
 
 (* [to_type_pr env tp tm] ensures that [tm] has type [tp], via constraint-based
    type inference a la Pottier and Remy. [tm] is assumed to be closed under
