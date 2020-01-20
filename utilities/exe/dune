@@ -1,3 +1,3 @@
-(test
- (name vector_test)
+(tests
+ (names disjoint_set_test vector_test)
  (libraries oUnit qcheck qcheck-ounit utilities))
