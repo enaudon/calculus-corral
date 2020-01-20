@@ -35,11 +35,3 @@ val peek_back : 'a t -> 'a
 
 (** [pop_back v] removes the element at the end [v], decrementing [v]'s size. *)
 val pop_back : 'a t -> 'a t
-
-(** {2 Conversions} *)
-
-(** [to_list v] produces a list containing the elements in [v]. *)
-val to_list : 'a t -> 'a list
-
-(** [of_list l] produces a vector containing the elements in [l]. *)
-val of_list : 'a list -> 'a t

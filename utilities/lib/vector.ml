@@ -32,7 +32,3 @@ let pop_back {size; data} =
     invalid_arg "Vector.pop_back";
   let size' = size - 1 in
   {size = size'; data = Map.remove size' data}
-
-let to_list v = Map.bindings v.data |> List.map snd
-
-let of_list l = List.fold_left (fun v x -> push_back x v) empty l
